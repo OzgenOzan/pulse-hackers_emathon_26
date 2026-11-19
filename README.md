@@ -41,3 +41,43 @@ Preparation of the English jury presentation
 Team:
 
 Team 4 — PULSE HACKERS
+
+## Şahin Göz prototype
+
+Şahin Göz is an offline decision-support demo for the emergency department’s yellow-zone observation area. All patients, feeds, times, diagnosis mappings and the HBYS screen are **SIMULATED**. The rules engine, role-routed alerts, blocking RED acknowledgement, clinician-selected state changes and audit log run end to end. No machine learning, real clinical integration or external runtime service is involved. **Not validated for clinical use.**
+
+### Run locally
+
+Requires Python 3.11+, Node.js 20+, and npm. Setup needs network access to download dependencies; the running demo does not.
+
+```sh
+make setup
+make test
+make demo
+```
+
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). For development, `make dev` starts the API on port 8000 and Vite on [port 5173](http://127.0.0.1:5173). Stop the demo before starting development.
+
+#### Windows PowerShell without Make
+
+```powershell
+python -m venv .venv
+& .\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
+& .\.venv\Scripts\python.exe -m pytest -c backend/pytest.ini backend/tests
+Push-Location frontend
+npm.cmd ci
+npm.cmd run typecheck
+npm.cmd run build
+Pop-Location
+& .\.venv\Scripts\python.exe -m uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
+```
+
+To develop instead, add `--reload --reload-dir backend` to the Uvicorn command, and in another terminal run `Set-Location frontend` then `npm.cmd run dev`.
+
+### Try the night shift
+
+1. **Physician → Reset → +15 min**. Open S-06 and make a simulated discharge decision from the GREEN results-ready alert.
+2. **+15 min → Nurse**. Acknowledge S-03 with **Monitor reconnected**.
+3. **Physician → +15 min**. Review the blocking RED for S-01. Try opening another patient, then choose **Move to red zone**. Open **Audit log**.
+
+The project is rule-based and uses prototype thresholds only. It illustrates tradeoffs, not clinical performance. See the [demo script](docs/demo-script.md), [60-second backup](docs/demo-backup.mp4), [generated clinical rules](docs/clinical-rules.md), [status and review items](docs/STATUS.md), and [screenshots](docs/screenshots/).
