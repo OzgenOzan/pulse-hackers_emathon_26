@@ -23,7 +23,6 @@
   "row.vitalsFresh": "Vital {time}",
   "row.vitalsStale": "GÜNCEL DEĞİL · son vital {time}",
   "row.noVitals": "Henüz vital yok",
-  "row.vitalsSummary": "Nabız {hr} · OAB {map} · SpO₂ {spo2}",
   "row.score": "Puan {score}",
   "row.trend.up": "puan artıyor",
   "row.trend.down": "puan azalıyor",

@@ -139,7 +139,6 @@
   "app.language.en": "EN",
   "app.language.tr": "TR",
   "app.clock": "Simulated time",
-  "row.vitalsSummary": "HR {hr} · MAP {map} · SpO₂ {spo2}",
   "sex.M": "M",
   "sex.F": "F",
   "level.RED": "RED",

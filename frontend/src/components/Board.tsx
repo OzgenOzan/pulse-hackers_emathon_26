@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { orderBoardRows } from '../boardOrder';
 import { fmtTime, fmtValue } from '../format';
 import { t } from '../i18n';
@@ -6,11 +7,7 @@ import { LevelChip } from './AlertDialog';
 
 const TREND: Record<Summary['score_trend'], string> = { up: '↑', down: '↓', steady: '→' };
 
-function vitalsText(p: Summary): string {
-  if (!p.last_vitals) return t('row.noVitals');
-  const time = fmtTime(p.last_vitals.time);
-  return p.vitals_stale ? t('row.vitalsStale', { time }) : t('row.vitalsFresh', { time });
-}
+const VITALS = ['hr', 'map', 'spo2'] as const;
 
 export function Board({
   patients,
@@ -53,10 +50,6 @@ export function Board({
             const selected = selectedId === p.id;
             const dx = p.working_dx[0];
             const diagnosis = dx ? `${dx.code} ${t(`dx.${dx.code}`, undefined, dx.text)}` : '–';
-            const readings = p.vitals_stale ? p.last_vitals : p.current_vitals;
-            const vitals = t('row.vitalsSummary', {
-              hr: fmtValue(readings?.hr), map: fmtValue(readings?.map), spo2: fmtValue(readings?.spo2),
-            });
             return (
               <li key={p.id}>
                 <button
@@ -72,8 +65,24 @@ export function Board({
                   <span>{p.age}{t(`sex.${p.sex}`)}</span>
                   <span className="row-dx" title={diagnosis}>{diagnosis}</span>
                   <span>{t('row.minutes', { minutes: p.minutes_in_zone })}</span>
-                  <span className="row-vitals" data-stale={p.vitals_stale} title={vitalsText(p)}>
-                    {vitals}{p.vitals_stale && <> <small>{t('row.stale')}</small></>}
+                  <span className="row-vitals">
+                    {VITALS.map((key, index) => {
+                      const current = p.current_vital_freshness[key];
+                      const fallback = p.vitals_stale ? p.last_vitals?.[key] : null;
+                      const stale = current?.stale ?? (fallback != null);
+                      const observedAt = current?.observed_at ?? (fallback == null ? null : p.last_vitals?.time);
+                      return (
+                        <Fragment key={key}>
+                          {index > 0 && ' · '}
+                          <span data-stale={stale}
+                            title={observedAt ? t(stale ? 'row.vitalsStale' : 'row.vitalsFresh', { time: fmtTime(observedAt) }) : t('row.noVitals')}>
+                            {key === 'spo2' ? 'SpO₂' : t(`vitals.short.${key}`)} {fmtValue(p.current_vitals[key] ?? fallback)}
+                            {stale && !p.vitals_stale && <> <small>{t('row.stale')}</small></>}
+                          </span>
+                        </Fragment>
+                      );
+                    })}
+                    {p.vitals_stale && p.last_vitals && <> <small>{t('row.stale')}</small></>}
                   </span>
                   <span title={t(`row.trend.${p.score_trend}`)}>
                     {t('row.score', { score: p.score })} {TREND[p.score_trend]}

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from app.domain.models import Component, LabOrder, PatientSnapshot, SuppressedLab
 from app.engine.config import CriticalBounds, EngineConfig
+from app.engine.display import format_rule_value
 
 
 def ordered_labs(patient: PatientSnapshot, now: datetime) -> list[LabOrder]:
@@ -15,7 +16,7 @@ def critical_rule(bounds: CriticalBounds, value: float, unit: str, test: str) ->
         op, bound = '≥', bounds.critical_high
     else:
         return None
-    number = f'{bound:.2f}'
+    number = format_rule_value(bound, 2)
     if test != 'ph':
         number = number.rstrip('0').rstrip('.')
     return f'{op} {number} {unit}'.rstrip()

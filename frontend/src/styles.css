@@ -190,7 +190,7 @@ button:disabled {
   color: var(--muted);
 }
 
-.row-vitals[data-stale='true'] {
+.row-vitals [data-stale='true'] {
   color: #656565;
 }
 
@@ -313,6 +313,7 @@ button:disabled {
 }
 
 .banners {
+  position: relative;
   display: grid;
   gap: 2px;
   padding: 2px 8px 0;
@@ -367,6 +368,28 @@ button:disabled {
 .banner-more {
   justify-self: end;
   font-size: .8125rem;
+}
+
+.banner-more summary {
+  cursor: pointer;
+}
+
+.banner-overflow {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  right: 8px;
+  left: 8px;
+  max-height: 50dvh;
+  overflow: auto;
+  padding: 4px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.banner-overflow .reasons {
+  position: static;
 }
 
 .banner-red {

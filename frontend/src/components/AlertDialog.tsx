@@ -264,30 +264,36 @@ export function AlertBanners({
   onEnterVitals?: (patientId: string) => void;
 }) {
   if (alerts.length === 0) return null;
+  const strip = (alert: Alert) => {
+    const patient = patients.find(p => p.id === alert.patient_id);
+    const title = alertTitle(alert);
+    return (
+      <article
+        key={alert.id}
+        className={`banner banner-${alert.level.toLowerCase()}`}
+        data-testid={`banner-${alert.level}-${alert.patient_id}`}
+      >
+        <LevelChip level={alert.level} />
+        <EscalatedTag escalated={alert.escalated} />
+        <strong>{patient ? `${patient.label} · ${patient.bed}` : alert.patient_id}</strong>
+        <span className="banner-title" title={title}>{title}</span>
+        <LatchedNote alert={alert} />
+        {alert.target_role === role
+          ? <AlertActions alert={alert} busy={busy} onAct={onAct} onEnterVitals={onEnterVitals}
+              testPrefix={alert.level === 'YELLOW' ? '' : 'banner-'} />
+          : <span>{t('banner.routed', { role: t(`app.role.${alert.target_role}`) })}</span>}
+      </article>
+    );
+  };
   return (
     <section className="banners" aria-label={t('app.region.alerts')}>
-      {alerts.slice(0, 2).map(alert => {
-        const patient = patients.find(p => p.id === alert.patient_id);
-        const title = alertTitle(alert);
-        return (
-          <article
-            key={alert.id}
-            className={`banner banner-${alert.level.toLowerCase()}`}
-            data-testid={`banner-${alert.level}-${alert.patient_id}`}
-          >
-            <LevelChip level={alert.level} />
-            <EscalatedTag escalated={alert.escalated} />
-            <strong>{patient ? `${patient.label} · ${patient.bed}` : alert.patient_id}</strong>
-            <span className="banner-title" title={title}>{title}</span>
-            <LatchedNote alert={alert} />
-            {alert.target_role === role
-              ? <AlertActions alert={alert} busy={busy} onAct={onAct} onEnterVitals={onEnterVitals}
-                  testPrefix={alert.level === 'YELLOW' ? '' : 'banner-'} />
-              : <span>{t('banner.routed', { role: t(`app.role.${alert.target_role}`) })}</span>}
-          </article>
-        );
-      })}
-      {alerts.length > 2 && <span className="banner-more">{t('banner.more', { count: alerts.length - 2 })}</span>}
+      {alerts.slice(0, 2).map(strip)}
+      {alerts.length > 2 && (
+        <details className="banner-more">
+          <summary>{t('banner.more', { count: alerts.length - 2 })}</summary>
+          <div className="banner-overflow">{alerts.slice(2).map(strip)}</div>
+        </details>
+      )}
     </section>
   );
 }

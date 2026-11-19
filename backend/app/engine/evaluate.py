@@ -33,4 +33,4 @@ def evaluate(patient_snapshot: PatientSnapshot, now: datetime, config: EngineCon
     if green is not None:
         candidates.append(green)
     return EngineResult(score=score, components=components, suppressed_labs=suppressed, candidates=candidates,
-                        current_vitals={param: value for param, (value, _) in fresh.items()})
+                        current_vital_evidence=fresh)

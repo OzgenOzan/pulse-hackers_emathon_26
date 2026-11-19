@@ -216,11 +216,26 @@ def test_bad_manual_vitals_are_rejected_before_mutation(values, error):
         assert not any(e['event'] == 'manual_vitals' for e in client.get('/api/audit').json())
 
 
-def test_unknown_physician_action_does_not_suppress_green():
+@pytest.mark.parametrize('action', ['banana', '', '   ', 'x' * 101])
+def test_unknown_physician_action_does_not_suppress_green(action):
     with client_for_night_shift() as client:
         state(client)
-        response = client.post('/api/patients/Y06/actions', json={'type': 'banana'})
+        response = client.post('/api/patients/Y06/actions', json={'type': action})
         assert response.status_code == 422
         assert response.json()['detail'] == 'invalid_action_type'
         step(client)
         assert [(a['level'], a['patient_id']) for a in state(client)['alerts']] == [('GREEN', 'Y06')]
+
+
+def test_board_freshness_tracks_each_vital_between_cycles():
+    with client_for_night_shift() as client:
+        for _ in range(3):
+            step(client)
+        state(client)
+        assert client.post('/api/patients/Y03/vitals', json={'hr': 90, 'sbp': 120, 'dbp': 70}).status_code == 204
+        client.app.state.session.clock.step(1)
+        summary = next(p for p in state(client, 'nurse')['patients'] if p['id'] == 'Y03')
+        assert summary['current_vitals']['spo2'] == 94
+        freshness = summary['current_vital_freshness']
+        assert freshness['hr'] == {'observed_at': '2026-11-20T03:30:00', 'stale': False}
+        assert freshness['spo2'] == {'observed_at': '2026-11-20T03:00:00', 'stale': True}

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
     Alert, AuditEntry, AuditEvent, EngineResult, PatientDetail, PatientSnapshot,
-    PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalReading, VitalValues,
+    PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
 )
 from app.engine.config import EngineConfig
 from app.engine.evaluate import evaluate
@@ -159,12 +159,18 @@ class Session:
     def summary(self, patient: PatientSnapshot) -> PatientSummary:
         last_vitals = latest_vital(patient.vitals)
         assessment = self.assessments.get(patient.profile.id, EMPTY_ASSESSMENT)
+        cutoff = self.now - timedelta(minutes=self.config.red.vital_max_age_minutes)
+        values: dict[str, float] = {}
+        freshness: dict[str, VitalFreshness] = {}
+        for param, (value, observed_at) in assessment.current_vital_evidence.items():
+            values[param] = value
+            freshness[param] = VitalFreshness(observed_at=observed_at, stale=observed_at < cutoff)
         return PatientSummary(**patient.profile.model_dump(), status=patient.status,
                               minutes_in_zone=max(0, int((self.now - patient.profile.arrived_at).total_seconds() // 60)),
                               last_vitals=last_vitals,
-                              current_vitals=assessment.current_vitals,
-                              vitals_stale=(last_vitals is None or self.now - last_vitals.time >
-                                            timedelta(minutes=self.config.red.vital_max_age_minutes)),
+                              current_vitals=values,
+                              current_vital_freshness=freshness,
+                              vitals_stale=last_vitals is None or last_vitals.time < cutoff,
                               score=assessment.score,
                               score_trend=self.score_trends.get(patient.profile.id, 'steady'),
                               intervention_started=patient.intervention_started)

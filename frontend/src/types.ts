@@ -17,6 +17,7 @@ export interface VitalReading extends VitalValues { time: string; source: 'monit
 export interface Summary extends Profile {
   status: Status; minutes_in_zone: number; last_vitals: VitalReading | null; vitals_stale: boolean;
   current_vitals: VitalValues;
+  current_vital_freshness: Partial<Record<keyof VitalValues, { observed_at: string; stale: boolean }>>;
   score: number; score_trend: 'up' | 'down' | 'steady'; intervention_started: boolean;
 }
 export interface LabOrder { test: string; ordered_at: string; resulted_at: string | null; value: number | null; unit: string | null }
