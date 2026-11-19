@@ -3,8 +3,8 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 4px;
-  min-height: 88px;
-  padding: 6px 8px 6px 10px;
+  min-width: 0;
+  padding: 6px 8px 8px 10px;
   text-align: left;
   color: var(--text);
   background: var(--surface);
@@ -40,7 +40,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: .25rem;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -58,7 +58,8 @@
 }
 
 .stat-yakin-takip {
-  border-left-color: var(--text);
+  border-color: var(--watch-edge);
+  border-left-color: var(--watch-edge);
   background: var(--yakin-takip);
   color: var(--status-on-yellow);
 }
@@ -70,18 +71,19 @@
 }
 
 .stat-unclassified {
-  border-left-color: var(--text);
+  border-left-color: var(--unclassified-edge);
   background: repeating-linear-gradient(
       135deg,
       var(--siniflandirilmamis) 0 6px,
       var(--surface) 6px 12px
     );
-  color: var(--unclassified-ink);
+  color: var(--text);
 }
 
+/* Labels sit on a solid chip so the #222 ink keeps contrast on both themes. */
 .stat-unclassified .stat-head,
 .stat-unclassified .stat-count {
-  background: var(--surface);
+  background: var(--siniflandirilmamis);
   color: var(--unclassified-ink);
   align-self: flex-start;
   padding: 0 6px;

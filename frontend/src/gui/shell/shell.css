@@ -1,4 +1,4 @@
-/* Header, demo strip, offline notice and overview row. Colours come from tokens.css only. */
+/* Header, navigation, demo strip, offline notice and overview row. Colours come from tokens.css only. */
 
 .gui-shell {
   position: relative;
@@ -17,8 +17,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 20px;
-  padding: 10px 20px;
+  gap: 8px 16px;
+  padding: 8px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -27,19 +27,23 @@
 .gui-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.gui-brand-text {
   min-width: 0;
 }
 
 .hawk-logo {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   color: var(--text);
 }
 
 .gui-title {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.15;
@@ -47,7 +51,7 @@
 
 .gui-subtitle {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -56,11 +60,13 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px 14px;
+  gap: 6px 12px;
+  min-width: 0;
 }
 
 .gui-bell,
-.gui-info {
+.gui-info,
+.gui-theme {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -95,7 +101,7 @@
 }
 
 .gui-clock-label {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -113,9 +119,9 @@
 }
 
 .role-option {
-  min-width: 96px;
+  min-width: 88px;
   min-height: 44px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border: 0;
   border-radius: 0;
   background: var(--surface);
@@ -140,7 +146,7 @@
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 0 10px 0 6px;
+  padding: 0 6px;
   font-size: 0.9375rem;
   font-weight: 600;
   white-space: nowrap;
@@ -162,7 +168,7 @@
   padding: 0 10px;
   border: 1px solid var(--text);
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -175,8 +181,25 @@
   }
 }
 
+/* Phones: the header stays compact and wraps to at most two short rows. */
+@media (max-width: 639px) {
+  .gui-header {
+    padding: 8px 12px;
+  }
+
+  .gui-subtitle,
+  .gui-clock-label,
+  .gui-pill {
+    display: none;
+  }
+
+  .role-option {
+    min-width: 72px;
+  }
+}
+
 .gui-notice {
-  padding: 10px 20px;
+  padding: 10px 16px;
   background: var(--subtle);
   border-bottom: 2px solid var(--text);
   font-weight: 700;
@@ -187,7 +210,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  padding: 4px 20px;
+  padding: 4px 16px;
   background: var(--subtle);
   border-bottom: 1px dashed var(--line-strong);
 }
@@ -213,37 +236,286 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Frame: sidebar + content on desktop; content + fixed bottom bar below 1200 px. */
+.gui-frame {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+.gui-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.nav-toggle {
+  display: none;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  gap: 4px;
+}
+
+.nav-list > li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.nav-item {
+  position: relative;
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.nav-item:hover {
+  background: var(--subtle);
+}
+
+.nav-item[aria-current='page'] {
+  background: var(--text);
+  color: var(--ink-inverse);
+}
+
+.nav-item[aria-current='page'] .nav-badge {
+  background: var(--ink-inverse);
+  color: var(--text);
+}
+
+.nav-label {
+  overflow-wrap: anywhere;
+}
+
+.nav-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--ink-inverse);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Below 1200 px the badge sits on the icon's top-right corner. */
+.nav-item .nav-badge {
+  position: absolute;
+  top: 0;
+  right: 2px;
+}
+
+.nav-more-panel {
+  position: fixed;
+  right: 8px;
+  bottom: calc(68px + env(safe-area-inset-bottom));
+  z-index: 30;
+  min-width: 220px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.nav-more-panel .nav-item {
+  flex-direction: row;
+  justify-content: flex-start;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 0.9375rem;
+}
+
+.nav-more.is-active {
+  box-shadow: inset 0 -3px 0 var(--text);
+}
+
+/* Desktop: a left sidebar in flow. Collapsed shows icons, with labels as flyouts on hover or focus. */
+@media (min-width: 1200px) {
+  .gui-frame {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    padding-bottom: 0;
+  }
+
+  .gui-nav {
+    position: sticky;
+    top: var(--header-height, 0px);
+    align-self: start;
+    height: calc(100vh - var(--header-height, 0px));
+    width: 52px;
+    padding: 8px 6px;
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .gui-frame[data-expanded='true'] .gui-nav {
+    width: 208px;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-control);
+    background: var(--surface);
+  }
+
+  .nav-list {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .nav-list > li {
+    flex: 0 0 auto;
+  }
+
+  .nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 10px;
+    font-size: 0.9375rem;
+  }
+
+  .nav-label {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .nav-item .nav-badge {
+    position: static;
+    margin-inline-start: auto;
+  }
+
+  .gui-frame[data-expanded='false'] .nav-item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .gui-frame[data-expanded='false'] .nav-label {
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--text);
+    color: var(--ink-inverse);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 30;
+  }
+
+  .gui-frame[data-expanded='false'] .nav-item:hover .nav-label,
+  .gui-frame[data-expanded='false'] .nav-item:focus-visible .nav-label {
+    opacity: 1;
+  }
+
+  .gui-frame[data-expanded='false'] .nav-item .nav-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 0.6875rem;
+    line-height: 18px;
+  }
+}
+
+.gui-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .gui-overview {
-  padding: 8px 20px 0;
+  padding: 8px 16px 0;
 }
 
 .stat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 128px), 1fr));
+  gap: 8px;
 }
 
-.filter-chip-row {
-  margin-top: 10px;
-}
-
-.filter-chip {
-  min-height: 44px;
-  padding: 6px 14px;
-  border: 1px solid var(--text);
-  border-radius: 999px;
-  background: var(--surface);
-  font-weight: 600;
+@media (min-width: 1200px) {
+  .stat-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
 }
 
 .gui-body {
   flex: 1 1 auto;
-  padding: 8px 20px;
+  min-width: 0;
+  padding: 8px 16px;
 }
 
 .gui-footer {
-  padding: 12px 20px;
+  padding: 12px 16px;
   border-top: 1px solid var(--line);
   font-size: 0.875rem;
   color: var(--muted);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
