@@ -1,0 +1,51 @@
+export type Level = 'RED' | 'YELLOW' | 'GREEN';
+export type Role = 'physician' | 'nurse';
+export type Status = 'in_zone' | 'transferred_red' | 'discharged';
+export type Speed = 30 | 60 | 120;
+export type Language = 'en' | 'tr';
+
+export interface Diagnosis { code: string; text: string }
+export interface Profile {
+  id: string; bed: string; label: string; age: number; sex: 'M' | 'F';
+  arrived_at: string; monitored: boolean; working_dx: Diagnosis[];
+}
+export interface VitalValues {
+  hr?: number | null; sbp?: number | null; dbp?: number | null; map?: number | null;
+  temp?: number | null; spo2?: number | null; rr?: number | null;
+}
+export interface VitalReading extends VitalValues { time: string; source: 'monitor' | 'manual' }
+export interface Summary extends Profile {
+  status: Status; minutes_in_zone: number; last_vitals: VitalReading | null; vitals_stale: boolean;
+  score: number; score_trend: 'up' | 'down' | 'steady'; intervention_started: boolean;
+}
+export interface LabOrder { test: string; ordered_at: string; resulted_at: string | null; value: number | null; unit: string | null }
+export interface PhysicianAction { time: string; type: string }
+export interface Component {
+  key: string; label: string; value: number; unit: string; rule: string; points: number; observed_at: string;
+}
+export interface SuppressedLab { test: string; value: number; unit: string; reason: string; reason_key: string; observed_at: string }
+export interface Candidate {
+  level: Level; target_role: Role; title_key: string; params: Record<string, string | number | boolean>;
+  recommended_actions: string[]; components: Component[]; escalated: boolean;
+}
+export interface Alert extends Candidate {
+  id: string; patient_id: string; score: number; created_at: string; updated_at: string;
+  status: 'active' | 'acknowledged' | 'auto_resolved' | 'superseded'; criteria_met: boolean;
+  closed_at: string | null; action: string | null; reason: string | null;
+}
+export interface EngineResult { score: number; components: Component[]; suppressed_labs: SuppressedLab[]; candidates: Candidate[] }
+export interface Detail {
+  profile: Profile; vitals: VitalReading[]; labs: LabOrder[]; actions: PhysicianAction[]; status: Status;
+  active_red: boolean; intervention_started: boolean; assessment: EngineResult; alert_history: Alert[];
+}
+export interface SimStatus { time: string; playing: boolean; speed: Speed; scenario_id: string; next_cycle_at: string | null }
+export interface State {
+  sim: SimStatus; patients: Summary[]; alerts: Alert[]; blocking_alert_id: string | null;
+  counters: { suppressed_labs: number; acknowledgements: number };
+}
+export interface AuditEntry {
+  id: string; sim_time: string; wall_time: string; patient_id: string; alert_id: string | null;
+  event: string; role: Role | null; action: string | null; reason: string | null; latency_minutes: number | null; score: number | null;
+}
+export interface ScenarioInfo { id: string; title: string }
+export interface RulesView { red: { threshold: number }; alerting: { red_blocks_navigation: boolean } }

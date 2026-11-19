@@ -1,0 +1,40 @@
+# Şahin Göz engine config. PROTOTYPE DEFAULTS. Values marked CLINICAL-REVIEW
+# must be confirmed by the team's clinicians before any demo claim.
+cycle_minutes: 15
+red:
+  threshold: 3                        # CLINICAL-REVIEW
+  vital_max_age_minutes: 30           # CLINICAL-REVIEW (not in design report)
+  vital_rules:                        # design report
+    - {key: map_low,   param: map,  op: "<=", value: 65,   points: 3}   # CLINICAL-REVIEW
+    - {key: hr_high,   param: hr,   op: ">",  value: 100,  points: 1}   # CLINICAL-REVIEW
+    - {key: temp_high, param: temp, op: ">=", value: 38.0, points: 1}   # CLINICAL-REVIEW
+    - {key: spo2_low,  param: spo2, op: "<=", value: 90,   points: 2, enabled: false}  # candidate, not in design report
+    - {key: rr_high,   param: rr,   op: ">=", value: 25,   points: 1, enabled: false}  # candidate, not in design report
+  trend_rules:                        # vs the patient's first reading in the zone. CLINICAL-REVIEW (not in design report)
+    - {key: map_drop, param: map, direction: down, delta: 15, points: 1}
+    - {key: hr_rise,  param: hr,  direction: up,   delta: 20, points: 1}
+  critical_lab_points: 3              # CLINICAL-REVIEW
+labs:                                 # CLINICAL-REVIEW: cut-offs are assay- and lab-specific
+  troponin:  {label: "hs-cTnT", unit: "ng/L",   ref_high: 14,  critical_high: 52}   # 52 = ESC 0h rule-in for Elecsys hs-cTnT
+  lactate:   {label: "Lactate", unit: "mmol/L", ref_high: 2.0, critical_high: 4.0}
+  ph:        {label: "pH (blood gas)", unit: "", ref_low: 7.35, ref_high: 7.45, critical_low: 7.20, critical_high: 7.60}
+  potassium: {label: "K+",      unit: "mmol/L", ref_low: 3.5,  ref_high: 5.1,  critical_low: 2.5,  critical_high: 6.0}
+icd_lab_relevance:                    # only these diagnosis→lab pairs may raise a lab-driven RED. CLINICAL-REVIEW
+  chest_pain_acs:   {icd_prefixes: ["R07", "I20", "I21", "I24"], labs: [troponin]}
+  infection_sepsis: {icd_prefixes: ["A40", "A41", "N39.0", "J18", "R50", "R65"], labs: [lactate]}
+  dka_acidosis:     {icd_prefixes: ["E10.1", "E11.1", "E87.2"], labs: [ph, potassium]}
+  renal_potassium:  {icd_prefixes: ["N17", "N18", "N19", "E87.5", "E87.6"], labs: [potassium, ph]}
+universal_panic:                      # bypasses the diagnosis filter. NOT in design report. CLINICAL-REVIEW
+  enabled: true
+  potassium: {critical_low: 2.5, critical_high: 6.5}
+  ph:        {critical_low: 7.10}
+yellow:
+  monitor_gap_minutes: 15             # design report
+  vitals_overdue_minutes: 30          # design report gives 30–60
+  vitals_overdue_escalate_minutes: 60
+green:
+  idle_after_results_minutes: 30      # design report
+alerting:
+  ack_cooldown_minutes: 30            # CLINICAL-REVIEW (not in design report)
+  realert_score_increase: 2           # CLINICAL-REVIEW (not in design report)
+  red_blocks_navigation: true         # design report
