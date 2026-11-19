@@ -1,0 +1,384 @@
+/* Patient cards and sheet. Colours come only from tokens.css variables or currentColor. */
+
+:is(.patient-card, .icon-button):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.patients {
+  display: grid;
+  gap: 12px;
+}
+
+.patients-empty {
+  color: var(--muted);
+}
+
+.patient-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 1600px) {
+  .patient-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .patient-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.patient-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.patient-card[data-status='kritik'] { border-left-color: var(--kritik); }
+.patient-card[data-status='yakin_takip'] { border-left-color: var(--yakin-takip); }
+.patient-card[data-status='siniflandirilmamis'] { border-left-color: var(--siniflandirilmamis); }
+.patient-card[data-status='stabil'] { border-left-color: var(--stabil); }
+.patient-card[data-locked] { outline: 2px dashed var(--muted); outline-offset: -4px; }
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.card-meta,
+.card-foot {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.card-reason,
+.card-issue {
+  margin: 0;
+  font-size: 14px;
+}
+
+.card-issue {
+  color: var(--muted);
+}
+
+.card-tasks {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge-locked,
+.badge-worsened {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-worsened {
+  color: var(--kritik);
+}
+
+.status-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.status-label[data-status='kritik'] .status-pill {
+  background: var(--kritik-bg);
+  color: var(--kritik);
+}
+
+.status-label[data-status='yakin_takip'] .status-pill {
+  background: var(--yakin-takip-bg);
+  color: var(--status-on-yellow);
+}
+
+.status-label[data-status='siniflandirilmamis'] .status-pill {
+  background: var(--siniflandirilmamis);
+  color: var(--unclassified-ink);
+}
+
+.status-label[data-status='stabil'] .status-pill {
+  background: var(--stabil-bg);
+  color: var(--stabil);
+}
+
+.status-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vital {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--subtle);
+}
+
+.vital-label,
+.vital-unit,
+.vital-sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.vital-reading {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.vital-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vital-gap {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.vital[data-state='stale'] .vital-gap {
+  color: var(--text);
+}
+
+.vital-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.flag-kritik svg { color: var(--kritik); }
+.flag-yakin_takip svg { color: var(--yakin-takip); }
+
+.task-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--subtle);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.patient-sheet {
+  position: fixed;
+  inset: 0 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.patient-sheet:not([open]) {
+  display: none;
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.sheet-meta,
+.sheet-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.sheet-body {
+  display: grid;
+  flex: 1;
+  gap: 20px;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.sheet-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sheet-section h3,
+.sheet-subhead {
+  margin: 0;
+  font-size: 16px;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.reason-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.notice {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--subtle);
+}
+
+.trend {
+  display: grid;
+  grid-template-columns: 56px 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.trend svg {
+  width: 120px;
+  height: 36px;
+  color: var(--muted);
+}
+
+.trend-label,
+.trend-text {
+  color: var(--muted);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rule {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .trend {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+}
