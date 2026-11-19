@@ -20,7 +20,7 @@ export function AlarmCard({ tone, title, meta, badges, children, actions }: Alar
       <header className="alarm-card-head">
         {tone === 'critical' && (
           <span className="alarm-card-icon" role="img" aria-label={copy.panel.criticalIcon} title={copy.panel.criticalIcon}>
-            <TriangleAlert aria-hidden="true" size={28} />
+            <TriangleAlert aria-hidden="true" size={24} />
           </span>
         )}
         <div className="alarm-card-title">

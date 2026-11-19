@@ -23,6 +23,9 @@ export const copy = {
     offline: 'Bağlantı kesildi; kayıt yapılamaz.',
     criticalIcon: 'Kritik uyarı',
   },
+  strip: {
+    label: 'Kritik alarm özeti',
+  },
   sheet: {
     heading: 'Klinik değerlendirme kaydı',
     evidence: 'Uyarının gerekçesi',

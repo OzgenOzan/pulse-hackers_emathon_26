@@ -60,7 +60,7 @@
 
 /* Critical panel: light red field, strong border, no animation. */
 .alarm-panel {
-  padding: 12px;
+  padding: 10px 12px;
   border: 3px solid var(--kritik);
   border-radius: 12px;
   background: var(--kritik-bg);
@@ -369,4 +369,96 @@
   .alarm-btn {
     transition: none;
   }
+}
+
+/* Desktop: alarm cards sit side by side so the whole block stays short. */
+@media (min-width: 1200px) {
+  .alarm-panel .alarm-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+    gap: 10px;
+  }
+
+  .alarm-panel .alarm-list > li + li {
+    margin-top: 0;
+  }
+}
+
+/* Critical card: compact, with 44px secondary and 48px primary actions. */
+.alarm-card-critical {
+  padding: 8px 12px;
+}
+
+.alarm-card-critical .alarm-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+}
+
+.alarm-card-critical .alarm-card-body {
+  margin-top: 4px;
+}
+
+.alarm-card-critical .alarm-card-actions {
+  margin-top: 6px;
+}
+
+.alarm-card-critical .alarm-btn {
+  min-height: 44px;
+  padding: 6px 12px;
+}
+
+.alarm-card-critical .alarm-btn.primary {
+  min-height: 48px;
+}
+
+/* Sticky strip: pinned under the shell header (top is measured from it at runtime). */
+.alarm-strip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 20px;
+  border-bottom: 3px solid var(--kritik);
+  background: var(--kritik-bg);
+  box-shadow: var(--shadow);
+}
+
+.alarm-strip .alarm-strip-title {
+  flex: 0 0 auto;
+  margin: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.alarm-strip-list {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.alarm-strip-list li {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.alarm-strip-bed {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alarm-strip-btn {
+  min-height: 44px;
+  padding: 6px 12px;
 }
