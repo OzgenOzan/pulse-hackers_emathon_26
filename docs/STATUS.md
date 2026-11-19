@@ -59,4 +59,5 @@
 - U3 — Edge showed all six RED evidence rows at 04:00 with consistent precision and no visible value over two decimals. The engine still uses raw values; the focused engine and replay suite passed (10 tests).
 - U4 — with no URL selection, a nurse opening the board at 03:15 gets C.M. (S-03), the top YELLOW row. Edge also preserved an explicit A.K. selection after reload.
 - U5 — Edge showed configured Lactate and K+ labels (including filtered lactate) and localized CBC, Creatinine and Urinalysis labels in English and Turkish.
+- U6 — a fresh Edge load used the inline SVG icon, made no `/favicon.ico` request, and logged no errors.
 - Intentional behavior: a valid manual entry or acknowledgement re-evaluates immediately, so an alert can appear between the scheduled 15-minute evaluations.
