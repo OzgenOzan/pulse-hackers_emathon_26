@@ -53,4 +53,5 @@ export interface RulesView {
   red: { threshold: number };
   alerting: { red_blocks_navigation: boolean };
   manual_entry: { required: (keyof VitalValues)[]; limits: Record<keyof VitalValues, {min: number; max: number}> };
+  labs: Record<string, { label: string }>;
 }

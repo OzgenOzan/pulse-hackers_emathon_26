@@ -191,6 +191,7 @@ export function App() {
     pane = (
       <PatientDetail
         detail={detail.data}
+        labRules={config?.labs}
         role={view.role}
         greenAlerts={greenAlerts}
         busy={busy}

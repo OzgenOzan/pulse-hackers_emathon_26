@@ -1,10 +1,11 @@
 import { fmtLab, fmtTime, fmtValue } from '../format';
 import { t } from '../i18n';
-import type { Alert, Detail, Role } from '../types';
+import type { Alert, Detail, Role, RulesView } from '../types';
 import { type ActAlert, AlertActions, ComponentTable, EscalatedTag, LevelChip, alertTitle } from './AlertDialog';
 
 export function PatientDetail({
   detail,
+  labRules,
   role,
   greenAlerts,
   busy,
@@ -12,6 +13,7 @@ export function PatientDetail({
   onEnterVitals,
 }: {
   detail: Detail;
+  labRules?: RulesView['labs'];
   role: Role;
   greenAlerts: Alert[];
   busy: boolean;
@@ -87,7 +89,8 @@ export function PatientDetail({
           <ul>
             {assessment.suppressed_labs.map(s => (
               <li key={`${s.test}-${s.observed_at}`}>
-                {s.test} {fmtLab(s.test, s.value)} {s.unit}: {t(`suppression.${s.reason_key}`, undefined, s.reason)}
+                {labRules?.[s.test]?.label ?? t(`lab.${s.test}`, undefined, s.test)}{' '}
+                {fmtLab(s.test, s.value)} {s.unit}: {t(`suppression.${s.reason_key}`, undefined, s.reason)}
               </li>
             ))}
           </ul>
@@ -149,7 +152,7 @@ export function PatientDetail({
             <tbody>
               {detail.labs.map(l => (
                 <tr key={`${l.test}-${l.ordered_at}`}>
-                  <td>{l.test}</td>
+                  <td>{labRules?.[l.test]?.label ?? t(`lab.${l.test}`, undefined, l.test)}</td>
                   <td>{l.value === null ? t('detail.pending') : `${fmtLab(l.test, l.value)} ${l.unit ?? ''}`}</td>
                   <td>{fmtTime(l.ordered_at)}</td>
                   <td>{fmtTime(l.resulted_at)}</td>
