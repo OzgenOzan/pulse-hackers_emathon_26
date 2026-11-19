@@ -40,7 +40,18 @@ def test_trends_use_the_first_sample_and_the_latest_fresh_values():
     assert [(c.key, c.value) for c in result.components] == [('map_drop', 15), ('hr_rise', 20)]
     assert run(patient(vitals=[reading(30, map=64)])).score == 3
     assert run(patient(vitals=[reading(31, map=64)])).score == 0
-    assert run(patient(vitals=[reading(4, map=64), reading(hr=88)])).score == 0
+    assert run(patient(vitals=[reading(4, map=64), reading(hr=88)])).score == 3
+
+
+def test_partial_readings_keep_each_fields_own_freshness_and_baseline():
+    vitals = [reading(50, hr=94), reading(45, map=92), reading(5, map=74, temp=38.4), reading(hr=95)]
+    result = run(patient(vitals=vitals))
+    assert result.score == 2
+    assert [(c.key, c.observed_at) for c in result.components] == [
+        ('temp_high', NOW - timedelta(minutes=5)), ('map_drop', NOW - timedelta(minutes=5)),
+    ]
+    expired_map = run(patient(vitals=[reading(31, map=64), reading(hr=108)]))
+    assert [(c.key, c.observed_at) for c in expired_map.components] == [('hr_high', NOW)]
 
 
 def lab(test, value, unit, age=0):

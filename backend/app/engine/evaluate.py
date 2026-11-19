@@ -6,7 +6,7 @@ from app.domain.models import AlertCandidate, EngineResult, PatientSnapshot
 from app.engine.config import EngineConfig
 from app.engine.green import green_candidate
 from app.engine.labs import ordered_labs, score_labs
-from app.engine.vitals import observed_vitals, score_vitals
+from app.engine.vitals import observed_vitals, score_vitals, vital_evidence
 from app.engine.yellow import yellow_candidate
 
 
@@ -16,7 +16,8 @@ def evaluate(patient_snapshot: PatientSnapshot, now: datetime, config: EngineCon
     readings = observed_vitals(patient_snapshot, now)
     orders = ordered_labs(patient_snapshot, now)
     lab_components, suppressed = score_labs(patient_snapshot, orders, now, config)
-    components = score_vitals(readings, now, config.red) + lab_components
+    fresh, baseline = vital_evidence(readings, now, config.red)
+    components = score_vitals(fresh, baseline, config.red) + lab_components
     score = sum(component.points for component in components)
     candidates: list[AlertCandidate] = []
     if score >= config.red.threshold:
@@ -31,4 +32,5 @@ def evaluate(patient_snapshot: PatientSnapshot, now: datetime, config: EngineCon
     green = green_candidate(patient_snapshot, orders, now, score, config)
     if green is not None:
         candidates.append(green)
-    return EngineResult(score=score, components=components, suppressed_labs=suppressed, candidates=candidates)
+    return EngineResult(score=score, components=components, suppressed_labs=suppressed, candidates=candidates,
+                        current_vitals={param: value for param, (value, _) in fresh.items()})

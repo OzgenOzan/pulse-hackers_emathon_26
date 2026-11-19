@@ -118,6 +118,7 @@ class EngineResult(Model):
     components: list[Component] = Field(default_factory=list)
     suppressed_labs: list[SuppressedLab] = Field(default_factory=list)
     candidates: list[AlertCandidate] = Field(default_factory=list)
+    current_vitals: dict[str, float] = Field(default_factory=dict, exclude=True)
 
 
 class Alert(AlertCandidate):
@@ -157,6 +158,7 @@ class PatientSummary(PatientProfile):
     status: PatientStatus
     minutes_in_zone: int
     last_vitals: VitalReading | None
+    current_vitals: dict[str, float]
     vitals_stale: bool
     score: int
     score_trend: Literal['up', 'down', 'steady']

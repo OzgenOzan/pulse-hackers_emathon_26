@@ -158,12 +158,14 @@ class Session:
 
     def summary(self, patient: PatientSnapshot) -> PatientSummary:
         last_vitals = latest_vital(patient.vitals)
+        assessment = self.assessments.get(patient.profile.id, EMPTY_ASSESSMENT)
         return PatientSummary(**patient.profile.model_dump(), status=patient.status,
                               minutes_in_zone=max(0, int((self.now - patient.profile.arrived_at).total_seconds() // 60)),
                               last_vitals=last_vitals,
+                              current_vitals=assessment.current_vitals,
                               vitals_stale=(last_vitals is None or self.now - last_vitals.time >
                                             timedelta(minutes=self.config.red.vital_max_age_minutes)),
-                              score=self.assessments.get(patient.profile.id, EMPTY_ASSESSMENT).score,
+                              score=assessment.score,
                               score_trend=self.score_trends.get(patient.profile.id, 'steady'),
                               intervention_started=patient.intervention_started)
 

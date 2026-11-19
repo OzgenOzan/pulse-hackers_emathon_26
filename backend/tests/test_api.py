@@ -146,3 +146,21 @@ def test_invalid_scenario_does_not_hide_valid_choices_or_replace_the_session(tmp
         assert rejected.status_code == 422
         assert 'incomplete.json' in rejected.json()['detail']
         assert state(client) == before
+
+
+def test_partial_manual_entry_preserves_fresh_red_evidence():
+    with client_for_night_shift() as client:
+        for _ in range(3):
+            step(client)
+        before = state(client)
+        response = client.post('/api/patients/Y01/vitals', json={'hr': 108})
+        assert response.status_code == 204
+        after = state(client)
+        red = next(a for a in after['alerts'] if a['id'] == before['blocking_alert_id'])
+        assert (red['score'], red['criteria_met']) == (3, True)
+        assert {c['key'] for c in red['components']} == {'hr_high', 'temp_high', 'map_drop'}
+        row = next(p for p in after['patients'] if p['id'] == 'Y01')
+        assert row['last_vitals']['temp'] is None
+        assert {k: row['current_vitals'][k] for k in ('hr', 'map', 'temp', 'spo2')} == {
+            'hr': 108, 'map': 74, 'temp': 38.4, 'spo2': 95,
+        }

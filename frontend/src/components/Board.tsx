@@ -86,7 +86,7 @@ export function Board({
                   {p.last_vitals && (
                     <span className="row-vitals" data-stale={p.vitals_stale}>
                       {t('row.vitalsSummary', {
-                        hr: fmtValue(p.last_vitals.hr), map: fmtValue(p.last_vitals.map), spo2: fmtValue(p.last_vitals.spo2),
+                        hr: fmtValue(p.current_vitals.hr), map: fmtValue(p.current_vitals.map), spo2: fmtValue(p.current_vitals.spo2),
                       })}
                     </span>
                   )}
