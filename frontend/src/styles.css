@@ -487,7 +487,7 @@ button:disabled {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  overflow: auto;
+  overflow: hidden;
   padding: 16px;
   background: var(--red-overlay);
 }
@@ -495,11 +495,37 @@ button:disabled {
 .red-dialog {
   width: 100%;
   max-width: 880px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   color: #111;
   border: 8px solid #b00020;
   border-radius: 12px;
   padding: 16px 20px;
+}
+
+.red-evidence {
+  min-height: 0;
+  overflow: auto;
+  padding: 0 4px;
+}
+
+.red-actions {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  border-top: 1px solid #b4b4b4;
+  background: var(--surface);
+}
+
+.red-actions .reason-group {
+  display: contents;
+}
+
+.red-actions .reasons {
+  flex-basis: 100%;
 }
 
 .red-dialog .action,

@@ -14,7 +14,7 @@ import type { Alert, AuditEntry, Detail, Role, RulesView, ScenarioInfo, State, V
 const POLL_MS = 1000;
 const NOTICE_MS = 6000;
 const TAB_STOPS =
-  '[data-blocking-allowed] button:not(:disabled), [data-blocking-allowed] select:not(:disabled), [data-blocking-allowed] input:not(:disabled)';
+  '[data-blocking-allowed] :is(button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"])';
 
 interface View {
   role: Role;

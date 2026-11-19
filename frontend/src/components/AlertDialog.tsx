@@ -226,18 +226,22 @@ export function RedDialog({
             {t('alert.queueLabel')}: {t('alert.queueCount', { index, total })}
           </span>
         </div>
-        <p className="red-patient">{who}</p>
-        <p className="red-text">{alertTitle(alert)}</p>
-        <LatchedNote alert={alert} />
-        <p>
-          {t(alert.criteria_met ? 'alert.score' : 'alert.currentScore',
-            { score: alert.score, threshold: threshold ?? '–' })} ·{' '}
-          {t('alert.raised', { time: fmtTime(alert.created_at) })}
-        </p>
-        <h3>{t(alert.criteria_met ? 'alert.components' : 'alert.previousComponents')}</h3>
-        <ComponentTable components={alert.components} empty={t('alert.noComponents')} />
-        {readings && <VitalTrends history={readings} />}
-        <AlertActions alert={alert} busy={busy} onAct={onAct} />
+        <div className="red-evidence" tabIndex={0} role="region" aria-label={t('alert.components')}>
+          <p className="red-patient">{who}</p>
+          <p className="red-text">{alertTitle(alert)}</p>
+          <LatchedNote alert={alert} />
+          <p>
+            {t(alert.criteria_met ? 'alert.score' : 'alert.currentScore',
+              { score: alert.score, threshold: threshold ?? '–' })} ·{' '}
+            {t('alert.raised', { time: fmtTime(alert.created_at) })}
+          </p>
+          <h3>{t(alert.criteria_met ? 'alert.components' : 'alert.previousComponents')}</h3>
+          <ComponentTable components={alert.components} empty={t('alert.noComponents')} />
+          {readings && <VitalTrends history={readings} />}
+        </div>
+        <footer className="red-actions">
+          <AlertActions alert={alert} busy={busy} onAct={onAct} />
+        </footer>
       </section>
     </div>
   );
@@ -278,7 +282,7 @@ export function AlertBanners({
             <LatchedNote alert={alert} />
             {alert.target_role === role
               ? <AlertActions alert={alert} busy={busy} onAct={onAct} onEnterVitals={onEnterVitals}
-                  testPrefix={alert.level === 'GREEN' ? 'banner-' : ''} />
+                  testPrefix={alert.level === 'YELLOW' ? '' : 'banner-'} />
               : <span>{t('banner.routed', { role: t(`app.role.${alert.target_role}`) })}</span>}
           </article>
         );
