@@ -180,6 +180,7 @@ class Alert(AlertCandidate):
 
 
 class CriticalAlarm(Alert):
+    patient: PatientProfile
     initial_score: int
     blocking: bool
     decision_latency_minutes: float | None = None
@@ -210,6 +211,35 @@ class VitalFreshness(Model):
     stale: bool
 
 
+class DisplayMeasurement(VitalFreshness):
+    value: float
+    source: Literal['monitor', 'manual']
+
+
+class DisplayGcs(GcsReading):
+    stale: bool
+
+
+class PendingLab(Model):
+    label: str
+    ordered_at: datetime
+
+
+class PendingConsult(Model):
+    service: str
+    requested_at: datetime
+
+
+class VitalFlag(Model):
+    level: Literal['kritik', 'yakin_takip']
+    note: str
+
+
+class EvaluationRecord(Model):
+    at: datetime
+    decision: str
+
+
 class PatientSummary(PatientProfile):
     status: PatientStatus
     minutes_in_zone: int
@@ -220,6 +250,14 @@ class PatientSummary(PatientProfile):
     score: int
     score_trend: Literal['up', 'down', 'steady']
     intervention_started: bool
+    risk_status: RiskStatus
+    gcs: DisplayGcs | None
+    pending_labs: list[PendingLab]
+    pending_consults: list[PendingConsult]
+    vital_flags: dict[str, VitalFlag]
+    latest_measurements: dict[str, DisplayMeasurement]
+    last_evaluation: EvaluationRecord | None
+    reconnect_pending: bool
 
 
 class PatientDetail(PatientSnapshot):
@@ -236,9 +274,22 @@ class SimStatus(Model):
     next_cycle_at: datetime | None
 
 
+class Overview(Model):
+    aktif: int
+    kritik: int
+    yakin_takip: int
+    stabil: int
+    siniflandirilmamis: int
+    taburculuk_bekleyen: int
+    bekleyen_islem: int
+
+
 class StateView(Model):
     sim: SimStatus
     patients: list[PatientSummary]
     alerts: list[Alert]
     blocking_alert_id: str | None
     counters: dict[str, int]
+    overview: Overview
+    critical_alarms: list[CriticalAlarm]
+    tasks: list[Alert]

@@ -1,4 +1,4 @@
-import type { AuditEntry, Detail, Role, RulesView, ScenarioInfo, State, Speed, VitalValues } from './types';
+import type { AuditEntry, CriticalAlarm, Detail, ManualValues, Role, RulesView, ScenarioInfo, State, Speed } from './types';
 import { t } from './i18n';
 
 /** The only module that calls the same-origin API. */
@@ -53,11 +53,14 @@ export const api = {
   patient: (id: string, role: Role) =>
     request<Detail>('GET', `/api/patients/${encodeURIComponent(id)}?role=${role}`),
   audit: () => request<AuditEntry[]>('GET', '/api/audit'),
+  alarms: () => request<CriticalAlarm[]>('GET', '/api/alerts?level=RED'),
   config: () => request<RulesView>('GET', '/api/config'),
   scenarios: () => request<ScenarioInfo[]>('GET', '/api/scenarios'),
-  ack: (alertId: string, body: { action: string; reason?: string }, replayId: string) =>
+  seen: (alertId: string, role: Role, replayId: string) =>
+    request<void>('POST', `/api/alerts/${encodeURIComponent(alertId)}/seen`, { role }, replayId),
+  ack: (alertId: string, body: { action: string; reason?: string; note?: string }, replayId: string) =>
     request<void>('POST', `/api/alerts/${encodeURIComponent(alertId)}/ack`, body, replayId),
-  vitals: (patientId: string, values: VitalValues, replayId: string) =>
+  vitals: (patientId: string, values: ManualValues, replayId: string) =>
     request<void>('POST', `/api/patients/${encodeURIComponent(patientId)}/vitals`, values, replayId),
   reset: (scenarioId: string) => request<void>('POST', '/api/sim/reset', { scenario_id: scenarioId }),
   play: (speed: Speed) => request<void>('POST', '/api/sim/play', { speed }),

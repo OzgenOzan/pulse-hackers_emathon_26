@@ -146,3 +146,104 @@ def test_evaluation_note_rejects_overlong_input_and_preserves_alarm_history():
         assert saved['decision_latency_minutes'] == 15
         [decision] = [r for r in client.get('/api/audit').json() if r['event'] == 'acknowledged']
         assert decision['note'] == 'Bazal değer doğrulandı.'
+
+
+def patient_at(view, patient_id):
+    return next(patient for patient in view['patients'] if patient['id'] == patient_id)
+
+
+def counts(view):
+    overview = view['overview']
+    return tuple(overview[key] for key in (
+        'aktif', 'kritik', 'yakin_takip', 'stabil', 'siniflandirilmamis', 'taburculuk_bekleyen', 'bekleyen_islem',
+    ))
+
+
+def test_gui_hero_counts_and_lock():
+    with client_for_night_shift() as client:
+        start = state(client)
+        assert counts(start) == (11, 0, 0, 11, 0, 0, 0)
+        step(client)
+        watch = state(client)
+        assert counts(watch) == (11, 0, 1, 10, 0, 1, 1)
+        result = patient_at(watch, 'Y01')['risk_status']
+        assert (result['key'], result['worsened'], result['since']) == ('yakin_takip', True, '2026-11-20T03:00:00')
+        green = watch['alerts'][0]
+        assert client.post(f"/api/alerts/{green['id']}/ack", json={'action': 'discharge_decided'}).status_code == 204
+        assert counts(state(client)) == (10, 0, 1, 9, 0, 0, 0)
+        step(client)
+        nurse = state(client, 'nurse')
+        assert counts(nurse) == (10, 0, 1, 8, 1, 0, 1)
+        assert not patient_at(nurse, 'Y01')['risk_status']['worsened']
+        gap = patient_at(nurse, 'Y03')['risk_status']
+        assert gap['key'] == 'siniflandirilmamis'
+        assert {'key': 'monitor_gap', 'params': {'minutes': 15}} in gap['data_issues']
+        yellow = nurse['alerts'][0]
+        assert client.post(f"/api/alerts/{yellow['id']}/ack", json={'action': 'monitor_reconnected'}).status_code == 204
+        nurse = state(client, 'nurse')
+        assert counts(nurse) == (10, 0, 1, 8, 1, 0, 0)
+        assert patient_at(nurse, 'Y03')['risk_status']['key'] == 'siniflandirilmamis'
+        assert patient_at(nurse, 'Y03')['reconnect_pending'] is True
+        step(client)
+        critical = state(client)
+        assert counts(critical) == (10, 1, 0, 9, 0, 0, 1)
+        assert patient_at(critical, 'Y01')['risk_status']['worsened']
+        assert patient_at(critical, 'Y03')['risk_status']['key'] == 'stabil'
+        [alarm] = critical['critical_alarms']
+        assert (alarm['patient_id'], alarm['blocking']) == ('Y01', True)
+        assert state(client, 'nurse')['critical_alarms'][0]['id'] == alarm['id']
+        assert not state(client, 'nurse')['blocking_alert_id']
+        root = f"/api/alerts/{alarm['id']}"
+        assert client.get('/api/patients/Y02').status_code == 409
+        assert client.post(f'{root}/seen', json={'role': 'physician'}).status_code == 204
+        assert counts(state(client)) == counts(critical)
+        assert client.get('/api/patients/Y02').status_code == 409
+        assert client.post(f'{root}/ack', json={'action': 'move_to_red_zone', 'note': 'Sentetik kayıt'}).status_code == 204
+        final = state(client)
+        assert counts(final) == (9, 0, 0, 9, 0, 0, 0)
+        assert final['critical_alarms'] == []
+        [saved] = client.get('/api/alerts?level=RED').json()
+        assert (saved['seen']['physician']['at'], saved['closed_at'], saved['decision_latency_minutes']) == (
+            '2026-11-20T03:30:00', '2026-11-20T03:30:00', 0,
+        )
+        assert saved['patient']['bed'] == 'S-01'
+
+
+def test_unattended_counts_and_flags_preserve_clinical_assessment():
+    with client_for_night_shift() as client:
+        for _ in range(5):
+            step(client)
+        view = state(client)
+        assert counts(view)[:5] == (11, 2, 0, 8, 1)
+        assert [a['patient_id'] for a in view['critical_alarms']] == ['Y01', 'Y02']
+        patient = patient_at(view, 'Y01')
+        assert patient['vital_flags']['map']['level'] == 'kritik'
+        assert patient['vital_flags']['hr']['level'] == 'yakin_takip'
+        assert 'bazale göre' in patient['vital_flags']['map']['note']
+        assert not {'rr', 'spo2', 'gcs'} & patient['vital_flags'].keys()
+        assert patient_at(view, 'Y03')['latest_measurements']['spo2'] == {
+            'value': 94, 'observed_at': '2026-11-20T03:00:00', 'stale': True, 'source': 'monitor',
+        }
+        assert patient_at(view, 'Y02')['pending_consults'] == [
+            {'service': 'Kardiyoloji', 'requested_at': '2026-11-20T03:55:00'},
+        ]
+        step(client)
+        assert counts(state(client))[:5] == (12, 3, 0, 8, 1)
+
+
+def test_gcs_freshness_boundary_and_evaluated_high_risk_label():
+    with client_for_night_shift() as client:
+        for _ in range(3):
+            step(client)
+        view = state(client)
+        [alarm] = view['critical_alarms']
+        assert client.post(f"/api/alerts/{alarm['id']}/ack", json={'action': 'reassessing'}).status_code == 204
+        current = state(client)
+        assert current['critical_alarms'] == []
+        patient = patient_at(current, 'Y01')
+        assert patient['risk_status']['key'] == 'kritik'
+        assert patient['last_evaluation'] == {'at': '2026-11-20T03:30:00', 'decision': 'reassessing'}
+        client.app.state.session.clock.step(42)
+        assert patient_at(state(client), 'Y01')['gcs']['stale'] is False
+        client.app.state.session.clock.step(1)
+        assert patient_at(state(client), 'Y01')['gcs']['stale'] is True

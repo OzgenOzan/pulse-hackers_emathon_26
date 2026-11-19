@@ -6,13 +6,16 @@ from datetime import datetime, timedelta
 
 from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
-    AlarmSeen, Alert, AuditEntry, AuditEvent, CriticalAlarm, EngineResult, GcsReading, PatientDetail, PatientSnapshot,
-    PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
+    AlarmSeen, Alert, AuditEntry, AuditEvent, CriticalAlarm, DisplayGcs, EngineResult, EvaluationRecord,
+    GcsReading, Overview, PatientDetail, PatientSnapshot, PatientSummary, PendingConsult, PendingLab,
+    PhysicianAction, RiskStatus, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
 )
 from app.engine.config import EngineConfig
 from app.engine.evaluate import evaluate
 from app.engine.lifecycle import priority_key, reconcile
+from app.engine.status import classify, update_status
 from app.engine.vitals import latest_vital
+from app.gui_projection import UNSCORED_LAB_LABELS, latest_measurements, vital_flags
 from app.sim.clock import SimClock
 from app.sim.player import Frame, Player, apply_event
 
@@ -69,6 +72,8 @@ class Session:
         self.critical_initial_scores: dict[str, int] = {}
         self.audit: list[AuditEntry] = []
         self.assessments: dict[str, EngineResult] = {}
+        self.risk_statuses: dict[str, RiskStatus] = {}
+        self.evaluations: dict[str, EvaluationRecord] = {}
         self.score_trends: dict[str, str] = {}
         self.suppressions: set[tuple[str, str, datetime, str]] = set()
         self.next_alert = 0
@@ -123,6 +128,9 @@ class Session:
                 self.critical_initial_scores.setdefault(alert.id, alert.score)
             self.record(change.event, patient_id, alert=alert, reason=alert.reason)
         patient.active_red = any(a.patient_id == patient_id and a.level == 'RED' and a.status == 'active' for a in self.alerts)
+        if patient.status == 'in_zone':
+            current = classify(patient, result, self.alerts, self.now, self.config)
+            self.risk_statuses[patient_id] = update_status(current, self.risk_statuses.get(patient_id), scheduled=update_trend)
 
     def alert_id(self) -> str:
         self.next_alert += 1
@@ -150,7 +158,8 @@ class Session:
         alarms = sorted((a for a in self.alerts if a.level == 'RED' and (history or a.status == 'active')), key=priority_key)
         blocking_id = alarms[0].id if alarms and alarms[0].status == 'active' and self.config.alerting.red_blocks_navigation else None
         return [CriticalAlarm(
-            **a.model_dump(), initial_score=self.critical_initial_scores[a.id], blocking=a.id == blocking_id,
+            **a.model_dump(), patient=self.patients[a.patient_id].profile,
+            initial_score=self.critical_initial_scores[a.id], blocking=a.id == blocking_id,
             decision_latency_minutes=(a.closed_at - a.created_at).total_seconds() / 60
             if a.status == 'acknowledged' and a.closed_at is not None else None,
         ) for a in alarms]
@@ -162,21 +171,48 @@ class Session:
     def view(self, role: Role) -> StateView:
         patients = [self.summary(p) for p in self.patients.values() if p.status == 'in_zone']
         patients.sort(key=lambda p: p.bed)
-        blocking = self.blocking_alert() if role == 'physician' else None
-        return StateView(sim=self.sim_status(), patients=patients, alerts=self.active_alerts(role),
-                         blocking_alert_id=blocking.id if blocking else None,
+        alarms = self.critical_alarms()
+        alerts = self.active_alerts(role)
+        blocking = alarms[0].id if role == 'physician' and alarms and alarms[0].blocking else None
+        count_by_status = {key: 0 for key in ('kritik', 'yakin_takip', 'stabil', 'siniflandirilmamis')}
+        for patient in patients:
+            count_by_status[patient.risk_status.key] += 1
+        tasks = sorted((a for a in self.alerts if a.level != 'RED' and a.status == 'active'), key=priority_key)
+        discharge = sum(a.level == 'GREEN' for a in tasks)
+        pending = len(alarms) + discharge if role == 'physician' else sum(a.level == 'YELLOW' for a in alerts)
+        overview = Overview(aktif=len(patients), taburculuk_bekleyen=discharge, bekleyen_islem=pending, **count_by_status)
+        return StateView(sim=self.sim_status(), patients=patients, alerts=alerts, blocking_alert_id=blocking,
+                         overview=overview, critical_alarms=alarms, tasks=tasks,
                          counters={'suppressed_labs': len(self.suppressions),
                                    'acknowledgements': sum(e.event == 'acknowledged' for e in self.audit)})
 
     def summary(self, patient: PatientSnapshot) -> PatientSummary:
         last_vitals = latest_vital(patient.vitals)
-        assessment = self.assessments.get(patient.profile.id, EMPTY_ASSESSMENT)
+        patient_id = patient.profile.id
+        recorded = self.assessments.get(patient_id)
+        assessment = recorded if recorded is not None else EMPTY_ASSESSMENT
         cutoff = self.now - timedelta(minutes=self.config.red.vital_max_age_minutes)
         values: dict[str, float] = {}
         freshness: dict[str, VitalFreshness] = {}
         for param, (value, observed_at) in assessment.current_vital_evidence.items():
             values[param] = value
             freshness[param] = VitalFreshness(observed_at=observed_at, stale=observed_at < cutoff)
+        current = classify(patient, recorded, self.alerts, self.now, self.config)
+        risk_status = update_status(current, self.risk_statuses.get(patient_id), scheduled=False)
+        if patient.gcs_history:
+            reading = patient.gcs_history[-1]
+            gcs = DisplayGcs(value=reading.value, observed_at=reading.observed_at,
+                             stale=self.now - reading.observed_at > timedelta(minutes=self.config.display.gcs_fresh_minutes))
+        else:
+            gcs = None
+        pending_labs = []
+        for lab in patient.labs:
+            if lab.resulted_at is None:
+                rule = self.config.labs.get(lab.test)
+                label = rule.label if rule else UNSCORED_LAB_LABELS.get(lab.test, lab.test)
+                pending_labs.append(PendingLab(label=label, ordered_at=lab.ordered_at))
+        pending_consults = [PendingConsult(service=r.service, requested_at=r.requested_at)
+                            for r in patient.consultations if r.resulted_at is None]
         return PatientSummary(**patient.profile.model_dump(), status=patient.status,
                               minutes_in_zone=max(0, int((self.now - patient.profile.arrived_at).total_seconds() // 60)),
                               last_vitals=last_vitals,
@@ -185,7 +221,12 @@ class Session:
                               vitals_stale=last_vitals is None or last_vitals.time < cutoff,
                               score=assessment.score,
                               score_trend=self.score_trends.get(patient.profile.id, 'steady'),
-                              intervention_started=patient.intervention_started)
+                              intervention_started=patient.intervention_started, risk_status=risk_status, gcs=gcs,
+                              pending_labs=pending_labs, pending_consults=pending_consults,
+                              vital_flags=vital_flags(assessment.components, self.config.red),
+                              latest_measurements=latest_measurements(patient.vitals, cutoff),
+                              last_evaluation=self.evaluations.get(patient_id),
+                              reconnect_pending=patient_id in self.pending_reconnects)
 
     def patient(self, patient_id: str, *, in_zone: bool = False) -> PatientSnapshot:
         patient = self.patients.get(patient_id)
@@ -278,6 +319,8 @@ class Session:
         alert.note = note
         latency = (self.now - alert.created_at).total_seconds() / 60
         self.record('acknowledged', alert.patient_id, alert=alert, action=action, reason=reason, latency=latency, note=note)
+        if alert.level == 'RED':
+            self.evaluations[alert.patient_id] = EvaluationRecord(at=self.now, decision=action)
         if alert.target_role == 'physician':
             patient.actions.append(PhysicianAction(time=self.now, type=action))
         if action == 'monitor_reconnected':
