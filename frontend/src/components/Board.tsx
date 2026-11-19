@@ -59,6 +59,12 @@ export function Board({
         <ul className="rows">
           {rows.map(({ p, level }) => {
             const selected = selectedId === p.id;
+            const dx = p.working_dx[0];
+            const diagnosis = dx ? `${dx.code} ${t(`dx.${dx.code}`, undefined, dx.text)}` : '–';
+            const readings = p.vitals_stale ? p.last_vitals : p.current_vitals;
+            const vitals = t('row.vitalsSummary', {
+              hr: fmtValue(readings?.hr), map: fmtValue(readings?.map), spo2: fmtValue(readings?.spo2),
+            });
             return (
               <li key={p.id}>
                 <button
@@ -68,28 +74,18 @@ export function Board({
                   aria-pressed={selected}
                   onClick={() => onSelect(p.id)}
                 >
-                  <span className="row-main">
-                    {level && <LevelChip level={level} />}
-                    <strong>{p.label}</strong>
-                    <span>{p.bed}</span>
-                    <span>{p.age}{t(`sex.${p.sex}`)}</span>
+                  <span>{level ? <LevelChip level={level} /> : '–'}</span>
+                  <span>{p.bed}</span>
+                  <strong>{p.label}</strong>
+                  <span>{p.age}{t(`sex.${p.sex}`)}</span>
+                  <span className="row-dx" title={diagnosis}>{diagnosis}</span>
+                  <span>{t('row.minutes', { minutes: p.minutes_in_zone })}</span>
+                  <span className="row-vitals" data-stale={p.vitals_stale} title={vitalsText(p)}>
+                    {vitals}{p.vitals_stale && <> <small>{t('row.stale')}</small></>}
                   </span>
-                  {p.working_dx.map(d => <span className="row-dx" key={d.code}>{d.code} {t(`dx.${d.code}`, undefined, d.text)}</span>)}
-                  <span className="row-meta">
-                    <span>{t('row.minutes', { minutes: p.minutes_in_zone })}</span>
-                    <span>{vitalsText(p)}</span>
-                    <span>
-                      {t('row.score', { score: p.score })} {TREND[p.score_trend]} {t(`row.trend.${p.score_trend}`)}
-                    </span>
-                    {p.intervention_started && <span>{t('row.intervention')}</span>}
+                  <span title={t(`row.trend.${p.score_trend}`)}>
+                    {t('row.score', { score: p.score })} {TREND[p.score_trend]}
                   </span>
-                  {p.last_vitals && (
-                    <span className="row-vitals" data-stale={p.vitals_stale}>
-                      {t('row.vitalsSummary', {
-                        hr: fmtValue(p.current_vitals.hr), map: fmtValue(p.current_vitals.map), spo2: fmtValue(p.current_vitals.spo2),
-                      })}
-                    </span>
-                  )}
                 </button>
               </li>
             );

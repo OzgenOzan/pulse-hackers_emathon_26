@@ -41,6 +41,8 @@
   "alert.title.yellow_monitor_and_vitals": "{monitor_minutes} dk monitör ölçümü yok; vital ölçümü {vitals_minutes} dk gecikti",
   "alert.title.green_results_ready": "Sonuçlar {minutes} dk önce hazırlandı; işlem yok",
   "alert.score": "Puan {score}, eşik {threshold}",
+  "banner.more": "+{count} uyarı",
+  "row.stale": "eski",
   "alert.raised": "Uyarı saati {time}",
   "alert.queueLabel": "Öncelik sırası",
   "alert.queueCount": "{index} / {total}",

@@ -41,6 +41,8 @@
   "alert.escalated": "Escalated",
   "alert.latched": "Criteria no longer met. The alert stays latched until acknowledged.",
   "banner.routed": "Waiting for the {role}.",
+  "banner.more": "+{count} more",
+  "row.stale": "stale",
   "actions.group": "Alert actions",
   "action.reassessing": "Reassessing",
   "action.move_to_red_zone": "Move to red zone",
