@@ -34,7 +34,9 @@ def test_synthetic_display_records_do_not_change_clinical_replay(tmp_path):
         for index in range(7):
             for role in ('physician', 'nurse'):
                 assert state(full, role)['alerts'] == state(original, role)['alerts']
-            assert detail(full, 'Y05')['assessment'] == detail(original, 'Y05')['assessment']
+            for patient in state(full, 'nurse')['patients']:
+                patient_id = patient['id']
+                assert detail(full, patient_id)['assessment'] == detail(original, patient_id)['assessment'], patient_id
             if index < 6:
                 step(full)
                 step(original)
@@ -60,7 +62,7 @@ def test_consult_result_requires_and_closes_oldest_pending_request(tmp_path):
             {'service': 'Üroloji', 'requested_at': '2026-11-20T02:40:00', 'resulted_at': '2026-11-20T03:10:00'},
             {'service': 'Üroloji', 'requested_at': '2026-11-20T02:41:00', 'resulted_at': None},
         ]
-        assert any(a['level'] == 'GREEN' for a in state(client)['alerts'])
+        assert [(a['patient_id'], a['level']) for a in state(client)['alerts']] == [('Y06', 'GREEN')]
 
 
 @pytest.mark.parametrize('gcs', [2, 16, 14.5, 14.0, '14', True])
@@ -70,6 +72,8 @@ def test_invalid_manual_gcs_rejects_entire_entry(gcs):
         before = detail(client, 'Y01')
         response = client.post('/api/patients/Y01/vitals', json={**VALID_VITALS, 'gcs': gcs})
         assert response.status_code == 422
+        if type(gcs) is int:
+            assert response.json()['detail'] == 'vital_out_of_range'
         assert detail(client, 'Y01') == before
         assert not any(row['event'] == 'manual_vitals' for row in client.get('/api/audit').json())
 

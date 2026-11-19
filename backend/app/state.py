@@ -262,9 +262,10 @@ class Session:
         if any(key not in supplied for key in entry.required):
             raise SessionError(422, 'vital_required_missing')
         patient = self.patient(patient_id, in_zone=True)
+        gcs_reading = GcsReading(value=gcs, observed_at=self.now) if gcs is not None else None
         patient.vitals.append(VitalReading(time=self.now, source='manual', **supplied))
-        if gcs is not None:
-            patient.gcs_history.append(GcsReading(value=gcs, observed_at=self.now))
+        if gcs_reading is not None:
+            patient.gcs_history.append(gcs_reading)
         self.record('manual_vitals', patient_id, role='nurse')
         self.evaluate_patient(patient)
 
