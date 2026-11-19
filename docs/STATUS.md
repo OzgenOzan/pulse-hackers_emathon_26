@@ -6,10 +6,12 @@
 - Added the validated YAML loader and typed Python/TypeScript wire contract. The loader passed five tests covering the default and rejected config variants.
 - Implemented pure alert transitions; six tests passed for latching, supersession, updates, cooldown, escalation and priority.
 - Wrote the 12-profile, 120-event synthetic night shift. `scripts/generate_noise.py --check` reproduced the six noise patients' readings.
+- Added deterministic clock, scenario playback and rules export. The 28 player tests passed; the exporter rendered successfully.
+- Scoring and the audited FastAPI session are integrated. All 69 backend tests passed, including the full no-intervention timeline and two identical scripted API runs.
 
 ## Real vs simulated
 
-- Implemented code is intended to evaluate rules, reconcile alerts, apply acknowledgements and log audit events end to end.
+- The backend evaluates weighted rules, reconciles alerts, applies simulated acknowledgements and records audit entries. Browser integration is not yet verified.
 - The HBYS, monitor and lab feeds, clock, patient identities and four diagnosis-group mappings are all simulated. This is not for real clinical use.
 
 ## Assumptions

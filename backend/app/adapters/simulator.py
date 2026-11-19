@@ -1,6 +1,7 @@
 """Data-source boundary for synthetic scenarios stored as JSON in app/sim/scenarios."""
 
 from pathlib import Path
+from typing import Protocol
 
 from app.domain.models import Model
 from app.sim.player import Scenario
@@ -11,6 +12,11 @@ SCENARIO_DIR = Path(__file__).resolve().parents[1] / 'sim' / 'scenarios'
 class ScenarioInfo(Model):
     id: str
     title: str
+
+
+class DataSource(Protocol):
+    def list_scenarios(self) -> list[ScenarioInfo]: ...
+    def load(self, scenario_id: str) -> Scenario: ...
 
 
 class SimulatorSource:
