@@ -4,7 +4,7 @@ from datetime import datetime
 from math import isfinite
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 
 Level = Literal['RED', 'YELLOW', 'GREEN']
 Role = Literal['physician', 'nurse']
@@ -26,6 +26,14 @@ class Diagnosis(Model):
     text: str
 
 
+class PatientDisplay(Model):
+    name: str
+    protocol: str
+    complaint: str
+    nurse: str
+    physician: str
+
+
 class PatientProfile(Model):
     id: str
     bed: str
@@ -35,6 +43,7 @@ class PatientProfile(Model):
     arrived_at: datetime
     monitored: bool
     working_dx: list[Diagnosis]
+    display: PatientDisplay | None = None
 
 
 class VitalValues(Model):
@@ -75,6 +84,17 @@ class PhysicianAction(Model):
     type: str
 
 
+class GcsReading(Model):
+    value: StrictInt = Field(ge=3, le=15)
+    observed_at: datetime
+
+
+class Consultation(Model):
+    service: str
+    requested_at: datetime
+    resulted_at: datetime | None = None
+
+
 class PatientSnapshot(Model):
     profile: PatientProfile
     vitals: list[VitalReading] = Field(default_factory=list)
@@ -83,6 +103,8 @@ class PatientSnapshot(Model):
     status: PatientStatus = 'in_zone'
     active_red: bool = False
     intervention_started: bool = False
+    gcs_history: list[GcsReading] = Field(default_factory=list)
+    consultations: list[Consultation] = Field(default_factory=list)
 
 
 class Component(Model):

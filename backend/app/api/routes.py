@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Request
-from pydantic import StringConstraints
+from pydantic import StrictInt, StringConstraints
 
 from app.domain.models import AuditEntry, Model, PatientDetail, Role, StateView, VitalValues
 from app.engine.config import EngineConfig
@@ -17,6 +17,10 @@ Word = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max
 class AckInput(Model):
     action: Word
     reason: Word | None = None
+
+
+class ManualVitalInput(VitalValues):
+    gcs: StrictInt | None = None
 
 
 class PhysicianInput(Model):
@@ -69,8 +73,8 @@ async def detail(patient_id: str, session: Current, role: Role = 'physician') ->
 
 
 @router.post('/patients/{patient_id}/vitals', status_code=204)
-async def manual_vitals(patient_id: str, body: VitalValues, session: Mutable) -> None:
-    session.add_vitals(patient_id, body)
+async def manual_vitals(patient_id: str, body: ManualVitalInput, session: Mutable) -> None:
+    session.add_vitals(patient_id, body, gcs=body.gcs)
 
 
 @router.post('/patients/{patient_id}/actions', status_code=204)

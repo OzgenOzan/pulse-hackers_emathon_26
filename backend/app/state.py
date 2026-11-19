@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
-    Alert, AuditEntry, AuditEvent, EngineResult, PatientDetail, PatientSnapshot,
+    Alert, AuditEntry, AuditEvent, EngineResult, GcsReading, PatientDetail, PatientSnapshot,
     PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
 )
 from app.engine.config import EngineConfig
@@ -193,11 +193,13 @@ class Session:
                              assessment=self.assessments.get(patient_id, EMPTY_ASSESSMENT),
                              alert_history=[a for a in self.alerts if a.patient_id == patient_id])
 
-    def add_vitals(self, patient_id: str, values: VitalValues) -> None:
+    def add_vitals(self, patient_id: str, values: VitalValues, *, gcs: int | None = None) -> None:
         entry = self.config.manual_entry
-        supplied = values.model_dump(exclude_none=True)
+        supplied = values.model_dump(include=set(VitalValues.model_fields), exclude_none=True)
         # Diagnose invalid measurements before missing fields so a typo gets specific feedback.
         if any(not entry.limits[key].min <= value <= entry.limits[key].max for key, value in supplied.items()):
+            raise SessionError(422, 'vital_out_of_range')
+        if gcs is not None and not entry.limits['gcs'].min <= gcs <= entry.limits['gcs'].max:
             raise SessionError(422, 'vital_out_of_range')
         if values.sbp is not None and values.dbp is not None:
             if values.sbp <= values.dbp:
@@ -208,6 +210,8 @@ class Session:
             raise SessionError(422, 'vital_required_missing')
         patient = self.patient(patient_id, in_zone=True)
         patient.vitals.append(VitalReading(time=self.now, source='manual', **supplied))
+        if gcs is not None:
+            patient.gcs_history.append(GcsReading(value=gcs, observed_at=self.now))
         self.record('manual_vitals', patient_id, role='nurse')
         self.evaluate_patient(patient)
 
