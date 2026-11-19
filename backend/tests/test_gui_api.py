@@ -83,3 +83,66 @@ def test_manual_gcs_is_stored_separately_from_vitals():
         assert data['gcs_history'][-1] == {'value': 14, 'observed_at': '2026-11-20T02:45:00'}
         assert 'gcs' not in data['vitals'][-1]
         assert data['assessment']['score'] == 0
+
+
+def test_seen_is_role_specific_and_does_not_record_an_evaluation():
+    with client_for_night_shift() as client:
+        for _ in range(3):
+            step(client)
+        alert = state(client)['alerts'][0]
+        url = f"/api/alerts/{alert['id']}/seen"
+        client.app.state.session.clock.step(1)
+        for role in ('physician', 'physician', 'nurse', 'nurse'):
+            assert client.post(url, json={'role': role}).status_code == 204
+        current = state(client)
+        assert current['blocking_alert_id'] == alert['id']
+        assert current['alerts'][0]['status'] == 'active'
+        assert client.get('/api/patients/Y02').status_code == 409
+        logged = [row for row in client.get('/api/audit').json() if row['event'] == 'seen']
+        assert [(row['role'], row['latency_minutes'], row['score']) for row in logged] == [
+            ('physician', 1, 3), ('nurse', 1, 3),
+        ]
+        alarms = client.get('/api/alerts', params={'level': 'RED'}).json()
+        assert alarms[0]['seen'] == {role: {'at': '2026-11-20T03:31:00', 'score': 3}
+                                     for role in ('physician', 'nurse')}
+        assert alarms[0]['initial_score'] == 3
+
+
+def test_seen_requires_a_current_replay_and_a_critical_alarm():
+    with client_for_night_shift() as client:
+        assert client.post('/api/alerts/invalid/seen', json={'role': 'nurse'}).status_code == 428
+        step(client)
+        view = state(client)
+        alert = view['alerts'][0]
+        assert client.post('/api/alerts/invalid/seen', json={'role': 'nurse'}).status_code == 404
+        url = f"/api/alerts/{alert['id']}/seen"
+        denied = client.post(url, json={'role': 'physician'})
+        assert (denied.status_code, denied.json()['detail']) == (422, 'seen_not_applicable')
+        assert client.post('/api/sim/reset', json={}).status_code == 204
+        stale = client.post(url, json={'role': 'physician'})
+        assert (stale.status_code, stale.json()['detail']) == (409, 'stale_replay')
+        assert not client.get('/api/audit').json()
+
+
+def test_evaluation_note_rejects_overlong_input_and_preserves_alarm_history():
+    with client_for_night_shift() as client:
+        for _ in range(3):
+            step(client)
+        alert = state(client)['alerts'][0]
+        root = f"/api/alerts/{alert['id']}"
+        step(client)
+        assert client.post(f'{root}/seen', json={'role': 'physician'}).status_code == 204
+        action = {'action': 'expected_for_patient', 'reason': 'chronic_baseline'}
+        invalid = client.post(f'{root}/ack', json={**action, 'note': 'a' * 281})
+        assert (invalid.status_code, invalid.json()['detail']) == (422, 'note_too_long')
+        assert state(client)['blocking_alert_id'] == alert['id']
+        assert client.post(f'{root}/ack', json={**action, 'note': '  Bazal değer doğrulandı.  '}).status_code == 204
+        assert state(client)['blocking_alert_id'] is None
+        [saved] = client.get('/api/alerts?level=RED').json()
+        assert (saved['status'], saved['action'], saved['reason'], saved['note']) == (
+            'acknowledged', 'expected_for_patient', 'chronic_baseline', 'Bazal değer doğrulandı.',
+        )
+        assert (saved['initial_score'], saved['score'], saved['seen']['physician']['score']) == (3, 6, 6)
+        assert saved['decision_latency_minutes'] == 15
+        [decision] = [r for r in client.get('/api/audit').json() if r['event'] == 'acknowledged']
+        assert decision['note'] == 'Bazal değer doğrulandı.'

@@ -14,6 +14,7 @@ AlertEvent = Literal['created', 'updated', 'escalated', 'acknowledged', 'auto_re
 AuditEvent = Literal[
     'created', 'updated', 'escalated', 'acknowledged', 'auto_resolved', 'superseded',
     'lab_suppressed', 'status_changed', 'manual_vitals', 'physician_action',
+    'seen',
 ]
 
 
@@ -157,6 +158,11 @@ class EngineResult(Model):
     current_vital_evidence: dict[str, tuple[float, datetime]] = Field(default_factory=dict, exclude=True)
 
 
+class AlarmSeen(Model):
+    at: datetime
+    score: int
+
+
 class Alert(AlertCandidate):
     id: str
     patient_id: str
@@ -169,6 +175,14 @@ class Alert(AlertCandidate):
     closed_at: datetime | None = None
     action: str | None = None
     reason: str | None = None
+    seen: dict[Role, AlarmSeen] = Field(default_factory=dict)
+    note: str | None = None
+
+
+class CriticalAlarm(Alert):
+    initial_score: int
+    blocking: bool
+    decision_latency_minutes: float | None = None
 
 
 class AlertChange(Model):
@@ -188,6 +202,7 @@ class AuditEntry(Model):
     reason: str | None = None
     latency_minutes: float | None = None
     score: int | None = None
+    note: str | None = None
 
 
 class VitalFreshness(Model):

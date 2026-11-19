@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
-    Alert, AuditEntry, AuditEvent, EngineResult, GcsReading, PatientDetail, PatientSnapshot,
+    AlarmSeen, Alert, AuditEntry, AuditEvent, CriticalAlarm, EngineResult, GcsReading, PatientDetail, PatientSnapshot,
     PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
 )
 from app.engine.config import EngineConfig
@@ -66,6 +66,7 @@ class Session:
         self.disconnected: set[str] = set()
         self.pending_reconnects: set[str] = set()
         self.alerts: list[Alert] = []
+        self.critical_initial_scores: dict[str, int] = {}
         self.audit: list[AuditEntry] = []
         self.assessments: dict[str, EngineResult] = {}
         self.score_trends: dict[str, str] = {}
@@ -118,6 +119,8 @@ class Session:
                 self.record('lab_suppressed', patient_id, reason=lab.reason)
         for change in reconcile(self.alerts, patient_id, result, self.now, self.config, self.alert_id):
             alert = change.alert
+            if alert.level == 'RED':
+                self.critical_initial_scores.setdefault(alert.id, alert.score)
             self.record(change.event, patient_id, alert=alert, reason=alert.reason)
         patient.active_red = any(a.patient_id == patient_id and a.level == 'RED' and a.status == 'active' for a in self.alerts)
 
@@ -127,12 +130,12 @@ class Session:
 
     def record(self, event: AuditEvent, patient_id: str, *, alert: Alert | None = None,
                role: Role | None = None, action: str | None = None, reason: str | None = None,
-               latency: float | None = None) -> None:
+               latency: float | None = None, note: str | None = None) -> None:
         self.audit.append(AuditEntry(
             id=f'A-{len(self.audit) + 1:04d}', sim_time=self.now, wall_time=self.wall_now(),
             patient_id=patient_id, alert_id=alert.id if alert else None,
             event=event, role=role or (alert.target_role if alert else None), action=action, reason=reason,
-            latency_minutes=latency, score=alert.score if alert else None,
+            latency_minutes=latency, score=alert.score if alert else None, note=note,
         ))
 
     def active_alerts(self, role: Role) -> list[Alert]:
@@ -142,6 +145,15 @@ class Session:
         if not self.config.alerting.red_blocks_navigation:
             return None
         return next((a for a in self.active_alerts('physician') if a.level == 'RED'), None)
+
+    def critical_alarms(self, *, history: bool = False) -> list[CriticalAlarm]:
+        alarms = sorted((a for a in self.alerts if a.level == 'RED' and (history or a.status == 'active')), key=priority_key)
+        blocking_id = alarms[0].id if alarms and alarms[0].status == 'active' and self.config.alerting.red_blocks_navigation else None
+        return [CriticalAlarm(
+            **a.model_dump(), initial_score=self.critical_initial_scores[a.id], blocking=a.id == blocking_id,
+            decision_latency_minutes=(a.closed_at - a.created_at).total_seconds() / 60
+            if a.status == 'acknowledged' and a.closed_at is not None else None,
+        ) for a in alarms]
 
     def sim_status(self) -> SimStatus:
         return SimStatus(time=self.now, playing=self.clock.playing, speed=self.clock.speed,
@@ -224,7 +236,21 @@ class Session:
         self.record('physician_action', patient_id, role='physician', action=action)
         self.evaluate_patient(patient)
 
-    def acknowledge(self, alert_id: str, action: str, reason: str | None) -> None:
+    def mark_seen(self, alert_id: str, role: Role) -> None:
+        alert = next((a for a in self.alerts if a.id == alert_id), None)
+        if alert is None:
+            raise SessionError(404, 'unknown_alert')
+        if alert.level != 'RED':
+            raise SessionError(422, 'seen_not_applicable')
+        if role in alert.seen:
+            return
+        if alert.status != 'active':
+            raise SessionError(409, 'alert_already_closed')
+        alert.seen[role] = AlarmSeen(at=self.now, score=alert.score)
+        latency = (self.now - alert.created_at).total_seconds() / 60
+        self.record('seen', alert.patient_id, alert=alert, role=role, latency=latency)
+
+    def acknowledge(self, alert_id: str, action: str, reason: str | None, *, note: str | None = None) -> None:
         alert = next((a for a in self.alerts if a.id == alert_id), None)
         if alert is None:
             raise SessionError(404, 'unknown_alert')
@@ -239,14 +265,19 @@ class Session:
             raise SessionError(422, 'reason_not_applicable')
         if reasons is not None and (not reason or (reasons and reason not in reasons)):
             raise SessionError(422, 'valid_reason_required')
+        if note is not None:
+            note = note.strip() or None
+        if note is not None and len(note) > 280:
+            raise SessionError(422, 'note_too_long')
         patient = self.patient(alert.patient_id, in_zone=True)
         alert.status = 'acknowledged'
         alert.closed_at = self.now
         alert.updated_at = self.now
         alert.action = action
         alert.reason = reason
+        alert.note = note
         latency = (self.now - alert.created_at).total_seconds() / 60
-        self.record('acknowledged', alert.patient_id, alert=alert, action=action, reason=reason, latency=latency)
+        self.record('acknowledged', alert.patient_id, alert=alert, action=action, reason=reason, latency=latency, note=note)
         if alert.target_role == 'physician':
             patient.actions.append(PhysicianAction(time=self.now, type=action))
         if action == 'monitor_reconnected':

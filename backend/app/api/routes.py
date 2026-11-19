@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Header, Request
 from pydantic import StrictInt, StringConstraints
 
-from app.domain.models import AuditEntry, Model, PatientDetail, Role, StateView, VitalValues
+from app.domain.models import AuditEntry, CriticalAlarm, Level, Model, PatientDetail, Role, StateView, VitalValues
 from app.engine.config import EngineConfig
 from app.state import Session, SessionError
 
@@ -17,6 +17,11 @@ Word = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max
 class AckInput(Model):
     action: Word
     reason: Word | None = None
+    note: str | None = None
+
+
+class SeenInput(Model):
+    role: Role
 
 
 class ManualVitalInput(VitalValues):
@@ -84,7 +89,19 @@ async def physician_action(patient_id: str, body: PhysicianInput, session: Mutab
 
 @router.post('/alerts/{alert_id}/ack', status_code=204)
 async def acknowledge(alert_id: str, body: AckInput, session: Mutable) -> None:
-    session.acknowledge(alert_id, body.action, body.reason)
+    session.acknowledge(alert_id, body.action, body.reason, note=body.note)
+
+
+@router.post('/alerts/{alert_id}/seen', status_code=204)
+async def seen(alert_id: str, body: SeenInput, session: Mutable) -> None:
+    session.mark_seen(alert_id, body.role)
+
+
+@router.get('/alerts')
+async def alert_history(session: Current, level: Level = 'RED') -> list[CriticalAlarm]:
+    if level != 'RED':
+        raise SessionError(422, 'alarm_history_not_applicable')
+    return session.critical_alarms(history=True)
 
 
 @router.get('/scenarios')
