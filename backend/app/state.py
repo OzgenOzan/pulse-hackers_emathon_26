@@ -225,7 +225,8 @@ class Session:
         alert.reason = reason
         latency = (self.now - alert.created_at).total_seconds() / 60
         self.record('acknowledged', alert.patient_id, alert=alert, action=action, reason=reason, latency=latency)
-        patient.actions.append(PhysicianAction(time=self.now, type=action))
+        if alert.target_role == 'physician':
+            patient.actions.append(PhysicianAction(time=self.now, type=action))
         if action == 'monitor_reconnected':
             self.pending_reconnects.add(alert.patient_id)
         elif action == 'start_intervention':

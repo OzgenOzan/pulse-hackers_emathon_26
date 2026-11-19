@@ -51,3 +51,4 @@
 ## Audit follow-up 01
 
 - D1 — regressions reproduced the score drop (3 → 1) and stale-field masking. Freshness and baseline now resolve per parameter, and the board uses evaluated values. The focused engine, API and timeline checks passed (38 tests).
+- D2 — the reconnect fixture reproduced a missing GREEN at 03:15; nurse acknowledgements now remain in audit without entering physician decision history.

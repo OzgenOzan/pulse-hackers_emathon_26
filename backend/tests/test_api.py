@@ -164,3 +164,33 @@ def test_partial_manual_entry_preserves_fresh_red_evidence():
         assert {k: row['current_vitals'][k] for k in ('hr', 'map', 'temp', 'spo2')} == {
             'hr': 108, 'map': 74, 'temp': 38.4, 'spo2': 95,
         }
+
+
+def test_nurse_reconnect_does_not_clear_physician_idle_time(tmp_path):
+    import json
+
+    from app.adapters.simulator import SimulatorSource
+
+    events = [
+        {'t': '02:00', 'patient': 'Z1', 'type': 'arrival'},
+        {'t': '02:10', 'patient': 'Z1', 'type': 'lab_order', 'test': 'cbc'},
+        {'t': '02:40', 'patient': 'Z1', 'type': 'lab_result', 'test': 'cbc', 'value': 7.0, 'unit': '10^9/L'},
+        {'t': '02:45', 'patient': 'Z1', 'type': 'monitor_disconnect', 'resume': 'on_nurse_ack'},
+    ]
+    events.extend({'t': time, 'patient': 'Z1', 'type': 'vitals', 'source': 'monitor', 'hr': 80, 'sbp': 125,
+                   'dbp': 80, 'temp': 36.8, 'spo2': 98, 'rr': 16} for time in ('02:45', '03:00', '03:15', '03:30'))
+    profile = {'id': 'Z1', 'bed': 'S-01', 'label': 'Z.Z.', 'age': 40, 'sex': 'M', 'monitored': True,
+               'arrived_at': '2026-11-20T02:00:00', 'working_dx': [{'code': 'N23', 'text': 'Renal colic'}]}
+    scenario = {'id': 'night_shift_0245', 'title': 'Nurse ack vs GREEN', 'start': '2026-11-20T02:45:00',
+                'end': '2026-11-20T03:30:00', 'patients': [profile], 'events': events}
+    (tmp_path / 'night_shift_0245.json').write_text(json.dumps(scenario), encoding='utf-8')
+    with client_for_night_shift(source=SimulatorSource(tmp_path)) as client:
+        step(client)
+        yellow, = state(client, 'nurse')['alerts']
+        assert yellow['level'] == 'YELLOW'
+        assert client.post(f"/api/alerts/{yellow['id']}/ack", json={'action': 'monitor_reconnected'}).status_code == 204
+        step(client)
+        assert [(a['level'], a['patient_id'], a['params']['minutes'])
+                for a in state(client)['alerts']] == [('GREEN', 'Z1', 35)]
+        assert any(e['event'] == 'acknowledged' and e['role'] == 'nurse' and e['action'] == 'monitor_reconnected'
+                   for e in client.get('/api/audit').json())
