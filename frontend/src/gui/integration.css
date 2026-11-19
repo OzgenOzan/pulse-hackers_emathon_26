@@ -1,0 +1,10 @@
+.gui-list-head { display: flex; gap: .75rem; align-items: center; justify-content: space-between; margin: 0 0 .5rem; }
+.gui-list-head h2 { margin: 0; font-size: 1.125rem; }
+.gui-alarm-anchor { scroll-margin-top: 5rem; }
+.gui-feedback { position: fixed; z-index: 90; inset: auto 1rem 3.5rem auto; max-width: min(36rem, calc(100vw - 2rem)); padding: .75rem 1rem; border: 1px solid var(--line); border-radius: .75rem; color: var(--surface); background: var(--text); font-weight: 650; box-shadow: var(--shadow); }
+.gui-primary { min-height: 48px; font-weight: 650; }
+.about { box-sizing: border-box; width: min(40rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); border: 1px solid var(--line); border-radius: .75rem; padding: 1.25rem; color: var(--text); background: var(--surface); }
+.about::backdrop { background: var(--overlay); }
+.about .drawer-head { display: flex; gap: .75rem; align-items: center; justify-content: space-between; }
+.about .simulated { display: inline-block; border: 1px solid var(--line); border-radius: .25rem; padding: .125rem .5rem; font-weight: 700; }
+@media (max-width: 1199px) { .gui-feedback { bottom: 5rem; } }

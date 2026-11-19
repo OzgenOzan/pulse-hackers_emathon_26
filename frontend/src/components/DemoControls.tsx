@@ -5,7 +5,7 @@ import type { ScenarioInfo, SimStatus, Speed } from '../types';
 
 const SPEEDS: readonly Speed[] = [30, 60, 120];
 
-/** Demo-only controls. Allowed while a RED dialog blocks, so they stay usable for the demo operator. */
+/** Sim-only controls; remain available while patient navigation is locked. */
 export function DemoControls({
   sim,
   scenarios,
@@ -27,7 +27,7 @@ export function DemoControls({
   const [speed, setSpeed] = useState<Speed>(sim.speed);
 
   return (
-    <section className="demo-bar" data-blocking-allowed aria-label={t('demo.title')}>
+    <section className="demo-bar" aria-label={t('demo.title')}>
       <span className="demo-title">{t('demo.title')}</span>
       <label>
         {t('demo.scenario')}{' '}

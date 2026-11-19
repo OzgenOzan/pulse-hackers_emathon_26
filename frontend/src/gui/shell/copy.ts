@@ -14,7 +14,6 @@ export const shellCopy = {
   simulatedPill: 'SİMÜLE VERİ',
   simulatedPillTitle: 'Bu ekrandaki veriler sentetik simülasyon verisidir.',
   about: 'Bu prototip hakkında',
-  demoStrip: 'Demo kontrolleri — ürünün parçası değil',
   overview: 'Genel durum',
   filterChip: (label: string) => `Filtre: ${label}`,
   clearFilter: 'Filtreyi kaldır',

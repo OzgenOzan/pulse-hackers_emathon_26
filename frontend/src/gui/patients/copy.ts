@@ -59,6 +59,6 @@ export const copy = {
   trends: 'Son ölçümler',
   trendNone: 'Gösterilecek ölçüm yok.',
   trendSummary: (latest: string, low: string, high: string) => `Son ${latest} · en düşük ${low} · en yüksek ${high}`,
-  sex: { M: 'Erkek', F: 'Kadın' },
+  sex: { M: 'E', F: 'K' },
   vital: { bp: 'KB', hr: 'Nabız', spo2: 'SpO₂', rr: 'SS', temp: 'Ateş', gcs: 'GKS' },
 } as const;

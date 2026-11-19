@@ -27,10 +27,12 @@ export function StatCard({ testId, label, count, icon: Icon, tone, active, onSel
       onClick={onSelect}
     >
       <span className="stat-head">
-        <Icon size={20} strokeWidth={2} aria-hidden="true" focusable="false" />
         <span className="stat-label">{label}</span>
       </span>
-      <span className="stat-count">{count}</span>
+      <span className="stat-count">
+        {count}
+        <Icon size={20} strokeWidth={2} aria-hidden="true" focusable="false" />
+      </span>
     </button>
   );
 }

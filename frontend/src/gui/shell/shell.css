@@ -110,7 +110,6 @@
   display: inline-flex;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
-  overflow: hidden;
 }
 
 .role-option {
@@ -122,6 +121,10 @@
   background: var(--surface);
   font-weight: 600;
 }
+
+.role-option:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.role-option:last-child { border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+.role-option:focus-visible { position: relative; z-index: 1; }
 
 .role-option + .role-option {
   border-left: 1px solid var(--line-strong);
@@ -184,21 +187,34 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  padding: 8px 20px;
+  padding: 4px 20px;
   background: var(--subtle);
   border-bottom: 1px dashed var(--line-strong);
 }
 
-.demo-bar-label {
+.demo-title {
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+.demo-bar select {
+  min-height: 44px;
+  max-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+}
+
+.demo-status {
+  margin-inline-start: auto;
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .gui-overview {
-  padding: 16px 20px 0;
+  padding: 8px 20px 0;
 }
 
 .stat-grid {
@@ -222,7 +238,7 @@
 
 .gui-body {
   flex: 1 1 auto;
-  padding: 16px 20px;
+  padding: 8px 20px;
 }
 
 .gui-footer {

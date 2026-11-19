@@ -15,7 +15,9 @@ const numberFormats = {
 
 export function measurement(value: number, kind: string): string {
   const precision = kind === 'temp' ? 1 : kind === 'ph' ? 2 : kind === 'lab' ? 3 : 0;
-  return numberFormats[getLanguage()][precision].format(value);
+  // Match the rule text's rounding of exact binary inputs; apply locale punctuation last.
+  const digits = precision === 3 ? 2 : precision;
+  return numberFormats[getLanguage()][precision].format(Number(value.toFixed(digits)));
 }
 
 export const statusLabels: Record<RiskKey, string> = {

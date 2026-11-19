@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { bedLabel } from '../clinical';
 import type { ManualValues, Profile, RulesView } from '../../types';
 import { copy } from './copy';
@@ -22,8 +22,13 @@ export function ManualVitals({ profile, rules, busy, onSave, onClose }: ManualVi
   const titleId = useId();
   const formId = useId();
   const [raw, setRaw] = useState<Raw>(EMPTY);
+  const dialog = useRef<HTMLDialogElement>(null);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const requiredFields: readonly Field[] = rules.required;
+
+  useEffect(() => {
+    if (dialog.current && !dialog.current.open) dialog.current.showModal();
+  }, []);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,7 +42,7 @@ export function ManualVitals({ profile, rules, busy, onSave, onClose }: ManualVi
       }
       const value = Number(text);
       const limit = rules.limits[key];
-      if (!Number.isFinite(value)) issues[key] = copy.vitals.invalid;
+      if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) || !Number.isFinite(value)) issues[key] = copy.vitals.invalid;
       else if (value < limit.min || value > limit.max) issues[key] = copy.vitals.range(limit.min, limit.max);
       else if (key === 'gcs' && !Number.isInteger(value)) issues[key] = copy.vitals.integer;
       else values[key] = value;
@@ -53,7 +58,8 @@ export function ManualVitals({ profile, rules, busy, onSave, onClose }: ManualVi
   };
 
   return (
-    <form className="alarm-flows vitals-form" noValidate aria-labelledby={titleId} onSubmit={submit}>
+    <dialog ref={dialog} className="alarm-sheet manual-sheet" aria-labelledby={titleId} onClose={onClose}>
+      <form className="alarm-flows vitals-form" data-testid="manual-vitals" noValidate onSubmit={submit}>
       <h2 id={titleId}>{copy.vitals.heading}</h2>
       <p className="alarm-card-meta">{bedLabel(profile.bed)} · {profile.label}</p>
       <p className="vitals-hint">{copy.vitals.hint}</p>
@@ -69,6 +75,7 @@ export function ManualVitals({ profile, rules, busy, onSave, onClose }: ManualVi
               <span className="vitals-need">{required ? copy.vitals.required : copy.vitals.optional}</span>
               <input
                 id={inputId}
+                data-testid={`vital-${key}`}
                 type="text"
                 inputMode={key === 'gcs' ? 'numeric' : 'decimal'}
                 autoComplete="off"
@@ -91,8 +98,9 @@ export function ManualVitals({ profile, rules, busy, onSave, onClose }: ManualVi
       </div>
       <div className="alarm-actions">
         <button type="submit" className="alarm-btn primary" disabled={busy}>{copy.vitals.save}</button>
-        <button type="button" className="alarm-btn" disabled={busy} onClick={onClose}>{copy.vitals.cancel}</button>
+        <button type="button" className="alarm-btn" onClick={() => dialog.current?.close()}>{copy.vitals.cancel}</button>
       </div>
-    </form>
+      </form>
+    </dialog>
   );
 }

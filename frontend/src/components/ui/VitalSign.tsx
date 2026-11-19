@@ -16,18 +16,19 @@ export function VitalSign({
   flags: VitalFlag[];
   sub?: string;
 }) {
+  const currentFlags = state.kind === 'value' ? flags : [];
   return (
-    <div className="vital" data-state={state.kind}>
-      <span className="vital-label">{label}</span>
+    <div className="vital" data-state={state.kind} data-flag={currentFlags.some(f => f.level === 'kritik') ? 'kritik' : currentFlags[0]?.level}>
+      <span className="vital-label">{label}{sub && <> · {unit}</>}</span>
       {state.kind === 'value' ? (
         <span className="vital-reading">
           <strong className="vital-value">{state.text}</strong>
-          <span className="vital-unit">{unit}</span>
+          {!sub && <span className="vital-unit">{unit}</span>}
         </span>
       ) : (
         <span className="vital-gap">{describeState(state)}</span>
       )}
-      {flags.map(flag => (
+      {currentFlags.map(flag => (
         <span key={flag.note} className={`vital-flag flag-${flag.level}`}>
           {flag.level === 'kritik'
             ? <TriangleAlert aria-hidden="true" size={14} />
@@ -35,7 +36,7 @@ export function VitalSign({
           {flag.note}
         </span>
       ))}
-      {sub && <span className="vital-sub">{sub}</span>}
+      {sub && <span className="vital-sub" title="Ortalama arter basıncı">{sub}</span>}
     </div>
   );
 }

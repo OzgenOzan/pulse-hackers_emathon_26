@@ -80,6 +80,10 @@
   border: 3px solid var(--kritik);
 }
 
+.alarm-list > [data-emphasis='true'] > .alarm-card-critical {
+  border-width: 4px;
+}
+
 .alarm-card-head {
   display: flex;
   flex-wrap: wrap;
@@ -198,7 +202,7 @@
 .alarm-btn:focus-visible,
 .alarm-sheet textarea:focus-visible,
 .vitals-form input:focus-visible {
-  outline: 3px solid var(--text);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 

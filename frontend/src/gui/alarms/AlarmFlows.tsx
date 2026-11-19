@@ -3,7 +3,7 @@ import { CircleCheck, ClipboardPlus, Eye } from 'lucide-react';
 import { ACTIONS, type ActionSpec } from '../../alertActions';
 import { AlarmCard } from '../../components/ui/AlarmCard';
 import { fmtTime } from '../../format';
-import type { Alert, CriticalAlarm, Role } from '../../types';
+import type { Alert, CriticalAlarm, Role, Summary } from '../../types';
 import { bedLabel, componentText, localRule, roleLabels, stayLabel } from '../clinical';
 import { copy, NOTE_MAX } from './copy';
 import { alarmSentence, announceKey, isWorsenedFor, minutesBetween, rankFindings, ROLES } from './model';
@@ -53,12 +53,12 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
           const evaluateReason = role !== 'physician'
             ? copy.panel.nurseEvaluate
             : orderLocked && blocker
-              ? copy.panel.orderBlocked(bedLabel(blocker.patient.bed), blocker.id)
+              ? copy.panel.orderBlocked(bedLabel(blocker.patient.bed))
               : undefined;
           const reasonId = `${alarm.id}-reason`;
           const offlineId = `${alarm.id}-offline`;
           return (
-            <li key={alarm.id}>
+            <li key={alarm.id} data-testid={`alarm-${alarm.patient_id}`} data-emphasis={!mine || isWorsenedFor(alarm, role)}>
               <AlarmCard
                 tone="critical"
                 title={copy.panel.headline}
@@ -74,7 +74,7 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
                     <button
                       type="button"
                       className="alarm-btn"
-                      data-testid="alarm-view"
+                      data-testid={`alarm-view-${alarm.patient_id}`}
                       disabled={orderLocked}
                       aria-describedby={orderLocked ? reasonId : undefined}
                       onClick={() => onView(alarm.patient_id)}
@@ -85,7 +85,7 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
                     <button
                       type="button"
                       className="alarm-btn"
-                      data-testid="alarm-seen"
+                      data-testid={`alarm-seen-${alarm.patient_id}`}
                       disabled={busy || offline || mine !== undefined}
                       aria-describedby={offline ? offlineId : undefined}
                       onClick={() => onSeen(alarm)}
@@ -97,7 +97,7 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
                       <button
                         type="button"
                         className="alarm-btn primary"
-                        data-testid="alarm-evaluate"
+                        data-testid={`alarm-evaluate-${alarm.patient_id}`}
                         disabled={busy || offline || evaluateReason !== undefined}
                         aria-describedby={evaluateReason ? reasonId : offline ? offlineId : undefined}
                         onClick={() => onEvaluate(alarm)}
@@ -105,7 +105,7 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
                         <ClipboardPlus aria-hidden="true" size={20} />
                         {copy.panel.evaluate}
                       </button>
-                      {evaluateReason && <span className="alarm-reason" id={reasonId}>{evaluateReason} · {alarm.id}</span>}
+                      {evaluateReason && <span className="alarm-reason" id={reasonId}>{evaluateReason}</span>}
                     </div>
                     {offline && <span className="alarm-reason" id={offlineId}>{copy.panel.offline}</span>}
                   </div>
@@ -166,7 +166,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
           <div>
             <h2 id={titleId}>{copy.sheet.heading}</h2>
             <p className="alarm-card-meta">
-              {copy.panel.patientLine(bedLabel(alarm.patient.bed), alarm.patient.label, alarm.patient.age)} · {alarm.id} · {copy.sheet.score(alarm.score)}
+              {copy.panel.patientLine(bedLabel(alarm.patient.bed), alarm.patient.label, alarm.patient.age)} · {copy.sheet.score(alarm.score)}
             </p>
           </div>
           <button
@@ -216,7 +216,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
                   key={reason}
                   type="button"
                   className="alarm-btn reason"
-                  data-testid={`reason-${reason}`}
+                  data-testid={`eval-reason-${reason}`}
                   disabled={disabled}
                   onClick={() => onSave(picked.action, reason, noteValue)}
                 >
@@ -238,7 +238,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
                 key={spec.action}
                 type="button"
                 className="alarm-btn"
-                data-testid={`action-${spec.action}`}
+                data-testid={`eval-action-${spec.action}`}
                 disabled={disabled}
                 onClick={() => choose(spec)}
               >
@@ -254,6 +254,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
 
 export interface TaskActionsProps {
   tasks: Alert[];
+  patients?: Summary[];
   role: Role;
   busy: boolean;
   offline: boolean;
@@ -262,37 +263,39 @@ export interface TaskActionsProps {
 }
 
 /** Physician and nurse tasks. Actions outside the owner's role are shown disabled with a reason. */
-export function TaskActions({ tasks, role, busy, offline, onAck, onVitals }: TaskActionsProps) {
+export function TaskActions({ tasks, patients, role, busy, offline, onAck, onVitals }: TaskActionsProps) {
   const headingId = useId();
   const [picked, setPicked] = useState<string | null>(null);
 
   return (
-    <section className="alarm-flows alarm-tasks" aria-labelledby={headingId}>
+    <section className="alarm-flows alarm-tasks" aria-labelledby={headingId} aria-live="polite">
       <h2 id={headingId}>{copy.tasks.heading}</h2>
       {tasks.length === 0 && <p className="alarm-empty">{copy.tasks.empty}</p>}
       <ol className="alarm-list">
         {tasks.map(task => {
+          const patient = patients?.find(p => p.id === task.patient_id);
           const mine = task.target_role === role;
-          const reason = mine ? undefined : copy.tasks.roleDisabled(roleLabels[task.target_role]);
+          const reason = mine ? undefined : copy.tasks.roleDisabled(task.target_role);
           const disabled = busy || offline || !mine;
           const reasonId = `${task.id}-reason`;
           return (
             <li key={task.id}>
               <AlarmCard
                 tone="neutral"
-                title={copy.tasks.titles[task.level] ?? task.level}
-                meta={copy.tasks.patient(task.patient_id, task.id)}
+                title={copy.tasks.titles[task.level]}
+                meta={patient ? `${bedLabel(patient.bed)} · ${patient.label}` : undefined}
                 badges={<span className="alarm-badge">{copy.alarmStatus[task.status]}</span>}
                 actions={(
                   <div className="alarm-actions">
                     {ACTIONS[task.level].map(spec => {
+                      if (!task.recommended_actions.includes(spec.action)) return null;
                       if (spec.action === 'vitals_entered') {
                         return (
                           <button
                             key={spec.action}
                             type="button"
                             className="alarm-btn"
-                            data-testid={`action-${spec.action}`}
+                            data-testid={`task-action-${spec.action}`}
                             disabled={disabled}
                             aria-describedby={reason ? reasonId : undefined}
                             onClick={() => onVitals(task.patient_id)}
@@ -310,7 +313,7 @@ export function TaskActions({ tasks, role, busy, offline, onAck, onVitals }: Tas
                                 key={r}
                                 type="button"
                                 className="alarm-btn reason"
-                                data-testid={`reason-${r}`}
+                                data-testid={`task-reason-${r}`}
                                 disabled={disabled}
                                 onClick={() => {
                                   setPicked(null);
@@ -328,7 +331,7 @@ export function TaskActions({ tasks, role, busy, offline, onAck, onVitals }: Tas
                           key={spec.action}
                           type="button"
                           className="alarm-btn"
-                          data-testid={`action-${spec.action}`}
+                          data-testid={`task-action-${spec.action}`}
                           disabled={disabled}
                           aria-describedby={reason ? reasonId : undefined}
                           onClick={() => {
@@ -343,7 +346,11 @@ export function TaskActions({ tasks, role, busy, offline, onAck, onVitals }: Tas
                     {reason && <span className="alarm-reason" id={reasonId}>{reason}</span>}
                   </div>
                 )}
-              />
+              >
+                {typeof task.params.minutes === 'number' &&
+                  <p>{task.level === 'GREEN' ? copy.tasks.discharge(stayLabel(task.params.minutes))
+                    : copy.tasks.gap(stayLabel(task.params.minutes))}</p>}
+              </AlarmCard>
             </li>
           );
         })}

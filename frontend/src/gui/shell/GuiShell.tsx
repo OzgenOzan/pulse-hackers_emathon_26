@@ -120,12 +120,7 @@ export function GuiShell({
         </div>
       )}
 
-      {demo && (
-        <section className="demo-bar" aria-label={shellCopy.demoStrip}>
-          <span className="demo-bar-label">{shellCopy.demoStrip}</span>
-          {demo}
-        </section>
-      )}
+      {demo}
 
       <section className="gui-overview" aria-label={shellCopy.overview}>
         <div className="stat-grid">

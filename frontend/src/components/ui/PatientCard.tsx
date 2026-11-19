@@ -31,8 +31,10 @@ export function PatientCard({
   onOpen: () => void;
 }) {
   const [reason] = patient.risk_status.reasons;
-  const [issue] = patient.risk_status.data_issues;
+  const extraIssues = patient.risk_status.data_issues.filter(issue => issue.key !== reason?.key);
   const complaint = complaintOf(patient);
+  const labs = patient.pending_labs.map(lab => lab.label).join(', ') || copy.none;
+  const consults = patient.pending_consults.map(consult => consult.service).join(', ') || copy.none;
   return (
     <article
       className="patient-card"
@@ -54,17 +56,14 @@ export function PatientCard({
           <h3 className="card-name">{displayName(patient)}</h3>
           <p className="card-meta">{bedLabel(patient.bed)} · {ageSex(patient)} · {protocolOf(patient)}</p>
         </div>
-        {locked && (
-          <span className="badge-locked">
-            <Lock aria-hidden="true" size={14} />
-            {copy.lockedBadge}
-          </span>
-        )}
+        <div className="card-status">
+          <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient)} />
+          {patient.risk_status.worsened && <span className="badge-worsened">{copy.worsened}</span>}
+          {locked && <span className="badge-locked"><Lock aria-hidden="true" size={14} />{copy.lockedBadge}</span>}
+        </div>
       </header>
-      <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient)} />
-      {patient.risk_status.worsened && <span className="badge-worsened">{copy.worsened}</span>}
-      {reason && <p className="card-reason">{reasonLabel(reason)}</p>}
-      {issue && <p className="card-issue">{reasonLabel(issue)}</p>}
+      {reason && <p className="card-reason" title={reasonLabel(reason)}>{reasonLabel(reason)}</p>}
+      {extraIssues.map(issue => <p className="card-issue" key={issue.key}>{reasonLabel(issue)}</p>)}
       {patient.reconnect_pending && <p className="card-issue">{copy.reconnect}</p>}
       <div className="vitals">
         {vitalCells(patient, offline).map(c => (
@@ -81,10 +80,13 @@ export function PatientCard({
         </ul>
       )}
       <footer className="card-foot">
-        {complaint && <span>{complaint}</span>}
-        <span>{copy.stay}: {stayLabel(patient.minutes_in_zone)}</span>
-        <span>{lastMeasureText(patient)}</span>
+        <div><span title={complaint ?? undefined}>{complaint}</span><span>{copy.stay}: {stayLabel(patient.minutes_in_zone)}</span></div>
+        <span>{copy.lastMeasure} {lastMeasureText(patient)}</span>
       </footer>
+      <div className="card-pending">
+        <span title={`${copy.pendingLabs}: ${labs}`}>Tetkik: {labs}</span>
+        <span title={`${copy.pendingConsults}: ${consults}`}>Konsültasyon: {consults}</span>
+      </div>
     </article>
   );
 }

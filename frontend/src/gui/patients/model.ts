@@ -193,7 +193,7 @@ export function vitalCells(p: Summary, offline: boolean): VitalCell[] {
       unit: 'mmHg',
       state: pair(m.sbp, m.dbp, offline, noPatientData),
       flags: flagsOf(flags.sbp, flags.dbp, flags.map),
-      sub: `${copy.oab} ${describeState(map, 'mmHg')}`,
+      sub: `${copy.oab} ${describeState(map)}`,
     },
     { key: 'hr', label: copy.vital.hr, unit: '/dk', state: single(m.hr, offline, noPatientData, fmtInt), flags: flagsOf(flags.hr) },
     { key: 'spo2', label: copy.vital.spo2, unit: '%', state: single(m.spo2, offline, noPatientData, fmtInt), flags: flagsOf(flags.spo2) },

@@ -7,15 +7,7 @@ type Params = Record<string, string | number | boolean>;
 const STORAGE_KEY = 'sahin-goz-language';
 const catalogs: Record<Language, Record<string, string>> = { en, tr: tr satisfies typeof en };
 
-function readLanguage(): Language {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'tr' ? 'tr' : 'en';
-  } catch {
-    return 'en';
-  }
-}
-
-let language = readLanguage();
+let language: Language = 'tr';
 
 export function getLanguage(): Language {
   return language;

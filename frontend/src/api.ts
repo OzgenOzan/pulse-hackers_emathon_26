@@ -34,9 +34,10 @@ async function readDetail(res: Response): Promise<string> {
   return res.statusText || `HTTP ${res.status}`;
 }
 
-async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, replayId?: string): Promise<T> {
+async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, replayId?: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(path, {
     method,
+    signal,
     headers: body === undefined ? undefined : {
       'Content-Type': 'application/json',
       ...(replayId ? { 'X-Replay-Id': replayId } : {}),
@@ -49,7 +50,7 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
 }
 
 export const api = {
-  state: (role: Role) => request<State>('GET', `/api/state?role=${role}`),
+  state: (role: Role, signal?: AbortSignal) => request<State>('GET', `/api/state?role=${role}`, undefined, undefined, signal),
   patient: (id: string, role: Role) =>
     request<Detail>('GET', `/api/patients/${encodeURIComponent(id)}?role=${role}`),
   audit: () => request<AuditEntry[]>('GET', '/api/audit'),
