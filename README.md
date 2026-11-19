@@ -80,4 +80,4 @@ To develop instead, add `--reload --reload-dir backend` to the Uvicorn command, 
 2. **+15 min → Nurse**. Acknowledge S-03 with **Monitor reconnected**.
 3. **Physician → +15 min**. Review the blocking RED for S-01. Try opening another patient, then choose **Move to red zone**. Open **Audit log**.
 
-The project is rule-based and uses prototype thresholds only. It illustrates tradeoffs, not clinical performance. See the [demo script](docs/demo-script.md), [generated clinical rules](docs/clinical-rules.md), [status and review items](docs/STATUS.md), and [screenshots](docs/screenshots/).
+The project is rule-based and uses prototype thresholds only. It illustrates tradeoffs, not clinical performance. See the [demo script](docs/demo-script.md), [60-second backup](docs/demo-backup.mp4), [generated clinical rules](docs/clinical-rules.md), [status and review items](docs/STATUS.md), and [screenshots](docs/screenshots/).

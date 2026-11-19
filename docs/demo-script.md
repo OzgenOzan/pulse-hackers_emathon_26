@@ -15,7 +15,7 @@
 
 ## Hero path and 60-second backup
 
-Run `make demo`, use a 1280×720 or larger desktop viewport, keep English selected and the clock paused. Record this path without narration if needed; keep the recording on two devices. Use only the real controls, not an edited playback.
+Run `make demo`, use a 1280×720 or larger desktop viewport, keep English selected and the clock paused. The [60-second backup recording](demo-backup.mp4) uses the actual application controls. Keep a copy on two devices.
 
 | Seconds | Click and verify |
 |---|---|

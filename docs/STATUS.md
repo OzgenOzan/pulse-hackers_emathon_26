@@ -7,12 +7,13 @@
 - Implemented pure alert transitions; six tests passed for latching, supersession, updates, cooldown, escalation and priority.
 - Wrote the 12-profile, 120-event synthetic night shift. `scripts/generate_noise.py --check` reproduced the six noise patients' readings.
 - Implemented deterministic clock and validated scenario playback. The clinical rule table renders from the active YAML config.
-- `make test` passed: 74 backend tests, TypeScript type check, and Vite build. `make setup` also succeeded in a clean clone.
+- `make test` passed: 79 backend tests, TypeScript type check, and Vite build. `make setup` also succeeded in a clean clone.
 - `make dev` served Vite with a working API proxy; `make demo` served the built client and API from one Uvicorn process.
 - Two 1280×720 Edge runs completed GREEN discharge → YELLOW reconnect → RED transfer. Each RED blocked another patient and survived reload. Audit entries matched except for actual UTC wall time.
 - Verified the 56 px RED buttons were visible without scrolling, and the keyboard trap reached role/demo controls without entering the patient board.
 - Verified Y05's filtered lactate in English and Turkish, Turkish preference after reload, the two vital sparklines, the honesty panel, and the Y08 chronic-baseline override in the audit. No external runtime origin was requested in the smoke run.
-- [Demo script](demo-script.md), [clinical rules](clinical-rules.md), and [four browser screenshots](screenshots/) are available.
+- [Demo script](demo-script.md), [decoded 60-second backup video](demo-backup.mp4), [clinical rules](clinical-rules.md), and [four browser screenshots](screenshots/) are available.
+- Verified manual drafts do not cross patient identities or replays, the pre-alert selection survives refresh, and a latched RED distinguishes current score from earlier trigger evidence.
 
 ## Real vs simulated
 
@@ -30,6 +31,7 @@
 - The role switch controls demo views, not authentication or authorization. `wait_justified` is recorded as a physician action; its explicit 30-minute snooze is the exception to clearing GREEN indefinitely after an action.
 - Monitor reconnection takes effect at the next cycle. Opening manual entry does not dismiss YELLOW; the nurse must submit a reading.
 - The clinician team owns the numeric bounds. A scenario event cannot be an empty vital sample or a lab result without a value; a supplied MAP is accepted as measured rather than overwritten by the blood-pressure estimate.
+- Clinical mutation requests include `X-Replay-Id` from `GET /api/state` (`sim.replay_id`). Stale requests cannot act on recycled demo IDs. This is a consistency check, not authentication.
 
 ## CLINICAL-REVIEW items
 
