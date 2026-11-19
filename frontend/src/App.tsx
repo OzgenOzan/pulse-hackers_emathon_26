@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ApiError, api, errorMessage } from './api';
+import { orderBoardRows } from './boardOrder';
 import { AboutPrototype } from './components/AboutPrototype';
 import { AlertBanners, RedDialog } from './components/AlertDialog';
 import { AuditDrawer } from './components/AuditDrawer';
@@ -42,7 +43,7 @@ function selectPatient(st: State, role: Role, urlPatient: string | null, blocksN
   const blocking = blockingAlertOf(st, role, blocksNavigation);
   if (blocking) return blocking.patient_id;
   if (urlPatient && st.patients.some(p => p.id === urlPatient)) return urlPatient;
-  return st.patients[0]?.id ?? null;
+  return orderBoardRows(st.patients, st.alerts, role)[0]?.p.id ?? null;
 }
 
 async function fetchDetail(role: Role, patientId: string): Promise<Detail | null> {
@@ -271,6 +272,7 @@ export function App() {
               <Board
                 patients={state.patients}
                 alerts={activeAlerts}
+                role={view.role}
                 selectedId={patientId}
                 auditOpen={auditOpen}
                 onSelect={id => setView(v => ({ ...v, patient: id }))}

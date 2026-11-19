@@ -1,18 +1,10 @@
+import { orderBoardRows } from '../boardOrder';
 import { fmtTime, fmtValue } from '../format';
 import { t } from '../i18n';
-import type { Alert, Level, Summary } from '../types';
+import type { Alert, Role, Summary } from '../types';
 import { LevelChip } from './AlertDialog';
 
-const RANK: Record<Level, number> = { GREEN: 1, YELLOW: 2, RED: 3 };
 const TREND: Record<Summary['score_trend'], string> = { up: '↑', down: '↓', steady: '→' };
-
-function worstLevel(patientId: string, alerts: Alert[]): Level | null {
-  let worst: Level | null = null;
-  for (const a of alerts) {
-    if (a.patient_id === patientId && (worst === null || RANK[a.level] > RANK[worst])) worst = a.level;
-  }
-  return worst;
-}
 
 function vitalsText(p: Summary): string {
   if (!p.last_vitals) return t('row.noVitals');
@@ -23,6 +15,7 @@ function vitalsText(p: Summary): string {
 export function Board({
   patients,
   alerts,
+  role,
   selectedId,
   auditOpen,
   onSelect,
@@ -30,14 +23,13 @@ export function Board({
 }: {
   patients: Summary[];
   alerts: Alert[];
+  role: Role;
   selectedId: string | null;
   auditOpen: boolean;
   onSelect: (patientId: string) => void;
   onToggleAudit: () => void;
 }) {
-  const rows = patients
-    .map(p => ({ p, level: worstLevel(p.id, alerts) }))
-    .sort((a, b) => (b.level ? RANK[b.level] : 0) - (a.level ? RANK[a.level] : 0) || b.p.score - a.p.score);
+  const rows = orderBoardRows(patients, alerts, role);
 
   return (
     <section className="board" aria-label={t('app.region.board')}>
