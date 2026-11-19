@@ -64,3 +64,8 @@
 - Review follow-through — timestamps and staleness now follow each displayed vital, halfway MAP values agree between rules and values, overflow YELLOW alerts remain actionable, and every unsupported physician-action string returns the same key. Verified with the off-cycle regression and an isolated three-alert browser fixture.
 - Final checks — `make test` passed (94 backend tests, TypeScript and Vite); both generated-file checks passed. The scenario and two deterministic night-shift tests are unchanged. Edge blocked all seven invalid form cases before the POST, with localized messages, and accepted the valid entry. Two hero passes produced identical visible alerts and nine identical audit rows with no browser errors. Refreshed the [four 1280×720 screenshots](screenshots/) and decoded all 600 frames of the [60-second recording](demo-backup.mp4).
 - Intentional behavior: a valid manual entry or acknowledgement re-evaluates immediately, so an alert can appear between the scheduled 15-minute evaluations.
+
+## GUI 2.0
+
+- The remote `v1-audited` fallback points to the audited `main` commit `ba0261a`, before any GUI changes. Baseline: 94 backend tests, TypeScript, build, clinical rules and seeded noise checks passed.
+- [Approved GUI brief](gui-2.0-brief.md) and [execution plan](superpowers/plans/2026-11-19-sahin-goz-gui-2.md). The engine and protected tests remain the control for this UI redesign.
