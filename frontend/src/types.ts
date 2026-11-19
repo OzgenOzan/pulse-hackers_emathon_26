@@ -16,6 +16,8 @@ export interface VitalValues {
 export interface VitalReading extends VitalValues { time: string; source: 'monitor' | 'manual' }
 export interface Summary extends Profile {
   status: Status; minutes_in_zone: number; last_vitals: VitalReading | null; vitals_stale: boolean;
+  current_vitals: VitalValues;
+  current_vital_freshness: Partial<Record<keyof VitalValues, { observed_at: string; stale: boolean }>>;
   score: number; score_trend: 'up' | 'down' | 'steady'; intervention_started: boolean;
 }
 export interface LabOrder { test: string; ordered_at: string; resulted_at: string | null; value: number | null; unit: string | null }
@@ -48,4 +50,9 @@ export interface AuditEntry {
   event: string; role: Role | null; action: string | null; reason: string | null; latency_minutes: number | null; score: number | null;
 }
 export interface ScenarioInfo { id: string; title: string; error: string | null }
-export interface RulesView { red: { threshold: number }; alerting: { red_blocks_navigation: boolean } }
+export interface RulesView {
+  red: { threshold: number };
+  alerting: { red_blocks_navigation: boolean };
+  manual_entry: { required: (keyof VitalValues)[]; limits: Record<keyof VitalValues, {min: number; max: number}> };
+  labs: Record<string, { label: string }>;
+}

@@ -15,6 +15,8 @@ export class ApiError extends Error {
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.message === 'stale_replay') return t('error.staleReplay');
+    const translated = t(`vitals.error.${err.message}`, undefined, '');
+    if (translated) return translated;
     return `${err.status} ${err.message}`;
   }
   return err instanceof Error ? err.message : String(err);

@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ApiError, api, errorMessage } from './api';
+import { orderBoardRows } from './boardOrder';
 import { AboutPrototype } from './components/AboutPrototype';
 import { AlertBanners, RedDialog } from './components/AlertDialog';
 import { AuditDrawer } from './components/AuditDrawer';
@@ -14,7 +15,7 @@ import type { Alert, AuditEntry, Detail, Role, RulesView, ScenarioInfo, State, V
 const POLL_MS = 1000;
 const NOTICE_MS = 6000;
 const TAB_STOPS =
-  '[data-blocking-allowed] button:not(:disabled), [data-blocking-allowed] select:not(:disabled), [data-blocking-allowed] input:not(:disabled)';
+  '[data-blocking-allowed] :is(button:not(:disabled), select:not(:disabled), input:not(:disabled), [tabindex="0"])';
 
 interface View {
   role: Role;
@@ -42,7 +43,7 @@ function selectPatient(st: State, role: Role, urlPatient: string | null, blocksN
   const blocking = blockingAlertOf(st, role, blocksNavigation);
   if (blocking) return blocking.patient_id;
   if (urlPatient && st.patients.some(p => p.id === urlPatient)) return urlPatient;
-  return st.patients[0]?.id ?? null;
+  return orderBoardRows(st.patients, st.alerts, role)[0]?.p.id ?? null;
 }
 
 async function fetchDetail(role: Role, patientId: string): Promise<Detail | null> {
@@ -190,6 +191,7 @@ export function App() {
     pane = (
       <PatientDetail
         detail={detail.data}
+        labRules={config?.labs}
         role={view.role}
         greenAlerts={greenAlerts}
         busy={busy}
@@ -271,6 +273,7 @@ export function App() {
               <Board
                 patients={state.patients}
                 alerts={activeAlerts}
+                role={view.role}
                 selectedId={patientId}
                 auditOpen={auditOpen}
                 onSelect={id => setView(v => ({ ...v, patient: id }))}
@@ -278,10 +281,11 @@ export function App() {
               />
               <section className="detail-pane" aria-label={t('app.region.detail')}>
                 {view.role === 'nurse' && vitalsFor?.patientId === patientId
-                  && vitalsFor.replayId === state.sim.replay_id && summary && (
+                  && vitalsFor.replayId === state.sim.replay_id && summary && config && (
                   <ManualVitals
                     key={`${vitalsFor.replayId}/${summary.id}`}
                     profile={summary}
+                    rules={config.manual_entry}
                     busy={busy}
                     onSave={values => void saveVitals(values)}
                     onCancel={() => setVitalsFor(null)}

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ACTIONS } from '../alertActions';
-import { fmtTime } from '../format';
+import { fmtLab, fmtTime, fmtValue } from '../format';
 import { ruleLabel, t } from '../i18n';
 import type { Alert, Component, Level, Role, Summary, VitalReading } from '../types';
 import { VitalTrends } from './VitalTrends';
@@ -58,7 +58,7 @@ export function ComponentTable({ components, empty }: { components: Component[];
           <tr key={c.key}>
             <td>{t(`component.${c.key}`, undefined, c.label)}</td>
             <td>
-              {c.value} {c.unit}
+              {c.key.startsWith('lab_') ? fmtLab(c.key.slice(4), c.value) : fmtValue(c.value, c.unit === '°C' ? 1 : 0)} {c.unit}
             </td>
             <td>{ruleLabel(c)}</td>
             <td>{c.points}</td>
@@ -75,21 +75,23 @@ function ReasonAction({
   reasons,
   busy,
   onAct,
+  testPrefix,
 }: {
   alert: Alert;
   action: string;
   reasons: readonly string[];
   busy: boolean;
   onAct: ActAlert;
+  testPrefix: string;
 }) {
   const [open, setOpen] = useState(false);
-  const panelId = `reasons-${alert.id}-${action}`;
+  const panelId = useId();
   return (
     <div className="reason-group">
       <button
         type="button"
         className="action"
-        data-testid={`action-${action}`}
+        data-testid={`${testPrefix}action-${action}`}
         aria-expanded={open}
         aria-controls={panelId}
         disabled={busy}
@@ -104,7 +106,7 @@ function ReasonAction({
               key={r}
               type="button"
               className="reason"
-              data-testid={`reason-${r}`}
+              data-testid={`${testPrefix}reason-${r}`}
               disabled={busy}
               onClick={() => onAct(alert, action, r)}
             >
@@ -123,11 +125,13 @@ export function AlertActions({
   busy,
   onAct,
   onEnterVitals,
+  testPrefix = '',
 }: {
   alert: Alert;
   busy: boolean;
   onAct: ActAlert;
   onEnterVitals?: (patientId: string) => void;
+  testPrefix?: string;
 }) {
   return (
     <div className="actions" role="group" aria-label={t('actions.group')}>
@@ -139,7 +143,7 @@ export function AlertActions({
               key={spec.action}
               type="button"
               className="action"
-              data-testid="action-vitals_entered"
+              data-testid={`${testPrefix}action-vitals_entered`}
               disabled={busy}
               onClick={() => onEnterVitals(alert.patient_id)}
             >
@@ -156,6 +160,7 @@ export function AlertActions({
               reasons={spec.reasons}
               busy={busy}
               onAct={onAct}
+              testPrefix={testPrefix}
             />
           );
         }
@@ -164,7 +169,7 @@ export function AlertActions({
             key={spec.action}
             type="button"
             className="action"
-            data-testid={`action-${spec.action}`}
+            data-testid={`${testPrefix}action-${spec.action}`}
             disabled={busy}
             onClick={() => onAct(alert, spec.action)}
           >
@@ -221,24 +226,28 @@ export function RedDialog({
             {t('alert.queueLabel')}: {t('alert.queueCount', { index, total })}
           </span>
         </div>
-        <p className="red-patient">{who}</p>
-        <p className="red-text">{alertTitle(alert)}</p>
-        <LatchedNote alert={alert} />
-        <p>
-          {t(alert.criteria_met ? 'alert.score' : 'alert.currentScore',
-            { score: alert.score, threshold: threshold ?? '–' })} ·{' '}
-          {t('alert.raised', { time: fmtTime(alert.created_at) })}
-        </p>
-        <h3>{t(alert.criteria_met ? 'alert.components' : 'alert.previousComponents')}</h3>
-        <ComponentTable components={alert.components} empty={t('alert.noComponents')} />
-        {readings && <VitalTrends history={readings} />}
-        <AlertActions alert={alert} busy={busy} onAct={onAct} />
+        <div className="red-evidence" tabIndex={0} role="region" aria-label={t('alert.components')}>
+          <p className="red-patient">{who}</p>
+          <p className="red-text">{alertTitle(alert)}</p>
+          <LatchedNote alert={alert} />
+          <p>
+            {t(alert.criteria_met ? 'alert.score' : 'alert.currentScore',
+              { score: alert.score, threshold: threshold ?? '–' })} ·{' '}
+            {t('alert.raised', { time: fmtTime(alert.created_at) })}
+          </p>
+          <h3>{t(alert.criteria_met ? 'alert.components' : 'alert.previousComponents')}</h3>
+          <ComponentTable components={alert.components} empty={t('alert.noComponents')} />
+          {readings && <VitalTrends history={readings} />}
+        </div>
+        <footer className="red-actions">
+          <AlertActions alert={alert} busy={busy} onAct={onAct} />
+        </footer>
       </section>
     </div>
   );
 }
 
-/** Non-blocking banners. GREEN gets a hint only (its actions live in the detail panel). */
+/** Compact, non-blocking alert strips. */
 export function AlertBanners({
   alerts,
   patients,
@@ -255,40 +264,36 @@ export function AlertBanners({
   onEnterVitals?: (patientId: string) => void;
 }) {
   if (alerts.length === 0) return null;
+  const strip = (alert: Alert) => {
+    const patient = patients.find(p => p.id === alert.patient_id);
+    const title = alertTitle(alert);
+    return (
+      <article
+        key={alert.id}
+        className={`banner banner-${alert.level.toLowerCase()}`}
+        data-testid={`banner-${alert.level}-${alert.patient_id}`}
+      >
+        <LevelChip level={alert.level} />
+        <EscalatedTag escalated={alert.escalated} />
+        <strong>{patient ? `${patient.label} · ${patient.bed}` : alert.patient_id}</strong>
+        <span className="banner-title" title={title}>{title}</span>
+        <LatchedNote alert={alert} />
+        {alert.target_role === role
+          ? <AlertActions alert={alert} busy={busy} onAct={onAct} onEnterVitals={onEnterVitals}
+              testPrefix={alert.level === 'YELLOW' ? '' : 'banner-'} />
+          : <span>{t('banner.routed', { role: t(`app.role.${alert.target_role}`) })}</span>}
+      </article>
+    );
+  };
   return (
     <section className="banners" aria-label={t('app.region.alerts')}>
-      {alerts.map(alert => {
-        const patient = patients.find(p => p.id === alert.patient_id);
-        let body;
-        if (alert.level === 'GREEN') {
-          body = (
-            <>
-              <p className="hint suggest">{t('alert.greenSuggest')}</p>
-              <p className="hint">{t('alert.greenHint')}</p>
-            </>
-          );
-        } else if (alert.target_role !== role) {
-          body = <p className="hint">{t('banner.routed', { role: t(`app.role.${alert.target_role}`) })}</p>;
-        } else {
-          body = <AlertActions alert={alert} busy={busy} onAct={onAct} onEnterVitals={onEnterVitals} />;
-        }
-        return (
-          <article
-            key={alert.id}
-            className={`banner banner-${alert.level.toLowerCase()}`}
-            data-testid={`banner-${alert.level}-${alert.patient_id}`}
-          >
-            <div className="banner-head">
-              <LevelChip level={alert.level} />
-              <EscalatedTag escalated={alert.escalated} />
-              <strong>{patient ? `${patient.label} · ${patient.bed}` : alert.patient_id}</strong>
-            </div>
-            <p>{alertTitle(alert)}</p>
-            <LatchedNote alert={alert} />
-            {body}
-          </article>
-        );
-      })}
+      {alerts.slice(0, 2).map(strip)}
+      {alerts.length > 2 && (
+        <details className="banner-more">
+          <summary>{t('banner.more', { count: alerts.length - 2 })}</summary>
+          <div className="banner-overflow">{alerts.slice(2).map(strip)}</div>
+        </details>
+      )}
     </section>
   );
 }

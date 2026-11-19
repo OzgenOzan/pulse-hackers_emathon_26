@@ -101,6 +101,18 @@ def _render(config: EngineConfig, source_lines: list[str]) -> list[str]:
         '',
         f'- Idle after results: {config.green.idle_after_results_minutes} minutes',
         '',
+        '## Manual entry (CLINICAL-REVIEW)',
+        '',
+        'Data-entry plausibility limits only; these are not alert thresholds.',
+        '',
+        *_table(
+            ['Field', 'Required', 'Minimum (inclusive)', 'Maximum (inclusive)'],
+            [[name, 'yes' if name in config.manual_entry.required else 'no', _num(bound.min), _num(bound.max)]
+             for name, bound in config.manual_entry.limits.items()],
+        ),
+        '',
+        'SBP must be above DBP. A supplied MAP must be between DBP and SBP.',
+        '',
         '## Alerting',
         '',
         f'- Acknowledgement cooldown: {config.alerting.ack_cooldown_minutes} minutes',

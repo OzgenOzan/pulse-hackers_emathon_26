@@ -1,28 +1,18 @@
+import { Fragment } from 'react';
+import { orderBoardRows } from '../boardOrder';
 import { fmtTime, fmtValue } from '../format';
 import { t } from '../i18n';
-import type { Alert, Level, Summary } from '../types';
+import type { Alert, Role, Summary } from '../types';
 import { LevelChip } from './AlertDialog';
 
-const RANK: Record<Level, number> = { GREEN: 1, YELLOW: 2, RED: 3 };
 const TREND: Record<Summary['score_trend'], string> = { up: '↑', down: '↓', steady: '→' };
 
-function worstLevel(patientId: string, alerts: Alert[]): Level | null {
-  let worst: Level | null = null;
-  for (const a of alerts) {
-    if (a.patient_id === patientId && (worst === null || RANK[a.level] > RANK[worst])) worst = a.level;
-  }
-  return worst;
-}
-
-function vitalsText(p: Summary): string {
-  if (!p.last_vitals) return t('row.noVitals');
-  const time = fmtTime(p.last_vitals.time);
-  return p.vitals_stale ? t('row.vitalsStale', { time }) : t('row.vitalsFresh', { time });
-}
+const VITALS = ['hr', 'map', 'spo2'] as const;
 
 export function Board({
   patients,
   alerts,
+  role,
   selectedId,
   auditOpen,
   onSelect,
@@ -30,14 +20,13 @@ export function Board({
 }: {
   patients: Summary[];
   alerts: Alert[];
+  role: Role;
   selectedId: string | null;
   auditOpen: boolean;
   onSelect: (patientId: string) => void;
   onToggleAudit: () => void;
 }) {
-  const rows = patients
-    .map(p => ({ p, level: worstLevel(p.id, alerts) }))
-    .sort((a, b) => (b.level ? RANK[b.level] : 0) - (a.level ? RANK[a.level] : 0) || b.p.score - a.p.score);
+  const rows = orderBoardRows(patients, alerts, role);
 
   return (
     <section className="board" aria-label={t('app.region.board')}>
@@ -59,6 +48,8 @@ export function Board({
         <ul className="rows">
           {rows.map(({ p, level }) => {
             const selected = selectedId === p.id;
+            const dx = p.working_dx[0];
+            const diagnosis = dx ? `${dx.code} ${t(`dx.${dx.code}`, undefined, dx.text)}` : '–';
             return (
               <li key={p.id}>
                 <button
@@ -68,28 +59,34 @@ export function Board({
                   aria-pressed={selected}
                   onClick={() => onSelect(p.id)}
                 >
-                  <span className="row-main">
-                    {level && <LevelChip level={level} />}
-                    <strong>{p.label}</strong>
-                    <span>{p.bed}</span>
-                    <span>{p.age}{t(`sex.${p.sex}`)}</span>
+                  <span>{level ? <LevelChip level={level} /> : '–'}</span>
+                  <span>{p.bed}</span>
+                  <strong>{p.label}</strong>
+                  <span>{p.age}{t(`sex.${p.sex}`)}</span>
+                  <span className="row-dx" title={diagnosis}>{diagnosis}</span>
+                  <span>{t('row.minutes', { minutes: p.minutes_in_zone })}</span>
+                  <span className="row-vitals">
+                    {VITALS.map((key, index) => {
+                      const current = p.current_vital_freshness[key];
+                      const fallback = p.vitals_stale ? p.last_vitals?.[key] : null;
+                      const stale = current?.stale ?? (fallback != null);
+                      const observedAt = current?.observed_at ?? (fallback == null ? null : p.last_vitals?.time);
+                      return (
+                        <Fragment key={key}>
+                          {index > 0 && ' · '}
+                          <span data-stale={stale}
+                            title={observedAt ? t(stale ? 'row.vitalsStale' : 'row.vitalsFresh', { time: fmtTime(observedAt) }) : t('row.noVitals')}>
+                            {key === 'spo2' ? 'SpO₂' : t(`vitals.short.${key}`)} {fmtValue(p.current_vitals[key] ?? fallback)}
+                            {stale && !p.vitals_stale && <> <small>{t('row.stale')}</small></>}
+                          </span>
+                        </Fragment>
+                      );
+                    })}
+                    {p.vitals_stale && p.last_vitals && <> <small>{t('row.stale')}</small></>}
                   </span>
-                  {p.working_dx.map(d => <span className="row-dx" key={d.code}>{d.code} {t(`dx.${d.code}`, undefined, d.text)}</span>)}
-                  <span className="row-meta">
-                    <span>{t('row.minutes', { minutes: p.minutes_in_zone })}</span>
-                    <span>{vitalsText(p)}</span>
-                    <span>
-                      {t('row.score', { score: p.score })} {TREND[p.score_trend]} {t(`row.trend.${p.score_trend}`)}
-                    </span>
-                    {p.intervention_started && <span>{t('row.intervention')}</span>}
+                  <span title={t(`row.trend.${p.score_trend}`)}>
+                    {t('row.score', { score: p.score })} {TREND[p.score_trend]}
                   </span>
-                  {p.last_vitals && (
-                    <span className="row-vitals" data-stale={p.vitals_stale}>
-                      {t('row.vitalsSummary', {
-                        hr: fmtValue(p.last_vitals.hr), map: fmtValue(p.last_vitals.map), spo2: fmtValue(p.last_vitals.spo2),
-                      })}
-                    </span>
-                  )}
                 </button>
               </li>
             );

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
     Alert, AuditEntry, AuditEvent, EngineResult, PatientDetail, PatientSnapshot,
-    PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalReading, VitalValues,
+    PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
 )
 from app.engine.config import EngineConfig
 from app.engine.evaluate import evaluate
@@ -158,12 +158,20 @@ class Session:
 
     def summary(self, patient: PatientSnapshot) -> PatientSummary:
         last_vitals = latest_vital(patient.vitals)
+        assessment = self.assessments.get(patient.profile.id, EMPTY_ASSESSMENT)
+        cutoff = self.now - timedelta(minutes=self.config.red.vital_max_age_minutes)
+        values: dict[str, float] = {}
+        freshness: dict[str, VitalFreshness] = {}
+        for param, (value, observed_at) in assessment.current_vital_evidence.items():
+            values[param] = value
+            freshness[param] = VitalFreshness(observed_at=observed_at, stale=observed_at < cutoff)
         return PatientSummary(**patient.profile.model_dump(), status=patient.status,
                               minutes_in_zone=max(0, int((self.now - patient.profile.arrived_at).total_seconds() // 60)),
                               last_vitals=last_vitals,
-                              vitals_stale=(last_vitals is None or self.now - last_vitals.time >
-                                            timedelta(minutes=self.config.red.vital_max_age_minutes)),
-                              score=self.assessments.get(patient.profile.id, EMPTY_ASSESSMENT).score,
+                              current_vitals=values,
+                              current_vital_freshness=freshness,
+                              vitals_stale=last_vitals is None or last_vitals.time < cutoff,
+                              score=assessment.score,
                               score_trend=self.score_trends.get(patient.profile.id, 'steady'),
                               intervention_started=patient.intervention_started)
 
@@ -186,15 +194,27 @@ class Session:
                              alert_history=[a for a in self.alerts if a.patient_id == patient_id])
 
     def add_vitals(self, patient_id: str, values: VitalValues) -> None:
-        if not any(value is not None for value in values.model_dump().values()):
-            raise SessionError(422, 'no_vitals_entered')
+        entry = self.config.manual_entry
+        supplied = values.model_dump(exclude_none=True)
+        # Diagnose invalid measurements before missing fields so a typo gets specific feedback.
+        if any(not entry.limits[key].min <= value <= entry.limits[key].max for key, value in supplied.items()):
+            raise SessionError(422, 'vital_out_of_range')
+        if values.sbp is not None and values.dbp is not None:
+            if values.sbp <= values.dbp:
+                raise SessionError(422, 'sbp_not_above_dbp')
+            if values.map is not None and not values.dbp <= values.map <= values.sbp:
+                raise SessionError(422, 'map_outside_bp')
+        if any(key not in supplied for key in entry.required):
+            raise SessionError(422, 'vital_required_missing')
         patient = self.patient(patient_id, in_zone=True)
-        patient.vitals.append(VitalReading(time=self.now, source='manual', **values.model_dump()))
+        patient.vitals.append(VitalReading(time=self.now, source='manual', **supplied))
         self.record('manual_vitals', patient_id, role='nurse')
         self.evaluate_patient(patient)
 
     def physician_action(self, patient_id: str, action: str) -> None:
         self.require_navigation(patient_id, 'physician')
+        if action not in {'order_placed', 'prescription_written', 'consult_requested', 'reassessed'}:
+            raise SessionError(422, 'invalid_action_type')
         patient = self.patient(patient_id, in_zone=True)
         patient.actions.append(PhysicianAction(time=self.now, type=action))
         self.record('physician_action', patient_id, role='physician', action=action)
@@ -223,7 +243,8 @@ class Session:
         alert.reason = reason
         latency = (self.now - alert.created_at).total_seconds() / 60
         self.record('acknowledged', alert.patient_id, alert=alert, action=action, reason=reason, latency=latency)
-        patient.actions.append(PhysicianAction(time=self.now, type=action))
+        if alert.target_role == 'physician':
+            patient.actions.append(PhysicianAction(time=self.now, type=action))
         if action == 'monitor_reconnected':
             self.pending_reconnects.add(alert.patient_id)
         elif action == 'start_intervention':

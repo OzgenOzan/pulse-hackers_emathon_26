@@ -1,7 +1,7 @@
 """Typed rule data. Only load_config touches the filesystem."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args
 
 import yaml
 from pydantic import PositiveInt, model_validator
@@ -103,6 +103,30 @@ class AlertingRules(Model):
     red_blocks_navigation: bool
 
 
+class ManualBound(Model):
+    min: float
+    max: float
+
+    @model_validator(mode='after')
+    def ordered(self):
+        if self.min >= self.max:
+            raise ValueError('manual entry min must be below max')
+        return self
+
+
+class ManualEntry(Model):
+    required: list[VitalParam]
+    limits: dict[VitalParam, ManualBound]
+
+    @model_validator(mode='after')
+    def complete(self):
+        if self.limits.keys() != set(get_args(VitalParam)):
+            raise ValueError('manual entry must define limits for each vital parameter')
+        if len(self.required) != len(set(self.required)):
+            raise ValueError('manual entry required fields must be unique')
+        return self
+
+
 class EngineConfig(Model):
     cycle_minutes: PositiveInt
     red: RedRules
@@ -112,6 +136,7 @@ class EngineConfig(Model):
     yellow: YellowRules
     green: GreenRules
     alerting: AlertingRules
+    manual_entry: ManualEntry
 
     @model_validator(mode='after')
     def valid_lab_references(self):

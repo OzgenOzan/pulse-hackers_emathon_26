@@ -8,3 +8,8 @@ export function fmtTime(iso: string | null | undefined): string {
 export function fmtValue(value: number | null | undefined, digits = 0): string {
   return value === null || value === undefined ? '–' : value.toFixed(digits);
 }
+
+export function fmtLab(test: string, value: number): string {
+  const fixed = fmtValue(value, 2);
+  return test !== 'ph' && fixed.includes('.') ? fixed.replace(/\.?0+$/, '') : fixed;
+}

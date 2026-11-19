@@ -20,7 +20,7 @@ class AckInput(Model):
 
 
 class PhysicianInput(Model):
-    type: Word
+    type: str
 
 
 class ResetInput(Model):

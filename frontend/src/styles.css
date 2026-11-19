@@ -57,12 +57,11 @@ button:disabled {
   outline-offset: 2px;
 }
 
-/* Action and primary buttons: at least 56 px tall. */
+/* Primary actions keep touch-sized targets; board rows use the compact desktop height. */
 .action,
 .reason,
-.big,
-.row {
-  min-height: 56px;
+.big {
+  min-height: 48px;
 }
 
 .big.primary,
@@ -78,8 +77,8 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 8px;
+  padding: 2px 12px;
   background: #fff;
   border-bottom: 2px solid #111;
 }
@@ -102,8 +101,7 @@ button:disabled {
 }
 
 .role-switch button {
-  min-height: 56px;
-  min-width: 120px;
+  min-width: 110px;
 }
 
 .role-switch button[aria-pressed='true'] {
@@ -172,10 +170,10 @@ button:disabled {
 .layout {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(270px, 2fr) minmax(0, 3fr);
+  grid-template-columns: minmax(650px, 1.3fr) minmax(0, 1fr);
   min-height: 0;
-  gap: 16px;
-  padding: 16px;
+  gap: 8px;
+  padding: 4px 8px;
 }
 
 .board,
@@ -184,7 +182,7 @@ button:disabled {
 }
 
 .board {
-  padding: 4px;
+  padding: 0 3px 2px;
 }
 
 .row-dx,
@@ -192,8 +190,8 @@ button:disabled {
   color: var(--muted);
 }
 
-.row-vitals[data-stale='true'] {
-  text-decoration: line-through;
+.row-vitals [data-stale='true'] {
+  color: #656565;
 }
 
 .board-head {
@@ -203,38 +201,49 @@ button:disabled {
   gap: 12px;
 }
 
+.board-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.row-dx,
+.banner-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .rows {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 8px;
 }
 
 .row {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 4.5rem 2.5rem 2.5rem 2.75rem minmax(0, 1fr) max-content max-content max-content;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 6px;
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   text-align: left;
+  border-radius: 4px;
+  border-color: #b4b4b4;
 }
 
 .row.selected {
-  outline: 3px solid #111;
-  outline-offset: 1px;
+  outline: 2px solid #111;
+  outline-offset: -2px;
+  background: #edf5ff;
 }
 
-.row-main,
-.row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.row-meta {
-  font-size: 0.9rem;
+.row .chip {
+  padding: 0 3px;
 }
 
 .detail-pane,
@@ -242,7 +251,7 @@ button:disabled {
   background: #fff;
   border: 2px solid #111;
   border-radius: 8px;
-  padding: 16px;
+  padding: 8px 12px;
   min-width: 0;
 }
 
@@ -304,22 +313,83 @@ button:disabled {
 }
 
 .banners {
+  position: relative;
   display: grid;
-  gap: 8px;
-  padding: 16px 16px 0;
+  gap: 2px;
+  padding: 2px 8px 0;
 }
 
 .banner {
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 0 8px;
   border: 2px solid #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  white-space: nowrap;
+  font-size: .875rem;
 }
 
-.banner-head {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
+.banner > .actions {
+  margin-left: auto;
+  flex-wrap: nowrap;
+}
+
+.banner .action {
+  padding: 0 8px;
+}
+
+.banner .reason-group {
+  position: relative;
+}
+
+.banner .reasons {
+  position: absolute;
+  z-index: 5;
+  right: 0;
+  top: 100%;
+  width: max-content;
+  max-width: 85vw;
+  padding: 8px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.banner .latched {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  padding: 2px 4px;
+}
+
+.banner-more {
+  justify-self: end;
+  font-size: .8125rem;
+}
+
+.banner-more summary {
+  cursor: pointer;
+}
+
+.banner-overflow {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  right: 8px;
+  left: 8px;
+  max-height: 50dvh;
+  overflow: auto;
+  padding: 4px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.banner-overflow .reasons {
+  position: static;
 }
 
 .banner-red {
@@ -353,8 +423,7 @@ button:disabled {
 
 .actions,
 .reasons,
-.form-actions,
-.board-head + .rows {
+.form-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -441,7 +510,7 @@ button:disabled {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  overflow: auto;
+  overflow: hidden;
   padding: 16px;
   background: var(--red-overlay);
 }
@@ -449,11 +518,42 @@ button:disabled {
 .red-dialog {
   width: 100%;
   max-width: 880px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   color: #111;
   border: 8px solid #b00020;
   border-radius: 12px;
   padding: 16px 20px;
+}
+
+.red-evidence {
+  min-height: 0;
+  overflow: auto;
+  padding: 0 4px;
+}
+
+.red-actions {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  padding-top: 8px;
+  border-top: 1px solid #b4b4b4;
+  background: var(--surface);
+}
+
+.red-actions .reason-group {
+  display: contents;
+}
+
+.red-actions .reasons {
+  flex-basis: 100%;
+}
+
+.red-dialog .action,
+.red-dialog .reason {
+  min-height: 56px;
 }
 
 .red-dialog p {
@@ -575,13 +675,13 @@ button:disabled {
 }
 
 .footer {
-  padding: 12px 16px;
+  padding: 3px 12px;
   border-top: 2px solid #111;
   background: #fff;
   font-weight: 700;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 850px) {
   .layout {
     grid-template-columns: 1fr;
   }
