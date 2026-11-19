@@ -12,6 +12,11 @@ SCENARIO_DIR = Path(__file__).resolve().parents[1] / 'sim' / 'scenarios'
 class ScenarioInfo(Model):
     id: str
     title: str
+    error: str | None = None
+
+
+class InvalidScenario(ValueError):
+    """Scenario file exists, but cannot be used for playback."""
 
 
 class DataSource(Protocol):
@@ -29,16 +34,28 @@ class SimulatorSource:
         return {path.stem: path for path in sorted(self._directory.glob('*.json'))}
 
     def list_scenarios(self) -> list[ScenarioInfo]:
-        return [
-            ScenarioInfo(id=scenario.id, title=scenario.title)
-            for scenario in (Scenario.load(path) for path in self._paths().values())
-        ]
+        infos = []
+        for path in self._paths().values():
+            try:
+                scenario = self._load_path(path)
+            except InvalidScenario as exc:
+                infos.append(ScenarioInfo(id=path.stem, title=path.stem, error=str(exc)))
+            else:
+                infos.append(ScenarioInfo(id=scenario.id, title=scenario.title))
+        return infos
 
     def load(self, scenario_id: str) -> Scenario:
         path = self._paths().get(scenario_id)
         if path is None:
             raise KeyError(scenario_id)
-        scenario = Scenario.load(path)
-        if scenario.id != scenario_id:
-            raise ValueError(f'{path.name} declares id {scenario.id}')
+        return self._load_path(path)
+
+    @staticmethod
+    def _load_path(path: Path) -> Scenario:
+        try:
+            scenario = Scenario.load(path)
+        except (ValueError, OSError) as exc:
+            raise InvalidScenario(f'{path.name}: {exc}') from exc
+        if scenario.id != path.stem:
+            raise InvalidScenario(f'{path.name} declares id {scenario.id}')
         return scenario

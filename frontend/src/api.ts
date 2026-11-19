@@ -1,4 +1,5 @@
 import type { AuditEntry, Detail, Role, RulesView, ScenarioInfo, State, Speed, VitalValues } from './types';
+import { t } from './i18n';
 
 /** The only module that calls the same-origin API. */
 export class ApiError extends Error {
@@ -12,7 +13,10 @@ export class ApiError extends Error {
 }
 
 export function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) return `${err.status} ${err.message}`;
+  if (err instanceof ApiError) {
+    if (err.message === 'stale_replay') return t('error.staleReplay');
+    return `${err.status} ${err.message}`;
+  }
   return err instanceof Error ? err.message : String(err);
 }
 
@@ -28,10 +32,13 @@ async function readDetail(res: Response): Promise<string> {
   return res.statusText || `HTTP ${res.status}`;
 }
 
-async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, replayId?: string): Promise<T> {
   const res = await fetch(path, {
     method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+    headers: body === undefined ? undefined : {
+      'Content-Type': 'application/json',
+      ...(replayId ? { 'X-Replay-Id': replayId } : {}),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) throw new ApiError(res.status, await readDetail(res));
@@ -46,10 +53,10 @@ export const api = {
   audit: () => request<AuditEntry[]>('GET', '/api/audit'),
   config: () => request<RulesView>('GET', '/api/config'),
   scenarios: () => request<ScenarioInfo[]>('GET', '/api/scenarios'),
-  ack: (alertId: string, body: { action: string; reason?: string }) =>
-    request<void>('POST', `/api/alerts/${encodeURIComponent(alertId)}/ack`, body),
-  vitals: (patientId: string, values: VitalValues) =>
-    request<void>('POST', `/api/patients/${encodeURIComponent(patientId)}/vitals`, values),
+  ack: (alertId: string, body: { action: string; reason?: string }, replayId: string) =>
+    request<void>('POST', `/api/alerts/${encodeURIComponent(alertId)}/ack`, body, replayId),
+  vitals: (patientId: string, values: VitalValues, replayId: string) =>
+    request<void>('POST', `/api/patients/${encodeURIComponent(patientId)}/vitals`, values, replayId),
   reset: (scenarioId: string) => request<void>('POST', '/api/sim/reset', { scenario_id: scenarioId }),
   play: (speed: Speed) => request<void>('POST', '/api/sim/play', { speed }),
   pause: () => request<void>('POST', '/api/sim/pause'),

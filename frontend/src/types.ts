@@ -38,7 +38,7 @@ export interface Detail {
   profile: Profile; vitals: VitalReading[]; labs: LabOrder[]; actions: PhysicianAction[]; status: Status;
   active_red: boolean; intervention_started: boolean; assessment: EngineResult; alert_history: Alert[];
 }
-export interface SimStatus { time: string; playing: boolean; speed: Speed; scenario_id: string; next_cycle_at: string | null }
+export interface SimStatus { time: string; playing: boolean; speed: Speed; scenario_id: string; replay_id: string; next_cycle_at: string | null }
 export interface State {
   sim: SimStatus; patients: Summary[]; alerts: Alert[]; blocking_alert_id: string | null;
   counters: { suppressed_labs: number; acknowledgements: number };
@@ -47,5 +47,5 @@ export interface AuditEntry {
   id: string; sim_time: string; wall_time: string; patient_id: string; alert_id: string | null;
   event: string; role: Role | null; action: string | null; reason: string | null; latency_minutes: number | null; score: number | null;
 }
-export interface ScenarioInfo { id: string; title: string }
+export interface ScenarioInfo { id: string; title: string; error: string | null }
 export interface RulesView { red: { threshold: number }; alerting: { red_blocks_navigation: boolean } }

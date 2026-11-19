@@ -25,14 +25,12 @@ def _num(value: float | None) -> str:
     return '-' if value is None else str(value)
 
 
-def _span(low: float | None, high: float | None) -> str:
-    if low is None and high is None:
-        return '-'
-    if low is None:
-        return f'below {_num(high)}'
-    if high is None:
-        return f'above {_num(low)}'
-    return f'{_num(low)} to {_num(high)}'
+def _bound(op: str, value: float | None) -> str:
+    return '-' if value is None else f'{op} {_num(value)}'
+
+
+def _reference(low: float | None, high: float | None) -> str:
+    return ', '.join(_bound(op, value) for op, value in [('≥', low), ('≤', high)] if value is not None) or '-'
 
 
 def _table(header: list[str], rows: list[list[str]]) -> list[str]:
@@ -43,6 +41,8 @@ def _table(header: list[str], rows: list[list[str]]) -> list[str]:
 
 def _render(config: EngineConfig, source_lines: list[str]) -> list[str]:
     out = [
+        f'Evaluation cadence: every {config.cycle_minutes} simulated minutes.',
+        '',
         '## Red',
         '',
         f'- Threshold: {config.red.threshold} points',
@@ -67,9 +67,9 @@ def _render(config: EngineConfig, source_lines: list[str]) -> list[str]:
         '## Labs',
         '',
         *_table(
-            ['Lab', 'Unit', 'Reference', 'Critical'],
-            [[f'{name} ({lab.label})', lab.unit or '-', _span(lab.ref_low, lab.ref_high),
-              _span(lab.critical_low, lab.critical_high)]
+            ['Lab', 'Unit', 'Reference', 'Critical low trigger', 'Critical high trigger'],
+            [[f'{name} ({lab.label})', lab.unit or '-', _reference(lab.ref_low, lab.ref_high),
+              _bound('≤', lab.critical_low), _bound('≥', lab.critical_high)]
              for name, lab in config.labs.items()],
         ),
         '',
@@ -85,8 +85,8 @@ def _render(config: EngineConfig, source_lines: list[str]) -> list[str]:
         '',
         f'- Enabled: {"yes" if config.universal_panic.enabled else "no"}',
         *_table(
-            ['Lab', 'Critical low', 'Critical high'],
-            [[test, _num(bounds.critical_low), _num(bounds.critical_high)]
+            ['Lab', 'Critical low trigger', 'Critical high trigger'],
+            [[test, _bound('≤', bounds.critical_low), _bound('≥', bounds.critical_high)]
              for test, bounds in (('potassium', config.universal_panic.potassium),
                                   ('ph', config.universal_panic.ph))],
         ),

@@ -3,7 +3,7 @@
 from collections.abc import AsyncIterator
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Header, Request
 from pydantic import StringConstraints
 
 from app.domain.models import AuditEntry, Model, PatientDetail, Role, StateView, VitalValues
@@ -45,6 +45,14 @@ async def current_session(request: Request) -> AsyncIterator[Session]:
 Current = Annotated[Session, Depends(current_session)]
 
 
+async def current_mutation(session: Current, x_replay_id: Annotated[str | None, Header()] = None) -> Session:
+    session.require_replay(x_replay_id)
+    return session
+
+
+Mutable = Annotated[Session, Depends(current_mutation)]
+
+
 @router.get('/health')
 async def health(session: Current):
     return {'status': 'ok', 'sim_time': session.now}
@@ -61,17 +69,17 @@ async def detail(patient_id: str, session: Current, role: Role = 'physician') ->
 
 
 @router.post('/patients/{patient_id}/vitals', status_code=204)
-async def manual_vitals(patient_id: str, body: VitalValues, session: Current) -> None:
+async def manual_vitals(patient_id: str, body: VitalValues, session: Mutable) -> None:
     session.add_vitals(patient_id, body)
 
 
 @router.post('/patients/{patient_id}/actions', status_code=204)
-async def physician_action(patient_id: str, body: PhysicianInput, session: Current) -> None:
+async def physician_action(patient_id: str, body: PhysicianInput, session: Mutable) -> None:
     session.physician_action(patient_id, body.type)
 
 
 @router.post('/alerts/{alert_id}/ack', status_code=204)
-async def acknowledge(alert_id: str, body: AckInput, session: Current) -> None:
+async def acknowledge(alert_id: str, body: AckInput, session: Mutable) -> None:
     session.acknowledge(alert_id, body.action, body.reason)
 
 

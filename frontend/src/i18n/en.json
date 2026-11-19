@@ -187,5 +187,10 @@
   "about.limits": "Known limits",
   "about.limitsBody": "Fixed thresholds can miss individual baselines. Only four diagnosis groups are mapped. The scoring cycle may add up to 15 minutes of delay. Demo roles do not authenticate anyone. Not validated for clinical use.",
   "about.ai": "Built with AI coding agents under clinician supervision.",
+  "alert.previousRed": "The earlier RED alert still needs acknowledgement.",
+  "alert.currentScore": "Current score {score} against threshold {threshold}",
+  "alert.previousComponents": "Previous triggering evidence",
+  "demo.invalidScenario": "{name} (invalid scenario)",
+  "error.staleReplay": "This action belongs to an earlier replay. Review the current board before trying again.",
   "about.close": "Close"
 }

@@ -13,7 +13,11 @@ def client_for_night_shift(monotonic=None, source=None):
 def state(client, role='physician'):
     response = client.get('/api/state', params={'role': role})
     assert response.status_code == 200
-    return response.json()
+    value = response.json()
+    replay = value['sim'].get('replay_id')
+    if replay is not None:
+        client.headers['X-Replay-Id'] = replay
+    return value
 
 
 def step(client):

@@ -33,8 +33,8 @@ export function DemoControls({
         {t('demo.scenario')}{' '}
         <select data-testid="demo-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>
           {scenarios.map(s => (
-            <option key={s.id} value={s.id}>
-              {t(`demo.scenario.${s.id}`, undefined, s.title)}
+            <option key={s.id} value={s.id} disabled={s.error !== null} title={s.error ?? undefined}>
+              {s.error ? t('demo.invalidScenario', { name: s.title }) : t(`demo.scenario.${s.id}`, undefined, s.title)}
             </option>
           ))}
         </select>

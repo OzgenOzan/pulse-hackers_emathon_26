@@ -16,11 +16,8 @@ def green_candidate(patient: PatientSnapshot, orders: list[LabOrder], now: datet
     limit = config.green.idle_after_results_minutes
     if idle_gap < timedelta(minutes=limit):
         return None
-    latest_order = max(lab.ordered_at for lab in orders)
     action = max((a for a in reversed(patient.actions) if last_result <= a.time <= now),
                  key=lambda a: a.time, default=None)
-    if latest_order >= last_result and (action is None or latest_order > action.time):
-        return None
     if action and (action.type != 'wait_justified' or now - action.time < timedelta(minutes=config.alerting.ack_cooldown_minutes)):
         return None
     minutes = int(idle_gap.total_seconds() // 60)

@@ -40,17 +40,18 @@ def test_duplicate_discharge_cannot_repeat_the_action():
 
 def test_manual_vitals_leave_independent_monitor_gap_open():
     with client_for_night_shift() as client:
-        step(client)
-        step(client)
-        step(client)
+        for _ in range(5):
+            step(client)
         before = state(client, 'nurse')['alerts'][0]
         response = client.post(f"/api/alerts/{before['id']}/ack", json={'action': 'vitals_entered'})
         assert response.status_code == 422
         assert state(client, 'nurse')['alerts'][0]['id'] == before['id']
         assert before['title_key'] == 'yellow_monitor_and_vitals'
+        assert before['escalated']
         assert client.post('/api/patients/Y03/vitals', json={'hr': 96, 'sbp': 125, 'dbp': 78, 'temp': 36.9, 'spo2': 94, 'rr': 20}).status_code == 204
         after = state(client, 'nurse')['alerts'][0]
         assert (after['id'], after['title_key']) == (before['id'], 'yellow_monitor_gap')
+        assert not after['escalated']
         assert any(entry['event'] == 'manual_vitals' for entry in client.get('/api/audit').json())
 
 
@@ -92,3 +93,56 @@ def test_reconnect_waits_for_next_boundary_even_when_an_early_sample_arrives(tmp
         wall[0] = 15.0
         readings = client.get('/api/patients/Y03?role=nurse').json()['vitals']
         assert [reading['time'][11:16] for reading in readings] == ['02:45', '03:00', '03:30']
+
+
+def test_stale_replay_cannot_acknowledge_a_reused_alert_id():
+    with client_for_night_shift() as client:
+        step(client)
+        first = state(client)
+        stale = first['sim'].get('replay_id', 'obsolete-run')
+        assert client.post('/api/sim/reset', json={}).status_code == 204
+        step(client)
+        second = state(client)
+        alert = second['alerts'][0]
+        assert alert['id'] == first['alerts'][0]['id']
+        response = client.post(f"/api/alerts/{alert['id']}/ack", headers={'X-Replay-Id': stale},
+                               json={'action': 'discharge_decided'})
+        assert response.status_code == 409
+        assert state(client)['alerts'][0]['id'] == alert['id']
+
+
+def test_same_timestamp_manual_vitals_are_reported_as_the_latest_sample():
+    with client_for_night_shift() as client:
+        state(client)
+        response = client.post('/api/patients/Y01/vitals', json={'map': 64})
+        assert response.status_code == 204
+        last = next(p for p in state(client)['patients'] if p['id'] == 'Y01')
+        assert (last['last_vitals']['map'], last['last_vitals']['source'], last['score']) == (64, 'manual', 4)
+
+
+def test_finite_extreme_pressure_values_do_not_raise_a_server_error():
+    with client_for_night_shift() as client:
+        state(client)
+        response = client.post('/api/patients/Y01/vitals', json={'sbp': 1.7e308, 'dbp': -1.7e308})
+        assert response.status_code == 204
+        last = next(p for p in state(client)['patients'] if p['id'] == 'Y01')['last_vitals']
+        assert -1e308 < last['map'] < 0
+
+
+def test_invalid_scenario_does_not_hide_valid_choices_or_replace_the_session(tmp_path):
+    from app.adapters.simulator import SCENARIO_DIR, SimulatorSource
+
+    name = 'night_shift_0245.json'
+    (tmp_path / name).write_bytes((SCENARIO_DIR / name).read_bytes())
+    (tmp_path / 'incomplete.json').write_text('{"id":"incomplete"}', encoding='utf-8')
+    with client_for_night_shift(source=SimulatorSource(tmp_path)) as client:
+        step(client)
+        before = state(client)
+        choices = client.get('/api/scenarios')
+        assert choices.status_code == 200
+        assert any(c['id'] == 'night_shift_0245' and not c.get('error') for c in choices.json())
+        assert any(c['id'] == 'incomplete' and 'incomplete.json' in c['error'] for c in choices.json())
+        rejected = client.post('/api/sim/reset', json={'scenario_id': 'incomplete'})
+        assert rejected.status_code == 422
+        assert 'incomplete.json' in rejected.json()['detail']
+        assert state(client) == before

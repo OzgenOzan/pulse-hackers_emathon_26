@@ -37,6 +37,7 @@ export function LatchedNote({ alert }: { alert: Alert }) {
 }
 
 export function alertTitle(alert: Alert): string {
+  if (alert.level === 'RED' && !alert.criteria_met) return t('alert.previousRed');
   return t(`alert.title.${alert.title_key}`, alert.params);
 }
 
@@ -207,8 +208,6 @@ export function RedDialog({
     <div className="overlay" onClick={onBackdrop}>
       <section
         ref={sectionRef}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby="red-title"
         data-blocking-allowed
         className="red-dialog"
@@ -226,10 +225,11 @@ export function RedDialog({
         <p className="red-text">{alertTitle(alert)}</p>
         <LatchedNote alert={alert} />
         <p>
-          {t('alert.score', { score: alert.score, threshold: threshold ?? '–' })} ·{' '}
+          {t(alert.criteria_met ? 'alert.score' : 'alert.currentScore',
+            { score: alert.score, threshold: threshold ?? '–' })} ·{' '}
           {t('alert.raised', { time: fmtTime(alert.created_at) })}
         </p>
-        <h3>{t('alert.components')}</h3>
+        <h3>{t(alert.criteria_met ? 'alert.components' : 'alert.previousComponents')}</h3>
         <ComponentTable components={alert.components} empty={t('alert.noComponents')} />
         {readings && <VitalTrends history={readings} />}
         <AlertActions alert={alert} busy={busy} onAct={onAct} />

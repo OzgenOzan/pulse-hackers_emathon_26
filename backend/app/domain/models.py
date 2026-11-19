@@ -1,6 +1,7 @@
 """Canonical data passed between simulation, evaluation, and API."""
 
 from datetime import datetime
+from math import isfinite
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -47,7 +48,11 @@ class VitalValues(Model):
     @model_validator(mode='after')
     def derive_map(self):
         if self.map is None and self.sbp is not None and self.dbp is not None:
-            self.map = self.dbp + (self.sbp - self.dbp) / 3
+            difference = self.sbp - self.dbp
+            self.map = (self.dbp + difference / 3 if isfinite(difference)
+                        else self.sbp / 3 + (self.dbp / 3) * 2)
+            if not isfinite(self.map):
+                raise ValueError('calculated MAP is not finite')
         return self
 
 
@@ -123,6 +128,7 @@ class Alert(AlertCandidate):
     updated_at: datetime
     status: Literal['active', 'acknowledged', 'auto_resolved', 'superseded'] = 'active'
     criteria_met: bool = True
+    realerted: bool = Field(default=False, exclude=True)
     closed_at: datetime | None = None
     action: str | None = None
     reason: str | None = None
@@ -167,6 +173,7 @@ class SimStatus(Model):
     playing: bool
     speed: int
     scenario_id: str
+    replay_id: str
     next_cycle_at: datetime | None
 
 

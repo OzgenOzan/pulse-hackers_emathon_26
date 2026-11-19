@@ -107,3 +107,10 @@ def test_green_snooze_expires_only_with_no_later_action():
     assert [a.level for a in run(p).candidates] == ['GREEN']
     p.actions.append(PhysicianAction(time=NOW, type='reassessing'))
     assert run(p).candidates == []
+
+
+def test_same_minute_lab_order_and_result_can_start_idle_waiting():
+    ready = lab('cbc', 7.2, '10^9/L', 30)
+    ready.ordered_at = ready.resulted_at
+    alerts = run(patient(vitals=[reading(hr=80)], labs=[ready])).candidates
+    assert [(a.level, a.params['minutes']) for a in alerts] == [('GREEN', 30)]

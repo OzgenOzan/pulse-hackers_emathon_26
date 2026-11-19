@@ -4,7 +4,7 @@ from asyncio import Lock
 from collections.abc import Callable, Iterable
 from datetime import datetime, timedelta
 
-from app.adapters.simulator import DataSource
+from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
     Alert, AuditEntry, AuditEvent, EngineResult, PatientDetail, PatientSnapshot,
     PatientSummary, PhysicianAction, Role, SimStatus, StateView, VitalReading, VitalValues,
@@ -12,6 +12,7 @@ from app.domain.models import (
 from app.engine.config import EngineConfig
 from app.engine.evaluate import evaluate
 from app.engine.lifecycle import priority_key, reconcile
+from app.engine.vitals import latest_vital
 from app.sim.clock import SimClock
 from app.sim.player import Frame, Player, apply_event
 
@@ -44,6 +45,8 @@ class Session:
         self.monotonic = monotonic
         self.wall_now = wall_now
         self.lock = Lock()
+        self.replay_epoch = wall_now().isoformat()
+        self.replay_number = 0
         self.reset('night_shift_0245')
 
     def reset(self, scenario_id: str) -> None:
@@ -51,6 +54,10 @@ class Session:
             scenario = self.source.load(scenario_id)
         except KeyError as exc:
             raise SessionError(404, 'unknown_scenario') from exc
+        except InvalidScenario as exc:
+            raise SessionError(422, str(exc)) from exc
+        self.replay_number += 1
+        self.replay_id = f'{self.replay_epoch}/{self.replay_number}'
         self.scenario_id = scenario.id
         self.player = Player(scenario, self.config.cycle_minutes)
         self.clock = SimClock(scenario.start, scenario.end, monotonic=self.monotonic)
@@ -65,6 +72,12 @@ class Session:
         self.suppressions: set[tuple[str, str, datetime, str]] = set()
         self.next_alert = 0
         self.consume(self.player.reset())
+
+    def require_replay(self, replay_id: str | None) -> None:
+        if replay_id is None:
+            raise SessionError(428, 'replay_id_required')
+        if replay_id != self.replay_id:
+            raise SessionError(409, 'stale_replay')
 
     def catch_up(self) -> None:
         self.advance_to(self.clock.now())
@@ -132,7 +145,7 @@ class Session:
 
     def sim_status(self) -> SimStatus:
         return SimStatus(time=self.now, playing=self.clock.playing, speed=self.clock.speed,
-                         scenario_id=self.scenario_id, next_cycle_at=self.player.next_cycle_at)
+                         scenario_id=self.scenario_id, replay_id=self.replay_id, next_cycle_at=self.player.next_cycle_at)
 
     def view(self, role: Role) -> StateView:
         patients = [self.summary(p) for p in self.patients.values() if p.status == 'in_zone']
@@ -144,7 +157,7 @@ class Session:
                                    'acknowledgements': sum(e.event == 'acknowledged' for e in self.audit)})
 
     def summary(self, patient: PatientSnapshot) -> PatientSummary:
-        last_vitals = max(patient.vitals, key=lambda reading: reading.time, default=None)
+        last_vitals = latest_vital(patient.vitals)
         return PatientSummary(**patient.profile.model_dump(), status=patient.status,
                               minutes_in_zone=max(0, int((self.now - patient.profile.arrived_at).total_seconds() // 60)),
                               last_vitals=last_vitals,
@@ -195,7 +208,7 @@ class Session:
             raise SessionError(409, 'alert_already_closed')
         self.require_navigation(alert.patient_id, alert.target_role)
         allowed = ACK_REASONS[alert.level]
-        if action not in allowed:
+        if action not in allowed or action not in alert.recommended_actions:
             raise SessionError(422, 'invalid_alert_action')
         reasons = allowed[action]
         if reasons is None and reason is not None:

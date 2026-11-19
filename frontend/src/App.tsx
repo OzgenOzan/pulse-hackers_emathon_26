@@ -64,7 +64,7 @@ export function App() {
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [auditOpen, setAuditOpen] = useState(false);
   const [detail, setDetail] = useState<{ key: string; data: Detail | null } | null>(null);
-  const [vitalsFor, setVitalsFor] = useState<string | null>(null);
+  const [vitalsFor, setVitalsFor] = useState<{ patientId: string; replayId: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -120,8 +120,8 @@ export function App() {
   }, [view.role, view.patient, auditOpen, blocksNavigation]);
 
   useEffect(() => {
-    writeView(view.role, patientId);
-  }, [view.role, patientId]);
+    writeView(view.role, view.patient);
+  }, [view.role, view.patient]);
 
   useEffect(() => {
     if (notice === null) return undefined;
@@ -158,18 +158,22 @@ export function App() {
     }
   };
 
-  const act = (alert: Alert, action: string, reason?: string) =>
-    mutate(() => api.ack(alert.id, reason === undefined ? { action } : { action, reason }));
+  const act = (alert: Alert, action: string, reason?: string) => {
+    if (state) return mutate(() => api.ack(alert.id, { action, reason }, state.sim.replay_id));
+  };
 
-  const saveVitals = (id: string, values: VitalValues) =>
-    mutate(async () => {
-      await api.vitals(id, values);
+  const saveVitals = (values: VitalValues) => {
+    if (!vitalsFor) return;
+    return mutate(async () => {
+      await api.vitals(vitalsFor.patientId, values, vitalsFor.replayId);
       setVitalsFor(null);
     });
+  };
 
   const openVitals = (id: string) => {
+    if (!state) return;
     setView(v => ({ ...v, patient: id }));
-    setVitalsFor(id);
+    setVitalsFor({ patientId: id, replayId: state.sim.replay_id });
   };
 
   const activeAlerts = state ? state.alerts.filter(a => a.status === 'active') : [];
@@ -195,7 +199,8 @@ export function App() {
     );
 
   return (
-    <div className="app">
+    <div className="app" role={blockingOn ? 'dialog' : undefined}
+      aria-modal={blockingOn || undefined} aria-labelledby={blockingOn ? 'red-title' : undefined}>
       <header className="topbar" data-blocking-allowed>
         <h1>{t('app.title')}</h1>
         <span>{t('app.subtitle')}</span>
@@ -253,39 +258,43 @@ export function App() {
         </p>
       ) : (
         <>
-          <AlertBanners
-            alerts={bannerAlerts}
-            patients={state.patients}
-            role={view.role}
-            busy={busy}
-            onAct={act}
-            onEnterVitals={view.role === 'nurse' ? openVitals : undefined}
-          />
-          <main className="layout">
-            <Board
+          <div className="workspace-body" inert={blockingOn}>
+            <AlertBanners
+              alerts={bannerAlerts}
               patients={state.patients}
-              alerts={activeAlerts}
-              selectedId={patientId}
-              auditOpen={auditOpen}
-              onSelect={id => setView(v => ({ ...v, patient: id }))}
-              onToggleAudit={() => setAuditOpen(o => !o)}
+              role={view.role}
+              busy={busy}
+              onAct={act}
+              onEnterVitals={view.role === 'nurse' ? openVitals : undefined}
             />
-            <section className="detail-pane" aria-label={t('app.region.detail')}>
-              {view.role === 'nurse' && vitalsFor !== null && vitalsFor === patientId && summary && (
-                <ManualVitals
-                  profile={summary}
-                  busy={busy}
-                  onSave={values => void saveVitals(summary.id, values)}
-                  onCancel={() => setVitalsFor(null)}
-                />
-              )}
-              {pane}
-            </section>
-          </main>
-          {auditOpen && !blocking && <AuditDrawer entries={audit} onClose={() => setAuditOpen(false)} />}
+            <main className="layout">
+              <Board
+                patients={state.patients}
+                alerts={activeAlerts}
+                selectedId={patientId}
+                auditOpen={auditOpen}
+                onSelect={id => setView(v => ({ ...v, patient: id }))}
+                onToggleAudit={() => setAuditOpen(o => !o)}
+              />
+              <section className="detail-pane" aria-label={t('app.region.detail')}>
+                {view.role === 'nurse' && vitalsFor?.patientId === patientId
+                  && vitalsFor.replayId === state.sim.replay_id && summary && (
+                  <ManualVitals
+                    key={`${vitalsFor.replayId}/${summary.id}`}
+                    profile={summary}
+                    busy={busy}
+                    onSave={values => void saveVitals(values)}
+                    onCancel={() => setVitalsFor(null)}
+                  />
+                )}
+                {pane}
+              </section>
+            </main>
+            {auditOpen && !blocking && <AuditDrawer entries={audit} onClose={() => setAuditOpen(false)} />}
+          </div>
           {blocking && (
             <RedDialog
-              key={blocking.id}
+              key={`${state.sim.replay_id}/${blocking.id}`}
               alert={blocking}
               summary={state.patients.find(p => p.id === blocking.patient_id)}
               readings={detail?.key === detailKey ? detail.data?.vitals : undefined}

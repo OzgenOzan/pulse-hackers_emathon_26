@@ -48,7 +48,7 @@ def reconcile(alerts: list[Alert], patient_id: str, result: EngineResult, now: d
         properties = candidate.model_dump()
         properties['escalated'] = candidate.escalated or escalated_recurrence
         alert = Alert(**properties, id=next_id(), patient_id=patient_id, score=result.score,
-                      created_at=now, updated_at=now)
+                      created_at=now, updated_at=now, realerted=escalated_recurrence)
         alerts.append(alert)
         changes.append(AlertChange(event='escalated' if escalated_recurrence else 'created', alert=alert))
 
@@ -63,13 +63,14 @@ def close(alert: Alert, now: datetime, status, reason: str | None) -> None:
 
 
 def update(alert: Alert, candidate: AlertCandidate, score: int, now: datetime) -> AlertChange | None:
-    escalate = candidate.escalated and not alert.escalated
-    if (not escalate and alert.criteria_met and alert.score == score
+    escalated = candidate.escalated or alert.realerted
+    escalate = escalated and not alert.escalated
+    if (alert.escalated == escalated and alert.criteria_met and alert.score == score
             and alert.title_key == candidate.title_key and alert.params == candidate.params
             and alert.components == candidate.components and alert.recommended_actions == candidate.recommended_actions):
         return None
     alert.criteria_met = True
-    alert.escalated = alert.escalated or candidate.escalated
+    alert.escalated = escalated
     alert.score = score
     alert.title_key = candidate.title_key
     alert.params = candidate.params

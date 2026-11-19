@@ -2,6 +2,8 @@
 
 Generated from `backend/app/engine/config.yaml` by `scripts/export_rules.py`. Do not edit by hand.
 
+Evaluation cadence: every 15 simulated minutes.
+
 ## Red
 
 - Threshold: 3 points
@@ -27,12 +29,12 @@ Generated from `backend/app/engine/config.yaml` by `scripts/export_rules.py`. Do
 
 ## Labs
 
-| Lab | Unit | Reference | Critical |
-|---|---|---|---|
-| troponin (hs-cTnT) | ng/L | below 14.0 | below 52.0 |
-| lactate (Lactate) | mmol/L | below 2.0 | below 4.0 |
-| ph (pH (blood gas)) | - | 7.35 to 7.45 | 7.2 to 7.6 |
-| potassium (K+) | mmol/L | 3.5 to 5.1 | 2.5 to 6.0 |
+| Lab | Unit | Reference | Critical low trigger | Critical high trigger |
+|---|---|---|---|---|
+| troponin (hs-cTnT) | ng/L | ≤ 14.0 | - | ≥ 52.0 |
+| lactate (Lactate) | mmol/L | ≤ 2.0 | - | ≥ 4.0 |
+| ph (pH (blood gas)) | - | ≥ 7.35, ≤ 7.45 | ≤ 7.2 | ≥ 7.6 |
+| potassium (K+) | mmol/L | ≥ 3.5, ≤ 5.1 | ≤ 2.5 | ≥ 6.0 |
 
 ## Diagnosis to lab relevance
 
@@ -46,10 +48,10 @@ Generated from `backend/app/engine/config.yaml` by `scripts/export_rules.py`. Do
 ## Universal panic (bypasses the diagnosis filter)
 
 - Enabled: yes
-| Lab | Critical low | Critical high |
+| Lab | Critical low trigger | Critical high trigger |
 |---|---|---|
-| potassium | 2.5 | 6.5 |
-| ph | 7.1 | - |
+| potassium | ≤ 2.5 | ≥ 6.5 |
+| ph | ≤ 7.1 | - |
 
 ## Yellow
 

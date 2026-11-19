@@ -15,8 +15,12 @@ def observed_vitals(patient: PatientSnapshot, now: datetime) -> list[VitalReadin
     return [r for r in patient.vitals if patient.profile.arrived_at <= r.time <= now]
 
 
+def latest_vital(readings: list[VitalReading]) -> VitalReading | None:
+    return max(reversed(readings), key=lambda reading: reading.time, default=None)
+
+
 def score_vitals(readings: list[VitalReading], now: datetime, rules: RedRules) -> list[Component]:
-    latest = max(reversed(readings), key=lambda r: r.time, default=None)
+    latest = latest_vital(readings)
     if latest is None or now - latest.time > timedelta(minutes=rules.vital_max_age_minutes):
         return []
     components: list[Component] = []
