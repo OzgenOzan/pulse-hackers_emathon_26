@@ -1,3 +1,12 @@
+:root {
+  --ink: #111;
+  --canvas: #f3f3f1;
+  --surface: #fff;
+  --muted: #454545;
+  --focus-ring: #005fcc;
+  --red-overlay: #7a0010;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -11,8 +20,8 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 1rem;
   line-height: 1.4;
-  color: #111;
-  background: #f3f3f1;
+  color: var(--ink);
+  background: var(--canvas);
 }
 
 h1,
@@ -44,7 +53,7 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 3px solid #005fcc;
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -116,17 +125,68 @@ button:disabled {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+.workspace {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sim-clock {
+  margin-inline: 4px;
+  font-size: 1.6rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.demo-role {
+  align-self: center;
+  color: var(--muted);
+  font-size: .875rem;
+}
+
+.language-switch {
+  display: flex;
+  gap: 4px;
+}
+
+.language-switch button[aria-pressed='true'] {
+  color: var(--surface);
+  background: var(--ink);
 }
 
 .layout {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(280px, 380px) 1fr;
+  grid-template-columns: minmax(270px, 2fr) minmax(0, 3fr);
+  min-height: 0;
   gap: 16px;
   padding: 16px;
+}
+
+.board,
+.detail-pane {
+  overflow: auto;
+}
+
+.board {
+  padding: 4px;
+}
+
+.row-dx,
+.row-vitals {
+  color: var(--muted);
+}
+
+.row-vitals[data-stale='true'] {
+  text-decoration: line-through;
 }
 
 .board-head {
@@ -368,15 +428,15 @@ button:disabled {
 }
 
 .overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   overflow: auto;
-  padding: 24px;
-  background: #7a0010;
+  padding: 16px;
+  background: var(--red-overlay);
 }
 
 .red-dialog {
@@ -386,7 +446,15 @@ button:disabled {
   color: #111;
   border: 8px solid #b00020;
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px 20px;
+}
+
+.red-dialog p {
+  margin: 6px 0;
+}
+
+.red-head h2 {
+  margin: 0;
 }
 
 .red-head {
@@ -406,11 +474,58 @@ button:disabled {
   font-weight: 700;
 }
 
+.trends {
+  padding: 8px 12px;
+  margin: 12px 0;
+  border: 1px solid #9c9c9c;
+  border-radius: 8px;
+}
+
+.trend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.trend-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trend-series {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-series svg {
+  display: block;
+  width: 100%;
+  max-height: 42px;
+}
+
+.about {
+  max-width: min(650px, 90vw);
+  padding: 20px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.about::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
 .drawer {
-  position: fixed;
+  position: absolute;
   right: 0;
-  top: 72px;
-  bottom: 56px;
+  top: 0;
+  bottom: 0;
   width: min(560px, 100vw);
   z-index: 90;
   overflow: auto;

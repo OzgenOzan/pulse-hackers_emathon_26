@@ -34,7 +34,7 @@ export function DemoControls({
         <select data-testid="demo-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>
           {scenarios.map(s => (
             <option key={s.id} value={s.id}>
-              {s.title}
+              {t(`demo.scenario.${s.id}`, undefined, s.title)}
             </option>
           ))}
         </select>

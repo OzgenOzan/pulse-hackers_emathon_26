@@ -1,12 +1,14 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ApiError, api, errorMessage } from './api';
+import { AboutPrototype } from './components/AboutPrototype';
 import { AlertBanners, RedDialog } from './components/AlertDialog';
 import { AuditDrawer } from './components/AuditDrawer';
 import { Board } from './components/Board';
 import { DemoControls } from './components/DemoControls';
 import { ManualVitals } from './components/ManualVitals';
 import { PatientDetail } from './components/PatientDetail';
-import { t } from './i18n';
+import { fmtTime } from './format';
+import { changeLanguage, getLanguage, t } from './i18n';
 import type { Alert, AuditEntry, Detail, Role, RulesView, ScenarioInfo, State, VitalValues } from './types';
 
 const POLL_MS = 1000;
@@ -54,6 +56,8 @@ async function fetchDetail(role: Role, patientId: string): Promise<Detail | null
 
 export function App() {
   const [view, setView] = useState<View>(readView);
+  const [language, setLanguage] = useState(getLanguage);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [state, setState] = useState<State | null>(null);
   const [config, setConfig] = useState<RulesView | null>(null);
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
@@ -73,6 +77,9 @@ export function App() {
   const blockingOn = blocking !== null;
   const patientId = state ? selectPatient(state, view.role, view.patient, blocksNavigation) : null;
   const detailKey = `${view.role}|${patientId}`;
+
+  useEffect(() => { document.documentElement.lang = language; }, [language]);
+  useEffect(() => { if (blockingOn) setAboutOpen(false); }, [blockingOn]);
 
   useEffect(() => {
     api.config().then(setConfig).catch(err => setNotice(errorMessage(err)));
@@ -130,13 +137,10 @@ export function App() {
       const stops = Array.from(document.querySelectorAll<HTMLElement>(TAB_STOPS));
       if (stops.length === 0) return;
       const current = document.activeElement instanceof HTMLElement ? stops.indexOf(document.activeElement) : -1;
-      if (e.shiftKey && current <= 0) {
-        e.preventDefault();
-        stops[stops.length - 1].focus();
-      } else if (!e.shiftKey && (current === -1 || current === stops.length - 1)) {
-        e.preventDefault();
-        stops[0].focus();
-      }
+      const direction = e.shiftKey ? -1 : 1;
+      const next = current < 0 ? (e.shiftKey ? stops.length - 1 : 0) : (current + direction + stops.length) % stops.length;
+      e.preventDefault();
+      stops[next].focus();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -196,7 +200,9 @@ export function App() {
         <h1>{t('app.title')}</h1>
         <span>{t('app.subtitle')}</span>
         <span className="simulated">{t('app.simulated')}</span>
+        {state && <time className="sim-clock" aria-label={t('app.clock')} dateTime={state.sim.time}>{fmtTime(state.sim.time)}</time>}
         <div className="role-switch" role="group" aria-label={t('app.role.label')}>
+          <span className="demo-role">{t('app.role.demo')}</span>
           {(['physician', 'nurse'] as const).map(r => (
             <button
               key={r}
@@ -209,6 +215,17 @@ export function App() {
             </button>
           ))}
         </div>
+        <div className="language-switch" role="group" aria-label={t('app.language')}>
+          {(['en', 'tr'] as const).map(locale => (
+            <button key={locale} type="button" data-testid={`language-${locale}`} aria-pressed={language === locale}
+              onClick={() => { changeLanguage(locale); setLanguage(locale); }}>
+              {t(`app.language.${locale}`)}
+            </button>
+          ))}
+        </div>
+        <button type="button" data-testid="about-prototype" disabled={blockingOn} onClick={() => setAboutOpen(true)}>
+          {t('about.open')}
+        </button>
       </header>
 
       {state && (
@@ -223,6 +240,7 @@ export function App() {
         />
       )}
 
+      <div className="workspace">
       {linkError && (
         <p role="alert" className="link-error">
           {t('app.linkError', { message: linkError })}
@@ -270,6 +288,7 @@ export function App() {
               key={blocking.id}
               alert={blocking}
               summary={state.patients.find(p => p.id === blocking.patient_id)}
+              readings={detail?.key === detailKey ? detail.data?.vitals : undefined}
               threshold={config?.red.threshold ?? null}
               index={redQueue.findIndex(a => a.id === blocking.id) + 1}
               total={redQueue.length}
@@ -280,6 +299,8 @@ export function App() {
           )}
         </>
       )}
+      </div>
+      {aboutOpen && !blockingOn && <AboutPrototype onClose={() => setAboutOpen(false)} />}
 
       {notice && (
         <div className="toast" role="alert">

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ACTIONS } from '../alertActions';
 import { fmtTime } from '../format';
-import { t } from '../i18n';
-import type { Alert, Component, Level, Role, Summary } from '../types';
+import { ruleLabel, t } from '../i18n';
+import type { Alert, Component, Level, Role, Summary, VitalReading } from '../types';
+import { VitalTrends } from './VitalTrends';
 
 export type ActAlert = (alert: Alert, action: string, reason?: string) => Promise<void> | void;
 
@@ -11,7 +12,7 @@ export function LevelChip({ level }: { level: Level }) {
   return (
     <span className={`chip chip-${level.toLowerCase()}`}>
       <span aria-hidden="true">{icon}</span>
-      {level}
+      {t(`level.${level}`)}
     </span>
   );
 }
@@ -54,11 +55,11 @@ export function ComponentTable({ components, empty }: { components: Component[];
       <tbody>
         {components.map(c => (
           <tr key={c.key}>
-            <td>{c.label}</td>
+            <td>{t(`component.${c.key}`, undefined, c.label)}</td>
             <td>
               {c.value} {c.unit}
             </td>
-            <td>{c.rule}</td>
+            <td>{ruleLabel(c)}</td>
             <td>{c.points}</td>
           </tr>
         ))}
@@ -130,6 +131,7 @@ export function AlertActions({
   return (
     <div className="actions" role="group" aria-label={t('actions.group')}>
       {ACTIONS[alert.level].map(spec => {
+        if (!alert.recommended_actions.includes(spec.action)) return null;
         if (spec.action === 'vitals_entered') {
           return onEnterVitals ? (
             <button
@@ -177,6 +179,7 @@ export function AlertActions({
 export function RedDialog({
   alert,
   summary,
+  readings,
   threshold,
   index,
   total,
@@ -186,6 +189,7 @@ export function RedDialog({
 }: {
   alert: Alert;
   summary: Summary | undefined;
+  readings?: VitalReading[];
   threshold: number | null;
   index: number;
   total: number;
@@ -198,7 +202,7 @@ export function RedDialog({
     sectionRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
   }, []);
 
-  const who = summary ? `${summary.label} · ${summary.bed} · ${summary.age}${summary.sex}` : alert.patient_id;
+  const who = summary ? `${summary.label} · ${summary.bed} · ${summary.age}${t(`sex.${summary.sex}`)}` : alert.patient_id;
   return (
     <div className="overlay" onClick={onBackdrop}>
       <section
@@ -227,6 +231,7 @@ export function RedDialog({
         </p>
         <h3>{t('alert.components')}</h3>
         <ComponentTable components={alert.components} empty={t('alert.noComponents')} />
+        {readings && <VitalTrends history={readings} />}
         <AlertActions alert={alert} busy={busy} onAct={onAct} />
       </section>
     </div>

@@ -33,11 +33,11 @@ export function AuditDrawer({ entries, onClose }: { entries: AuditEntry[]; onClo
                 <tr key={e.id}>
                   <td>{e.id}</td>
                   <td>{fmtTime(e.sim_time)}</td>
-                  <td>{e.event}</td>
+                  <td>{t(`event.${e.event}`, undefined, e.event)}</td>
                   <td>{e.patient_id}</td>
-                  <td>{e.role ?? '–'}</td>
-                  <td>{e.action ?? '–'}</td>
-                  <td>{e.reason ?? '–'}</td>
+                  <td>{e.role ? t(`app.role.${e.role}`) : '–'}</td>
+                  <td>{e.action === 'expected_for_patient' ? t('audit.override') : (e.action ? t(`action.${e.action}`, undefined, e.action) : '–')}</td>
+                  <td>{e.reason ? t(`reason.${e.reason}`, undefined, e.reason) : '–'}</td>
                   <td>{fmtValue(e.latency_minutes)}</td>
                 </tr>
               ))}

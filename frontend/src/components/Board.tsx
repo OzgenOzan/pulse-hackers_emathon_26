@@ -1,4 +1,4 @@
-import { fmtTime } from '../format';
+import { fmtTime, fmtValue } from '../format';
 import { t } from '../i18n';
 import type { Alert, Level, Summary } from '../types';
 import { LevelChip } from './AlertDialog';
@@ -72,7 +72,9 @@ export function Board({
                     {level && <LevelChip level={level} />}
                     <strong>{p.label}</strong>
                     <span>{p.bed}</span>
+                    <span>{p.age}{t(`sex.${p.sex}`)}</span>
                   </span>
+                  {p.working_dx.map(d => <span className="row-dx" key={d.code}>{d.code} {t(`dx.${d.code}`, undefined, d.text)}</span>)}
                   <span className="row-meta">
                     <span>{t('row.minutes', { minutes: p.minutes_in_zone })}</span>
                     <span>{vitalsText(p)}</span>
@@ -81,6 +83,13 @@ export function Board({
                     </span>
                     {p.intervention_started && <span>{t('row.intervention')}</span>}
                   </span>
+                  {p.last_vitals && (
+                    <span className="row-vitals" data-stale={p.vitals_stale}>
+                      {t('row.vitalsSummary', {
+                        hr: fmtValue(p.last_vitals.hr), map: fmtValue(p.last_vitals.map), spo2: fmtValue(p.last_vitals.spo2),
+                      })}
+                    </span>
+                  )}
                 </button>
               </li>
             );

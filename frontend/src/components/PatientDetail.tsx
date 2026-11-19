@@ -29,7 +29,7 @@ export function PatientDetail({
         <h2 id="detail-title">{p.label}</h2>
         <p>
           {p.bed} · {p.age}
-          {p.sex} · {t('detail.arrived', { time: fmtTime(p.arrived_at) })}
+          {t(`sex.${p.sex}`)} · {t('detail.arrived', { time: fmtTime(p.arrived_at) })}
         </p>
         <p>
           {t('detail.monitored')}: {p.monitored ? t('detail.yes') : t('detail.no')}
@@ -44,7 +44,7 @@ export function PatientDetail({
           <ul className="dx">
             {p.working_dx.map(d => (
               <li key={d.code}>
-                {d.code} {d.text}
+                {d.code} {t(`dx.${d.code}`, undefined, d.text)}
               </li>
             ))}
           </ul>
@@ -87,7 +87,7 @@ export function PatientDetail({
           <ul>
             {assessment.suppressed_labs.map(s => (
               <li key={`${s.test}-${s.observed_at}`}>
-                {s.test} {s.value} {s.unit}: {s.reason}
+                {s.test} {s.value} {s.unit}: {t(`suppression.${s.reason_key}`, undefined, s.reason)}
               </li>
             ))}
           </ul>
@@ -116,7 +116,7 @@ export function PatientDetail({
               {recentVitals.map(v => (
                 <tr key={`${v.time}-${v.source}`}>
                   <td>{fmtTime(v.time)}</td>
-                  <td>{v.source}</td>
+                  <td>{t(`vitals.source.${v.source}`)}</td>
                   <td>{fmtValue(v.hr)}</td>
                   <td>
                     {fmtValue(v.sbp)}/{fmtValue(v.dbp)}
