@@ -188,7 +188,7 @@ export function AlarmStrip({ alarms, panel, onView, announce = panel === null }:
                 type="button"
                 className="alarm-btn alarm-strip-btn"
                 data-testid={`alarm-strip-view-${alarm.patient_id}`}
-                aria-label={`${copy.panel.view}: ${bed}`}
+                aria-label={copy.strip.viewAria(bed)}
                 aria-disabled={!!locked}
                 title={tip ?? copy.panel.view}
                 onClick={() => onView(alarm.patient_id)}
@@ -287,7 +287,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
 
         {picked ? (
           <section className="alarm-decisions" aria-label={copy.sheet.reasonGroup}>
-            <h3>{copy.actions[picked.action]}</h3>
+            <h3>{copy.action(picked.action)}</h3>
             <div className="alarm-reasons">
               {picked.reasons?.map(reason => (
                 <button
@@ -298,7 +298,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
                   disabled={disabled}
                   onClick={() => onSave(picked.action, reason, noteValue)}
                 >
-                  {copy.reasons[reason]}
+                  {copy.reason(reason)}
                 </button>
               ))}
             </div>
@@ -320,7 +320,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
                 disabled={disabled}
                 onClick={() => choose(spec)}
               >
-                {copy.actions[spec.action]}
+                {copy.action(spec.action)}
               </button>
             ))}
           </section>
@@ -363,9 +363,9 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
             <li key={task.id}>
               <AlarmCard
                 tone="neutral"
-                title={copy.tasks.titles[task.level]}
+                title={copy.tasks.title(task.level)}
                 meta={patient ? `${bedLabel(patient.bed)} · ${patient.label}` : undefined}
-                badges={<span className="alarm-badge">{copy.alarmStatus[task.status]}</span>}
+                badges={<span className="alarm-badge">{copy.status(task.status)}</span>}
                 actions={(
                   <div className="alarm-actions">
                     {ACTIONS[task.level].map(spec => {
@@ -401,7 +401,7 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
                                   onAck(task, spec.action, r);
                                 }}
                               >
-                                {copy.reasons[r]}
+                                {copy.reason(r)}
                               </button>
                             ))}
                           </span>
@@ -420,7 +420,7 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
                             else onAck(task, spec.action);
                           }}
                         >
-                          {copy.actions[spec.action]}
+                          {copy.action(spec.action)}
                         </button>
                       );
                     })}
@@ -459,7 +459,7 @@ export function AlarmHistory({ alarms, onView }: AlarmHistoryProps) {
               tone="neutral"
               title={`${bedLabel(alarm.patient.bed)} - ${alarm.patient.label}`}
               meta={`${copy.history.created(fmtTime(alarm.created_at))} · ${alarm.id}`}
-              badges={<span className="alarm-badge">{copy.alarmStatus[alarm.status]}</span>}
+              badges={<span className="alarm-badge">{copy.status(alarm.status)}</span>}
               actions={(
                 <button type="button" className="alarm-btn" onClick={() => onView(alarm.patient_id)}>
                   <Eye aria-hidden="true" size={20} />
@@ -478,8 +478,8 @@ export function AlarmHistory({ alarms, onView }: AlarmHistoryProps) {
                   <li>
                     {copy.history.decided(
                       fmtTime(alarm.closed_at ?? alarm.updated_at),
-                      copy.actions[alarm.action],
-                      alarm.reason ? copy.reasons[alarm.reason] : null,
+                      copy.action(alarm.action),
+                      alarm.reason ? copy.reason(alarm.reason) : null,
                     )}
                     {alarm.decision_latency_minutes !== null && (
                       <small> · {copy.history.decisionLatency(stayLabel(alarm.decision_latency_minutes))}</small>

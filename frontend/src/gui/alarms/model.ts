@@ -1,5 +1,6 @@
 import { componentText, diagnosisLabel } from '../clinical';
 import type { Component, CriticalAlarm, Role } from '../../types';
+import { getLanguage, t } from '../../i18n';
 import { copy } from './copy';
 
 export const ROLES: readonly Role[] = ['physician', 'nurse'];
@@ -18,9 +19,9 @@ export function rankFindings(components: Component[]): Component[] {
     .map(({ component }) => component);
 }
 
-export function joinTr(items: string[]): string {
+export function joinList(items: string[]): string {
   if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} ve ${items[items.length - 1]}`;
+  return `${items.slice(0, -1).join(', ')} ${t('alarm.list.and')} ${items[items.length - 1]}`;
 }
 
 /** Brief text: top three findings by points, "+N bulgu", the priority line, and the lab diagnosis. */
@@ -28,9 +29,9 @@ export function alarmSentence(alarm: CriticalAlarm): string {
   const ranked = rankFindings(alarm.components);
   const top = ranked.slice(0, TOP_FINDINGS).map((component, index) => {
     const text = componentText(component);
-    return index === 0 ? text : text.charAt(0).toLocaleLowerCase('tr-TR') + text.slice(1);
+    return index === 0 || getLanguage() !== 'tr' ? text : text.charAt(0).toLocaleLowerCase('tr-TR') + text.slice(1);
   });
-  const findings = top.length ? `${copy.panel.findings(joinTr(top), ranked.length - top.length)} ` : '';
+  const findings = top.length ? `${copy.panel.findings(joinList(top), ranked.length - top.length)} ` : '';
   const isLab = alarm.components.some(component => component.key.startsWith('lab_'));
   const diagnoses = alarm.patient.working_dx.map(diagnosisLabel).join(', ');
   const lab = isLab && diagnoses ? ` · ${copy.panel.labDiagnosis(diagnoses)}` : '';
