@@ -1,0 +1,368 @@
+/* Scoped under .alarm-flows (and the AlarmCard that the panel renders). Colours come from tokens only. */
+
+.alarm-flows {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.alarm-flows h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+
+.alarm-flows h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.alarm-flows p {
+  margin: 4px 0;
+}
+
+.alarm-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.alarm-count {
+  display: inline-block;
+  min-width: 28px;
+  margin-left: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  text-align: center;
+  font-weight: 700;
+}
+
+.alarm-empty {
+  color: var(--muted);
+}
+
+.alarm-list,
+.alarm-history-list,
+.alarm-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alarm-list > li + li,
+.alarm-history-list > li + li {
+  margin-top: 12px;
+}
+
+/* Critical panel: light red field, strong border, no animation. */
+.alarm-panel {
+  padding: 12px;
+  border: 3px solid var(--kritik);
+  border-radius: 12px;
+  background: var(--kritik-bg);
+  box-shadow: var(--shadow);
+}
+
+.alarm-card {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.alarm-card-critical {
+  border: 3px solid var(--kritik);
+}
+
+.alarm-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.alarm-card-icon {
+  color: var(--kritik);
+  display: inline-flex;
+}
+
+.alarm-card-title {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.alarm-card-meta {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+.alarm-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.alarm-card-body {
+  margin-top: 8px;
+}
+
+.alarm-card-actions {
+  margin-top: 10px;
+}
+
+.alarm-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border: 2px solid var(--text);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.alarm-badge.new {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.alarm-badge.worse {
+  background: var(--kritik);
+  border-color: var(--kritik);
+  color: var(--surface);
+}
+
+.alarm-finding {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.alarm-seen {
+  margin: 0;
+  font-weight: 700;
+}
+
+.alarm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.alarm-action,
+.alarm-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alarm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms;
+}
+
+.alarm-btn.primary {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.alarm-btn.reason {
+  min-height: 48px;
+  font-weight: 500;
+}
+
+.alarm-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.alarm-btn:focus-visible,
+.alarm-sheet textarea:focus-visible,
+.vitals-form input:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+.alarm-reason {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.alarm-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Evaluation sheet: a top-anchored native dialog, not a full-screen block. */
+.alarm-sheet {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin: 16px auto auto;
+  padding: 0;
+  overflow: auto;
+  border: 3px solid var(--text);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.alarm-sheet::backdrop {
+  background: var(--overlay);
+}
+
+.alarm-sheet-inner {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.alarm-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alarm-sheet-head .alarm-btn {
+  min-width: 48px;
+  padding: 8px;
+}
+
+.alarm-evidence li {
+  margin: 4px 0;
+}
+
+.alarm-evidence small {
+  display: block;
+  color: var(--muted);
+}
+
+.alarm-note label {
+  display: block;
+  font-weight: 600;
+}
+
+.alarm-note textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 8px;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.alarm-note .alarm-count-text {
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.alarm-decisions {
+  display: grid;
+  gap: 8px;
+}
+
+/* Timeline entries under each history card. */
+.alarm-timeline li {
+  margin: 6px 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--line);
+}
+
+.alarm-history-section,
+.alarm-tasks,
+.alarm-history {
+  margin-top: 4px;
+}
+
+/* Manual vitals form. */
+.vitals-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 2px solid var(--text);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.vitals-hint {
+  color: var(--muted);
+}
+
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.vitals-field {
+  display: grid;
+  gap: 4px;
+}
+
+.vitals-field label {
+  font-weight: 600;
+}
+
+.vitals-need {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.vitals-field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 2px solid var(--text);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.25rem;
+}
+
+.vitals-field input[aria-invalid='true'] {
+  border-color: var(--kritik);
+}
+
+.field-error {
+  color: var(--kritik);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alarm-btn {
+    transition: none;
+  }
+}
