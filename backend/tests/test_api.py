@@ -44,6 +44,9 @@ def test_manual_vitals_leave_independent_monitor_gap_open():
         step(client)
         step(client)
         before = state(client, 'nurse')['alerts'][0]
+        response = client.post(f"/api/alerts/{before['id']}/ack", json={'action': 'vitals_entered'})
+        assert response.status_code == 422
+        assert state(client, 'nurse')['alerts'][0]['id'] == before['id']
         assert before['title_key'] == 'yellow_monitor_and_vitals'
         assert client.post('/api/patients/Y03/vitals', json={'hr': 96, 'sbp': 125, 'dbp': 78, 'temp': 36.9, 'spo2': 94, 'rr': 20}).status_code == 204
         after = state(client, 'nurse')['alerts'][0]
@@ -67,3 +70,25 @@ def test_unknown_api_path_is_not_an_spa_response():
     with client_for_night_shift() as client:
         assert client.get('/api/no-such-route').status_code == 404
         assert client.get('/assets/no-such-file.js').status_code == 404
+
+
+def test_reconnect_waits_for_next_boundary_even_when_an_early_sample_arrives(tmp_path):
+    import json
+    from app.adapters.simulator import SCENARIO_DIR, SimulatorSource
+
+    name = 'night_shift_0245.json'
+    data = json.loads((SCENARIO_DIR / name).read_text(encoding='utf-8'))
+    sample = next(e for e in data['events'] if e['patient'] == 'Y03' and e['t'] == '03:30')
+    data['events'].append({**sample, 't': '03:25'})
+    (tmp_path / name).write_text(json.dumps(data), encoding='utf-8')
+    wall = [0.0]
+    with client_for_night_shift(monotonic=lambda: wall[0], source=SimulatorSource(tmp_path)) as client:
+        step(client)
+        step(client)
+        assert client.post('/api/sim/play', json={'speed': 60}).status_code == 204
+        wall[0] = 7.0
+        yellow = state(client, 'nurse')['alerts'][0]
+        assert client.post(f"/api/alerts/{yellow['id']}/ack", json={'action': 'monitor_reconnected'}).status_code == 204
+        wall[0] = 15.0
+        readings = client.get('/api/patients/Y03?role=nurse').json()['vitals']
+        assert [reading['time'][11:16] for reading in readings] == ['02:45', '03:00', '03:30']

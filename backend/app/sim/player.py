@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import Field, TypeAdapter
+from pydantic import Field, TypeAdapter, model_validator
 
 from app.domain.models import (
     LabOrder,
@@ -27,6 +27,12 @@ class VitalsEvent(VitalValues):
     patient: str
     source: Literal['monitor', 'manual']
 
+    @model_validator(mode='after')
+    def require_measurement(self):
+        if not any(getattr(self, field) is not None for field in VITAL_FIELDS):
+            raise ValueError('provide at least one measured vital')
+        return self
+
 
 class LabOrderEvent(Model):
     type: Literal['lab_order']
@@ -38,7 +44,7 @@ class LabResultEvent(Model):
     type: Literal['lab_result']
     patient: str
     test: str
-    value: float | None = None
+    value: float
     unit: str | None = None
 
 
@@ -162,8 +168,20 @@ class Scenario:
         missing = sorted(set(patients) - arrived)
         if missing:
             raise ValueError(f'patients without an arrival event: {missing}')
-        # A disconnect sorts after same-time monitor samples so the boundary sample is kept.
-        scheduled.sort(key=lambda item: (item.at, isinstance(item.event, MonitorDisconnectEvent)))
+        # Arrival precedes measurements; disconnect comes after the boundary sample.
+        # Other equal-time events keep input order, including lab orders and results.
+        scheduled.sort(key=lambda item: (item.at, not isinstance(item.event, ArrivalEvent),
+                                         isinstance(item.event, MonitorDisconnectEvent)))
+        pending_orders: dict[tuple[str, str], int] = defaultdict(int)
+        for item in scheduled:
+            event = item.event
+            if isinstance(event, LabOrderEvent):
+                pending_orders[event.patient, event.test] += 1
+            elif isinstance(event, LabResultEvent):
+                key = (event.patient, event.test)
+                if not pending_orders[key]:
+                    raise ValueError(f'{event.patient} {event.test} result at {item.at} has no pending order')
+                pending_orders[key] -= 1
 
         expect = tuple(
             Expectation(patient=item.patient, level=item.level, at=_at(day, item.first_at))

@@ -3,11 +3,11 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 
-def client_for_night_shift(monotonic=None):
+def client_for_night_shift(monotonic=None, source=None):
     from app.main import create_app
 
     options = {'monotonic': monotonic} if monotonic is not None else {}
-    return TestClient(create_app(wall_now=lambda: datetime(2026, 11, 20, tzinfo=timezone.utc), **options))
+    return TestClient(create_app(source=source, wall_now=lambda: datetime(2026, 11, 20, tzinfo=timezone.utc), **options))
 
 
 def state(client, role='physician'):
@@ -48,6 +48,8 @@ def test_exact_night_shift_timeline():
         assert [(entry['sim_time'][11:16], entry['patient_id']) for entry in events if entry['event'] == 'created'] == [
             ('03:00', 'Y06'), ('03:15', 'Y03'), ('03:30', 'Y01'), ('04:00', 'Y02'), ('04:15', 'Y08'),
         ]
+        assert [(e['sim_time'][11:16], e['patient_id']) for e in events if e['event'] == 'lab_suppressed'] == [('03:15', 'Y05')]
+        assert [(e['sim_time'][11:16], e['patient_id']) for e in events if e['event'] == 'escalated'] == [('04:00', 'Y03')]
 
 
 def test_scripted_user_replay_has_identical_alerts_and_audit():

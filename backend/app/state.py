@@ -20,7 +20,8 @@ ACK_REASONS: dict[str, dict[str, frozenset[str] | None]] = {
         'reassessing': None, 'move_to_red_zone': None, 'start_intervention': None,
         'expected_for_patient': frozenset({'chronic_baseline', 'artifact', 'already_managed'}),
     },
-    'YELLOW': {'monitor_reconnected': None, 'vitals_entered': None, 'not_at_bed': frozenset()},
+    # Selecting “Vitals entered” only opens the form; POSTing readings is the mutation.
+    'YELLOW': {'monitor_reconnected': None, 'not_at_bed': frozenset()},
     'GREEN': {
         'discharge_decided': None, 'prescription_written': None,
         'wait_justified': frozenset({'consult', 'imaging', 'other'}),
@@ -56,6 +57,7 @@ class Session:
         self.now = scenario.start
         self.patients: dict[str, PatientSnapshot] = {}
         self.disconnected: set[str] = set()
+        self.pending_reconnects: set[str] = set()
         self.alerts: list[Alert] = []
         self.audit: list[AuditEntry] = []
         self.assessments: dict[str, EngineResult] = {}
@@ -77,6 +79,9 @@ class Session:
 
     def apply_frame(self, frame: Frame) -> None:
         self.now = frame.time
+        if frame.evaluate:
+            self.disconnected.difference_update(self.pending_reconnects)
+            self.pending_reconnects.clear()
         for event in frame.events:
             apply_event(self.patients, event, frame.time, self.disconnected)
         if frame.evaluate:
@@ -207,7 +212,7 @@ class Session:
         self.record('acknowledged', alert.patient_id, alert=alert, action=action, reason=reason, latency=latency)
         patient.actions.append(PhysicianAction(time=self.now, type=action))
         if action == 'monitor_reconnected':
-            self.disconnected.discard(alert.patient_id)
+            self.pending_reconnects.add(alert.patient_id)
         elif action == 'start_intervention':
             patient.intervention_started = True
         elif action in {'move_to_red_zone', 'discharge_decided'}:

@@ -268,14 +268,12 @@ def test_lab_result_pairs_with_oldest_pending_order(tmp_path):
 
 
 def test_lab_result_without_order_is_rejected(tmp_path):
-    scenario = write_scenario(
-        tmp_path,
-        [patient('P1', '02:00')],
-        [arrival('P1', '02:00'),
-         {'t': '03:00', 'patient': 'P1', 'type': 'lab_result', 'test': 'lactate', 'value': 2.0, 'unit': 'mmol/L'}],
-    )
-    with pytest.raises(ValueError):
-        replay(scenario, END)
+    with pytest.raises(ValueError, match='no pending order'):
+        write_scenario(
+            tmp_path, [patient('P1', '02:00')],
+            [arrival('P1', '02:00'),
+             {'t': '03:00', 'patient': 'P1', 'type': 'lab_result', 'test': 'lactate', 'value': 2.0, 'unit': 'mmol/L'}],
+        )
 
 
 def test_event_before_arrival_is_rejected_at_load(tmp_path):
@@ -286,6 +284,29 @@ def test_event_before_arrival_is_rejected_at_load(tmp_path):
 def test_arrival_must_match_profile_arrival_time(tmp_path):
     with pytest.raises(ValueError):
         write_scenario(tmp_path, [patient('P1', '02:10')], [arrival('P1', '02:00')])
+
+
+@pytest.mark.parametrize('stamp', ['02:20', '03:00'])
+def test_same_time_arrival_precedes_first_measurement(tmp_path, stamp):
+    scenario = write_scenario(tmp_path, [patient('P1', stamp)], [vitals('P1', stamp, 85), arrival('P1', stamp)])
+    assert replay(scenario, END)['P1'].vitals[0].hr == 85
+
+
+def test_empty_monitor_sample_cannot_count_as_fresh_data(tmp_path):
+    with pytest.raises(ValueError, match='at least one measured vital'):
+        write_scenario(tmp_path, [patient('P1', '02:00')], [
+            arrival('P1', '02:00'),
+            {'t': '03:00', 'patient': 'P1', 'type': 'vitals', 'source': 'monitor'},
+        ])
+
+
+def test_missing_lab_value_cannot_mark_the_order_resulted(tmp_path):
+    with pytest.raises(ValueError, match='value'):
+        write_scenario(tmp_path, [patient('P1', '02:00')], [
+            arrival('P1', '02:00'),
+            {'t': '03:00', 'patient': 'P1', 'type': 'lab_order', 'test': 'lactate'},
+            {'t': '03:10', 'patient': 'P1', 'type': 'lab_result', 'test': 'lactate', 'unit': 'mmol/L'},
+        ])
 
 
 # --- Synthetic night_shift_0245 data ---------------------------------------
