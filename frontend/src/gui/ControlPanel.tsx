@@ -1,13 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, ApiError } from '../api';
 import { AboutPrototype } from '../components/AboutPrototype';
 import { DemoControls } from '../components/DemoControls';
-import { AlarmHistory, AlarmPanel, EvaluationSheet, ManualVitals, TaskActions } from './alarms/AlarmFlows';
+import { FilterBar, type ListMode } from '../components/ui/FilterBar';
+import { AlarmHistory, AlarmPanel, AlarmStrip, EvaluationSheet, ManualVitals, TaskActions } from './alarms/AlarmFlows';
+import { copy as alarmCopy } from './alarms/copy';
 import { Patients } from './patients/Patients';
 import { PatientSheet } from './patients/PatientSheet';
+import { filterPatients, emptyFilters } from './patients/filters';
 import { GuiShell } from './shell/GuiShell';
-import { readView, viewHash, type View } from './navigation';
+import { readView, routeLabels, viewHash, type Route, type View } from './navigation';
+import { shellCopy } from './shell/copy';
+import { useMediaQuery } from './shell/media';
+import { Settings } from './Settings';
+import { useChoice, useTheme } from './usePreferences';
+import { WorkQueues } from './WorkQueues';
 import { guiError, useSession } from './useSession';
+import { fmtTime } from '../format';
+import { roleLabels } from './clinical';
 import type { Alert, CriticalAlarm, Detail, ManualValues, OverviewKey, Role, RulesView, ScenarioInfo } from '../types';
 import './integration.css';
 
@@ -18,14 +28,18 @@ export function ControlPanel() {
   const [view, setView] = useState(readView);
   const [config, setConfig] = useState<RulesView | null>(null);
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
-  const [filter, setFilter] = useState<OverviewKey | null>(null);
+  const [statFilter, setStatFilter] = useState<OverviewKey | null>(null);
+  const [filters, setFilters] = useState(emptyFilters);
+  const [mode, setMode] = useChoice<ListMode>('sg.list-mode', ['cards', 'table'], 'cards');
+  const [theme, setTheme] = useTheme();
   const [notice, setNotice] = useState('');
   const [about, setAbout] = useState(false);
   const [detail, setDetail] = useState<{ key: string; value: Detail } | null>(null);
   const [history, setHistory] = useState<{ replay: string; alarms: CriticalAlarm[] } | null>(null);
   const [evaluation, setEvaluation] = useState<ReplaySelection | null>(null);
   const [manual, setManual] = useState<ReplaySelection | null>(null);
-  const alarmAnchor = useRef<HTMLDivElement>(null);
+  const [alarmAnchor, setAlarmAnchor] = useState<HTMLDivElement | null>(null);
+  const mobile = useMediaQuery('(max-width: 767px)');
   const { state, revision, busy, connection, lastSuccess, mutate } = useSession(view.role, setNotice);
   const offline = connection === 'offline';
   const replay = state?.sim.replay_id;
@@ -48,6 +62,16 @@ export function ControlPanel() {
     setView(next);
   }
 
+  function goTo(route: Route) {
+    if (view.route === route && view.patient === null) return;
+    setManual(null);
+    setEvaluation(null);
+    setStatFilter(null);
+    setFilters(emptyFilters);
+    navigate({ ...view, route, patient: null });
+    window.scrollTo(0, 0);
+  }
+
   function select(id: string): boolean {
     if (blockingPatientId && id !== blockingPatientId) {
       setNotice(LOCK_NOTICE);
@@ -65,7 +89,7 @@ export function ControlPanel() {
     if (busy || view.role === role) return;
     setManual(null);
     setEvaluation(null);
-    setFilter(null);
+    setStatFilter(null);
     navigate({ ...view, role, patient: null });
   }
 
@@ -148,46 +172,71 @@ export function ControlPanel() {
 
   const alarms = state?.critical_alarms ?? [];
   const tasks = state?.tasks ?? [];
-  const filtered = state?.patients.filter(patient => {
-    if (filter === null || filter === 'aktif') return true;
-    if (filter === 'taburculuk_bekleyen') return tasks.some(a => a.level === 'GREEN' && a.patient_id === patient.id);
-    if (filter === 'bekleyen_islem') return (view.role === 'physician' && alarms.some(a => a.patient_id === patient.id))
+  const listPage = view.route === 'genel-bakis' || view.route === 'aktif-hastalar' || view.route === 'kritik-hastalar';
+  const queuePage = view.route === 'bekleyen-islemler' || view.route === 'hekim-paneli' || view.route === 'hemsire-paneli';
+  const criticalPreset = view.route === 'kritik-hastalar';
+  const stats = state?.patients.filter(patient => {
+    if (criticalPreset) return patient.risk_status.key === 'kritik';
+    if (statFilter === null || statFilter === 'aktif') return true;
+    if (statFilter === 'taburculuk_bekleyen') return tasks.some(a => a.level === 'GREEN' && a.patient_id === patient.id);
+    if (statFilter === 'bekleyen_islem') return (view.role === 'physician' && alarms.some(a => a.patient_id === patient.id))
       || tasks.some(a => a.target_role === view.role && a.patient_id === patient.id);
-    return patient.risk_status.key === filter;
+    return patient.risk_status.key === statFilter;
   }) ?? [];
+  const filtered = listPage && simTime ? filterPatients(stats, filters, simTime) : [];
   const selectedTasks = tasks.filter(a => a.patient_id === selectedId);
   const savedAlarms = history?.replay === replay ? history?.alarms : undefined;
+  const statChip = criticalPreset ? { label: 'Kritik', clear: () => goTo('aktif-hastalar') }
+    : statFilter ? { label: shellCopy.stats[statFilter], clear: () => setStatFilter(null) } : undefined;
+  const taskProps = { role: view.role, busy, offline, onAck: taskAck, onVitals: openVitals,
+    lockReason: blockingPatientId ? LOCK_NOTICE : undefined };
+  const openEvaluation = (alarm: CriticalAlarm) => {
+    if (replay && view.role === 'physician' && (!blockingPatientId || alarm.blocking)) setEvaluation({ id: alarm.id, replay });
+  };
+  const alarmPanel = alarms.length > 0 && <AlarmPanel alarms={alarms} role={view.role} busy={busy} offline={offline}
+    onView={select} onSeen={markSeen} onEvaluate={openEvaluation} />;
+  const selectedAlarm = alarms.find(alarm => alarm.patient_id === selectedId);
+  const seenByRole = selectedAlarm?.seen[view.role];
 
   return (
     <GuiShell role={view.role} state={state} busy={busy || offline} connection={connection} lastSuccess={lastSuccess}
-      filter={filter} onFilter={key => {
-        setFilter(old => old === key ? null : key);
-        if (view.route !== 'genel-bakis') navigate({ ...view, route: 'genel-bakis' });
-      }} onRole={setRole} onAbout={() => setAbout(true)}
+      route={view.route} onNavigate={goTo} showOverview={view.route === 'genel-bakis'} theme={theme} onTheme={setTheme}
+      filter={statFilter} onFilter={key => setStatFilter(old => old === key ? null : key)} onRole={setRole} onAbout={() => setAbout(true)}
       onAlarm={() => {
-        if (alarms.length && view.route === 'genel-bakis') {
-          alarmAnchor.current?.scrollIntoView({ block: 'start' });
-          alarmAnchor.current?.focus({ preventScroll: true });
-        } else navigate({ ...view, route: 'klinik-alarmlar', patient: null });
+        if (alarmAnchor) {
+          alarmAnchor.scrollIntoView({ block: 'start' });
+          alarmAnchor.focus({ preventScroll: true });
+        } else goTo('klinik-alarmlar');
       }}
       demo={state && <DemoControls sim={state.sim} scenarios={scenarios} busy={busy || offline}
         onReset={id => void mutate(() => api.reset(id)).then(ok => {
           if (!ok) return;
-          setManual(null); setEvaluation(null); setFilter(null); setNotice('');
+          setManual(null); setEvaluation(null); setStatFilter(null); setFilters(emptyFilters); setNotice('');
           navigate({ role: view.role, route: 'genel-bakis', patient: null }, true);
           window.scrollTo(0, 0);
         })} onPlay={speed => void mutate(() => api.play(speed))} onPause={() => void mutate(api.pause)}
         onStep={() => void mutate(api.step)} />}
-      alarm={alarms.length > 0 && <div ref={alarmAnchor} className="gui-alarm-anchor" tabIndex={-1}>
-        <AlarmPanel alarms={alarms} role={view.role} busy={busy} offline={offline} onView={select} onSeen={markSeen}
-          onEvaluate={alarm => { if (replay && view.role === 'physician') setEvaluation({ id: alarm.id, replay }); }} />
-      </div>}
+      stickyAlarm={listPage && alarms.length > 0 &&
+        <AlarmStrip key={replay} alarms={alarms} panel={alarmAnchor} onView={select} announce={mobile || view.route !== 'genel-bakis'} />}
+      alarm={alarmPanel && view.route === 'genel-bakis' && !mobile &&
+        <div ref={setAlarmAnchor} className="gui-alarm-anchor" tabIndex={-1}>{alarmPanel}</div>}
       floating={<>
         {summary && <PatientSheet summary={summary} detail={detail?.key === detailKey ? detail.value : null}
-          config={config} offline={offline} onClose={() => { setManual(null); navigate({ ...view, patient: null }); }}
+          config={config} offline={offline} modal={mobile} onClose={() => { setManual(null); navigate({ ...view, patient: null }); }}
+          primaryActions={mobile && selectedAlarm && <div className="mobile-alarm-actions">
+            {seenByRole
+              ? <span>{alarmCopy.panel.seenAt(fmtTime(seenByRole.at), roleLabels[view.role])}</span>
+              : <button type="button" disabled={busy || offline} data-testid={`alarm-mobile-seen-${summary.id}`}
+                  onClick={() => markSeen(selectedAlarm)}>{alarmCopy.panel.seen}</button>}
+            <button type="button" className="primary" disabled={busy || offline || view.role !== 'physician'}
+              aria-describedby={view.role === 'nurse' ? 'mobile-evaluate-role' : undefined}
+              data-testid={`alarm-mobile-evaluate-${summary.id}`} onClick={() => openEvaluation(selectedAlarm)}>
+              {alarmCopy.panel.evaluate}
+            </button>
+            {view.role === 'nurse' && <span id="mobile-evaluate-role">{alarmCopy.panel.nurseEvaluate}</span>}
+          </div>}
           actions={<>
-            <TaskActions tasks={selectedTasks} patients={state?.patients} role={view.role} busy={busy} offline={offline}
-              onAck={taskAck} onVitals={openVitals} />
+            <TaskActions {...taskProps} tasks={selectedTasks} patients={state?.patients} />
             {view.role === 'nurse' && !selectedTasks.some(a => a.recommended_actions.includes('vitals_entered')) &&
               <button type="button" className="gui-primary" data-testid="detail-enter-vitals" disabled={!config || busy || offline}
                 onClick={() => openVitals(summary.id)}>Vital gir</button>}
@@ -199,19 +248,35 @@ export function ControlPanel() {
         {about && <AboutPrototype onClose={() => setAbout(false)} />}
         {notice && <div className="gui-feedback" role="alert">{notice}</div>}
       </>}>
-      {!state ? <p role="status">Simüle hasta listesi yükleniyor…</p> : view.route === 'klinik-alarmlar' ? (
+      {view.route === 'ayarlar' ? (
+        <section aria-labelledby="gui-settings-title">
+          <div className="gui-list-head"><h2 id="gui-settings-title">{routeLabels.ayarlar}</h2></div>
+          <Settings config={config} theme={theme} onTheme={setTheme} mode={mode} onMode={setMode}
+            role={view.role} onRole={setRole} onAbout={() => setAbout(true)} busy={busy || offline} />
+        </section>
+      ) : !state ? <p role="status">Simüle hasta listesi yükleniyor…</p> : view.route === 'klinik-alarmlar' ? (
         <section aria-labelledby="gui-history-title">
-          <div className="gui-list-head"><h2 id="gui-history-title">Klinik Alarmlar</h2>
-            <button type="button" data-testid="nav-genel-bakis" onClick={() => navigate({ ...view, route: 'genel-bakis' })}>Genel Bakış</button>
-          </div>
+          <div className="gui-list-head"><h2 id="gui-history-title">{routeLabels[view.route]}</h2></div>
+          {alarmPanel}
           {savedAlarms ? <AlarmHistory alarms={savedAlarms} onView={select} /> : <p role="status">Alarm geçmişi yükleniyor…</p>}
+        </section>
+      ) : queuePage ? (
+        <section aria-labelledby="gui-queue-title">
+          <div className="gui-list-head"><h2 id="gui-queue-title">{routeLabels[view.route]}</h2></div>
+          <WorkQueues route={view.route} state={state} taskProps={taskProps} alarmPanel={alarmPanel} onOpen={select} />
         </section>
       ) : (
         <section aria-labelledby="gui-patient-title" className="gui-patient-section">
-          <div className="gui-list-head"><h2 id="gui-patient-title">Aktif Hastalar</h2>
-            <button type="button" data-testid="nav-klinik-alarmlar" onClick={() => navigate({ ...view, route: 'klinik-alarmlar', patient: null })}>Klinik Alarmlar</button>
+          <div className="gui-list-head"><h2 id="gui-patient-title">{criticalPreset ? routeLabels['kritik-hastalar'] : 'Aktif Hastalar'}</h2>
+            <FilterBar key={view.route} filters={filters} onChange={setFilters} allPatients={state.patients}
+              defaultExpanded={view.route === 'aktif-hastalar'} mode={mode} onMode={setMode} statChip={statChip}
+              onClear={() => {
+                setFilters(emptyFilters); setStatFilter(null);
+                if (criticalPreset) goTo('aktif-hastalar');
+              }} />
           </div>
-          <Patients patients={filtered} tasks={tasks} blockingPatientId={blockingPatientId} offline={offline} onOpen={select} />
+          <Patients patients={filtered} tasks={tasks} blockingPatientId={blockingPatientId}
+            offline={offline} mode={mode} onOpen={select} />
         </section>
       )}
     </GuiShell>

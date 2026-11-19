@@ -39,6 +39,12 @@ export function diagnosisLabel(diagnosis: Diagnosis): string {
   return text ? `${diagnosis.code} ${text}` : diagnosis.code;
 }
 
+const labKeys: Record<string, string> = { 'hs-cTnT': 'troponin', Lactate: 'lactate', 'pH (blood gas)': 'ph', 'K+': 'potassium' };
+export function labDisplayLabel(label: string): string {
+  const key = labKeys[label];
+  return key ? t(`lab.${key}`) : label;
+}
+
 export function finding(key: string, value: number): string | undefined {
   switch (key) {
     case 'map_low': return `Hipotansiyon (OAB ${measurement(value, 'map')} mmHg)`;

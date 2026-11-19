@@ -384,6 +384,24 @@
   }
 }
 
+@media (min-width: 1200px) {
+  .alarm-panel { padding: 4px 7px; }
+  .alarm-panel > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .alarm-panel .alarm-card-critical { padding: 4px 7px; }
+  .alarm-panel .alarm-card-head { flex-wrap: nowrap; gap: .375rem; align-items: center; }
+  .alarm-panel .alarm-card-title { flex-basis: 0; }
+  .alarm-panel .alarm-card-meta, .alarm-panel .alarm-finding, .alarm-panel .alarm-seen { margin: 0; }
+  .alarm-panel .alarm-finding { font-size: .875rem; line-height: 1.25; }
+  .alarm-panel .alarm-card-body, .alarm-panel .alarm-card-actions { margin-block-start: 3px; }
+  .alarm-panel .alarm-card-title h3 { font-size: .875rem; }
+  .alarm-panel .alarm-badge { padding: 1px 6px; white-space: nowrap; }
+  .alarm-panel .alarm-list:has(> li:nth-child(2)) .alarm-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+  .alarm-panel .alarm-list:has(> li:nth-child(2)) .alarm-action { display: contents; }
+  .alarm-panel .alarm-list:has(> li:nth-child(2)) .alarm-btn { padding: 2px 4px; justify-content: center; font-size: .875rem; line-height: 1.1; align-self: stretch; }
+  .alarm-panel .alarm-list:has(> li:nth-child(2)) .alarm-btn svg { display: none; }
+  .alarm-panel .alarm-list:has(> li:nth-child(2)) .alarm-reason { grid-column: 1 / -1; }
+}
+
 /* Critical card: compact, with 44px secondary and 48px primary actions. */
 .alarm-card-critical {
   padding: 8px 12px;
@@ -413,12 +431,11 @@
   min-height: 48px;
 }
 
-/* Sticky strip: pinned under the shell header (top is measured from it at runtime). */
+/* Fixed only after the overview panel scrolls away; otherwise leave the demo controls in flow. */
 .alarm-strip {
-  position: fixed;
-  left: 0;
-  right: 0;
-  z-index: 19;
+  position: sticky;
+  top: var(--header-height, 0);
+  z-index: 18;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -428,8 +445,17 @@
   box-shadow: var(--shadow);
 }
 
+.alarm-strip[data-past-panel='true'] { position: fixed; inset-inline: 0; }
+@media (min-width: 1200px) {
+  .gui-shell:has(.gui-frame[data-expanded='false']) .alarm-strip[data-past-panel='true'] { inset-inline-start: 52px; }
+  .gui-shell:has(.gui-frame[data-expanded='true']) .alarm-strip[data-past-panel='true'] { inset-inline-start: 208px; }
+}
+
 .alarm-strip .alarm-strip-title {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .375rem;
   margin: 0;
   font-weight: 700;
   white-space: nowrap;
@@ -461,4 +487,18 @@
 .alarm-strip-btn {
   min-height: 44px;
   padding: 6px 12px;
+}
+
+.alarm-strip-btn[aria-disabled='true'] { color: var(--muted); }
+@media (max-width: 767px) {
+  .alarm-strip { flex-wrap: wrap; gap: 0 .5rem; padding: 3px 8px; }
+  .alarm-strip-list { flex-basis: auto; }
+  .alarm-strip-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .alarm-strip-btn { min-width: 44px; padding-inline: 6px; }
+}
+
+@media (min-width: 380px) and (max-width: 767px) {
+  .alarm-strip-btn span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .alarm-strip-btn svg { display: none; }
+  .alarm-strip-btn { font-size: .875rem; }
 }

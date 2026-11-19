@@ -2,10 +2,11 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { StatusLabel } from '../../components/ui/StatusLabel';
 import { VitalSign } from '../../components/ui/VitalSign';
-import { fmtLab, fmtTime } from '../../format';
+import { fmtTime } from '../../format';
 import {
   bedLabel,
   diagnosisLabel,
+  labDisplayLabel,
   localRule,
   measurement,
   reasonLabel,
@@ -41,6 +42,8 @@ export function PatientSheet({
   detail,
   config,
   offline,
+  modal,
+  primaryActions,
   actions,
   onClose,
 }: {
@@ -48,6 +51,8 @@ export function PatientSheet({
   detail: Detail | null;
   config: RulesView | null;
   offline: boolean;
+  modal: boolean;
+  primaryActions?: ReactNode;
   actions?: ReactNode;
   onClose: () => void;
 }) {
@@ -59,13 +64,14 @@ export function PatientSheet({
     const dialog = dialogRef.current;
     if (!dialog) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog.show();
+    if (modal) dialog.showModal();
+    else dialog.show();
     closeRef.current?.focus();
     return () => {
       dialog.close();
       opener?.focus();
     };
-  }, []);
+  }, [modal]);
 
   const issues = summary.risk_status.data_issues;
   return (
@@ -88,12 +94,14 @@ export function PatientSheet({
         <div>
           <h2 id={headingId} className="sheet-title">{displayName(summary)}</h2>
           <p className="sheet-meta">{bedLabel(summary.bed)} · {ageSex(summary)} · {protocolOf(summary)}</p>
+          <StatusLabel status={summary.risk_status.key} sublabel={statusSublabel(summary)} />
         </div>
         <button ref={closeRef} type="button" className="icon-button" aria-label={copy.close} title={copy.close} onClick={onClose}>
           <X aria-hidden="true" size={22} />
         </button>
       </header>
       <div className="sheet-body">
+        {primaryActions}
         <section className="sheet-section">
           <h3>{copy.identity}</h3>
           <dl className="facts">
@@ -105,7 +113,7 @@ export function PatientSheet({
             <Fact label={copy.lastMeasure}>{lastMeasureText(summary)}</Fact>
             <Fact label={copy.lastEvaluation}>{lastEvaluationText(summary)}</Fact>
             <Fact label={copy.pendingLabs}>
-              {summary.pending_labs.length ? summary.pending_labs.map(lab => lab.label).join(', ') : copy.none}
+              {summary.pending_labs.length ? summary.pending_labs.map(lab => labDisplayLabel(lab.label)).join(', ') : copy.none}
             </Fact>
             <Fact label={copy.pendingConsults}>
               {summary.pending_consults.length ? summary.pending_consults.map(c => c.service).join(', ') : copy.none}
@@ -121,7 +129,6 @@ export function PatientSheet({
 
         <section className="sheet-section">
           <h3>{copy.reasonsHead}</h3>
-          <StatusLabel status={summary.risk_status.key} sublabel={statusSublabel(summary)} />
           <ul className="reason-list">
             {summary.risk_status.reasons.map(r => <li key={r.key}>{reasonLabel(r)}</li>)}
           </ul>
@@ -211,7 +218,7 @@ function DetailSections({ detail, config }: { detail: Detail; config: RulesView 
           <ul className="reason-list">
             {assessment.suppressed_labs.map(l => (
               <li key={`${l.test}-${l.observed_at}`}>
-                {testLabel(l.test, config)} · {fmtLab(l.test, l.value)} {l.unit} · {suppressionText(l.reason_key)}
+                {testLabel(l.test, config)} · {measurement(l.value, l.test === 'ph' ? 'ph' : 'lab')} {l.unit} · {suppressionText(l.reason_key)}
               </li>
             ))}
           </ul>
@@ -235,7 +242,7 @@ function DetailSections({ detail, config }: { detail: Detail; config: RulesView 
               {detail.labs.map(lab => (
                 <tr key={`${lab.test}-${lab.ordered_at}`}>
                   <td>{testLabel(lab.test, config)}</td>
-                  <td>{lab.value === null ? copy.pending : `${fmtLab(lab.test, lab.value)} ${lab.unit ?? ''}`}</td>
+                  <td>{lab.value === null ? copy.pending : `${measurement(lab.value, lab.test === 'ph' ? 'ph' : 'lab')} ${lab.unit ?? ''}`}</td>
                   <td>{lab.resulted_at ? fmtTime(lab.resulted_at) : copy.pending}</td>
                 </tr>
               ))}

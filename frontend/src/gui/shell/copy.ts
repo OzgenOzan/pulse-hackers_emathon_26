@@ -52,8 +52,8 @@ export const shellCopy = {
   } satisfies Record<OverviewKey, string>,
   /** Visible card labels only; the full label stays in aria-label and title. */
   statsShort: {
-    taburculuk_bekleyen: 'Taburculuk değ. bekleyen',
-  } satisfies Partial<Record<OverviewKey, string>>,
+    taburculuk_bekleyen: 'Taburculuk bekleyen',
+  } as Partial<Record<OverviewKey, string>>,
 };
 
 const clockFormat = new Intl.DateTimeFormat('tr-TR', {

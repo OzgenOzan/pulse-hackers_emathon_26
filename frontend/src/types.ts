@@ -78,10 +78,20 @@ export interface AuditEntry {
 }
 export interface ScenarioInfo { id: string; title: string; error: string | null }
 export interface RulesView {
-  red: { threshold: number };
-  alerting: { red_blocks_navigation: boolean };
+  cycle_minutes: number;
+  red: {
+    threshold: number; vital_max_age_minutes: number; critical_lab_points: number;
+    vital_rules: { key: string; param: keyof VitalValues; op: string; value: number; points: number; enabled: boolean }[];
+    trend_rules: { key: string; param: keyof VitalValues; direction: 'up' | 'down'; delta: number; points: number }[];
+  };
+  yellow: { monitor_gap_minutes: number; vitals_overdue_minutes: number; vitals_overdue_escalate_minutes: number };
+  green: { idle_after_results_minutes: number };
+  alerting: { red_blocks_navigation: boolean; ack_cooldown_minutes: number; realert_score_increase: number };
   manual_entry: { required: (keyof VitalValues)[]; limits: Record<keyof ManualValues, {min: number; max: number}> };
-  labs: Record<string, { label: string }>;
+  labs: Record<string, {
+    label: string; unit: string; ref_low: number | null; ref_high: number | null;
+    critical_low: number | null; critical_high: number | null;
+  }>;
   status: { watch_min_score: number; required_fresh_vitals: (keyof VitalValues)[] };
   display: { gcs_fresh_minutes: number };
 }

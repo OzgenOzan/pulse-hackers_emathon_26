@@ -9,12 +9,14 @@ export function VitalSign({
   state,
   flags,
   sub,
+  compact = false,
 }: {
   label: string;
   unit: string;
   state: VitalState;
   flags: VitalFlag[];
   sub?: string;
+  compact?: boolean;
 }) {
   const currentFlags = state.kind === 'value' ? flags : [];
   return (
@@ -28,7 +30,7 @@ export function VitalSign({
       ) : (
         <span className="vital-gap">{describeState(state)}</span>
       )}
-      {currentFlags.map(flag => (
+      {!compact && currentFlags.map(flag => (
         <span key={flag.note} className={`vital-flag flag-${flag.level}`}>
           {flag.level === 'kritik'
             ? <TriangleAlert aria-hidden="true" size={14} />
@@ -36,7 +38,9 @@ export function VitalSign({
           {flag.note}
         </span>
       ))}
-      {sub && <span className="vital-sub" title="Ortalama arter basıncı">{sub}</span>}
+      {sub && <span className="vital-sub" title={`Ortalama arter basıncı: ${sub}`}>
+        {compact && state.kind === 'stale' && sub.endsWith(describeState(state)) ? 'OAB —' : sub}
+      </span>}
     </div>
   );
 }

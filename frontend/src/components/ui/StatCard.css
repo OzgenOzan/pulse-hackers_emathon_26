@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
-  padding: 6px 8px 8px 10px;
+  padding: 4px 6px 4px 8px;
   text-align: left;
   color: var(--text);
   background: var(--surface);
@@ -40,7 +40,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: .25rem;
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;

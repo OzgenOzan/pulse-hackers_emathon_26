@@ -26,7 +26,11 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1199px) {
+  .patient-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
   .patient-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -49,10 +53,16 @@
 }
 
 .patient-card[data-status='kritik'] { border-left-color: var(--kritik); }
-.patient-card[data-status='yakin_takip'] { border-left-color: var(--yakin-takip); }
-.patient-card[data-status='siniflandirilmamis'] { border-left-color: var(--siniflandirilmamis); }
+.patient-card[data-status='yakin_takip'] { border-left-color: var(--watch-edge, var(--line-strong)); }
+.patient-card[data-status='siniflandirilmamis'] { border-left-color: var(--unclassified-edge, var(--line-strong)); position: relative; }
+.patient-card[data-status='siniflandirilmamis']::before {
+  position: absolute;
+  inset: 3px auto 3px -5px;
+  width: 3px;
+  background: repeating-linear-gradient(135deg, var(--siniflandirilmamis) 0 3px, transparent 3px 6px);
+  content: '';
+}
 .patient-card[data-status='stabil'] { border-left-color: var(--stabil); }
-.patient-card[data-locked] { outline: 2px dashed var(--muted); outline-offset: -4px; }
 
 .card-head {
   display: flex;
@@ -87,10 +97,6 @@
   font-size: .875rem;
 }
 
-.card-foot { display: grid; gap: 2px; }
-.card-foot > div { display: flex; min-width: 0; justify-content: space-between; gap: .5rem; }
-.card-foot > div > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-foot > div > span:last-child { flex: none; }
 
 .card-reason,
 .card-issue {
@@ -112,7 +118,6 @@
   list-style: none;
 }
 
-.badge-locked,
 .badge-worsened {
   display: inline-flex;
   align-items: center;
@@ -159,7 +164,7 @@
 }
 
 .status-label[data-status='siniflandirilmamis'] .status-pill {
-  background: repeating-linear-gradient(135deg, var(--siniflandirilmamis) 0 6px, var(--surface) 6px 12px);
+  background: repeating-linear-gradient(135deg, var(--siniflandirilmamis) 0 6px, var(--unclassified-hatch, var(--surface)) 6px 12px);
   color: var(--unclassified-ink);
 }
 
@@ -175,7 +180,7 @@
 
 .vitals {
   display: grid;
-  grid-template-columns: minmax(92px, 1.7fr) repeat(3, minmax(0, 1fr)) minmax(54px, 1.05fr) minmax(0, 1fr);
+  grid-template-columns: minmax(92px, 1.7fr) repeat(3, minmax(0, 1fr)) minmax(58px, 1.05fr) minmax(0, 1fr);
   gap: 4px;
 }
 
@@ -185,7 +190,7 @@
   line-height: 1.1;
   gap: 2px;
   min-width: 0;
-  padding: 3px 4px;
+  padding: 3px;
   border-radius: 6px;
   background: var(--subtle);
 }
@@ -245,7 +250,7 @@
 }
 
 .flag-kritik svg { color: var(--kritik); }
-.flag-yakin_takip svg { color: var(--yakin-takip); }
+.flag-yakin_takip svg { color: var(--status-on-yellow); }
 
 .task-chip {
   display: inline-flex;
@@ -261,14 +266,14 @@
 
 .patient-sheet {
   position: fixed;
-  inset: 65px 0 0 auto;
+  inset: var(--header-height, 67px) 0 0 auto;
   z-index: 19;
   display: flex;
   flex-direction: column;
   width: min(480px, 100vw);
   max-width: 100vw;
-  height: calc(100dvh - 65px);
-  max-height: calc(100dvh - 65px);
+  height: calc(100dvh - var(--header-height, 67px));
+  max-height: calc(100dvh - var(--header-height, 67px));
   margin: 0;
   padding: 0;
   border: 0;
@@ -276,6 +281,11 @@
   background: var(--surface);
   color: var(--text);
   box-shadow: var(--shadow);
+}
+
+@media (max-width: 767px) {
+  .patient-sheet { inset: 0; width: 100vw; height: 100dvh; max-height: 100dvh; z-index: 40; }
+  .vitals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .patient-sheet:not([open]) {
@@ -412,4 +422,62 @@
   .trend {
     grid-template-columns: 56px minmax(0, 1fr);
   }
+}
+
+.patient-table-scroll { overflow-x: auto; border: 1px solid var(--line-strong); border-radius: var(--radius-card); }
+.patient-table { width: 100%; min-width: 850px; border-collapse: collapse; font-size: .875rem; line-height: 1.13; background: var(--surface); }
+.patient-table th, .patient-table td { padding: 2px 5px; text-align: start; vertical-align: middle; border-bottom: 1px solid var(--line); }
+.patient-table tbody th { padding-block: 0; }
+.patient-table thead th { height: 30px; background: var(--subtle); }
+.patient-table tbody tr { cursor: pointer; }
+.patient-table tbody tr:hover { background: var(--subtle); }
+.patient-table tbody th { border-inline-start: 5px solid var(--line-strong); }
+.patient-table [data-status='kritik'] th { border-inline-start-color: var(--kritik); }
+.patient-table [data-status='yakin_takip'] th { border-inline-start-color: var(--watch-edge, var(--line-strong)); }
+.patient-table [data-status='siniflandirilmamis'] th { border-inline-start-color: var(--unclassified-edge, var(--line-strong)); }
+.patient-table [data-status='stabil'] th { border-inline-start-color: var(--stabil); }
+.patient-table th:last-child, .patient-table td:last-child { padding-inline-end: 8px; }
+.patient-table small { font-size: .875rem; }
+.patient-table thead small { color: var(--muted); font-weight: 450; }
+.table-patient { width: 100%; min-width: 9.25rem; padding: 0 2px; display: grid; align-content: center; gap: 2px; color: var(--text); border: 0; background: none; text-align: start; font-weight: 700; }
+.table-patient svg { vertical-align: middle; margin-inline-start: .375rem; }
+.table-patient small, .table-vital > small, .table-gap, .table-issue, .table-last { color: var(--muted); font-weight: 450; }
+.table-risk { min-width: 7.75rem; }
+.table-risk .status-label { gap: .25rem; }
+.table-risk .status-pill { padding: .125rem .25rem; }
+.table-risk .badge-worsened, .table-vital > small, .table-issue { display: block; }
+.table-vital { font-variant-numeric: tabular-nums; }
+.table-value { font-size: 1rem; font-weight: 680; white-space: nowrap; }
+.table-vital[data-flag='kritik'] { background: var(--kritik-bg); color: var(--kritik); }
+.table-vital[data-flag='yakin_takip'] { background: var(--yakin-takip); color: var(--status-on-yellow); }
+.table-vital[data-flag] > small { color: inherit; }
+@media (max-width: 1439px) { .patient-table .table-extra { display: none; } }
+
+.card-name svg { vertical-align: middle; color: var(--muted); }
+.card-flags { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: .875rem; line-height: 1.14; }
+.card-flags span { display: flex; align-items: center; gap: 3px; }
+.card-flags .flag-kritik { color: var(--kritik); }
+.card-flags .flag-yakin_takip { padding-inline: .25rem; color: var(--status-on-yellow); background: var(--yakin-takip); border-radius: .25rem; }
+.patient-table thead th { height: 24px; }
+.table-gap small { display: block; }
+.table-vital { min-width: 60px; }
+.table-vital .table-gap { white-space: nowrap; }
+.table-vital .table-flag { margin-inline-start: 3px; vertical-align: middle; }
+
+.card-finding { display: flex; gap: .75rem; justify-content: space-between; min-width: 0; }
+.card-reason { flex: 1 1 58%; }
+.card-complaint {
+  flex: 1 1 42%;
+  margin: 0;
+  color: var(--muted);
+  font-size: .875rem;
+  text-align: end;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 6px; }
+@media (min-width: 1600px) {
+  .patient-grid { row-gap: 8px; }
+  .patient-card { gap: 3px; padding-block: 6px; }
 }

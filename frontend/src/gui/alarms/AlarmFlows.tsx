@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { CircleCheck, ClipboardPlus, Eye } from 'lucide-react';
+import { CircleCheck, ClipboardPlus, Eye, TriangleAlert } from 'lucide-react';
 import { ACTIONS, type ActionSpec } from '../../alertActions';
 import { AlarmCard } from '../../components/ui/AlarmCard';
 import { fmtTime } from '../../format';
@@ -136,35 +135,29 @@ export interface AlarmStripProps {
   announce?: boolean;
 }
 
-/** Below this width the controller hides the full panel, so the strip is shown whenever alarms exist. */
-const MOBILE_QUERY = '(max-width: 900px)';
-
-/** Compact sticky alarm strip. Portaled to body and pinned directly under the shell header. */
+/** Shows the strip immediately without a full panel, or once the full panel is above the header. */
 export function AlarmStrip({ alarms, panel, onView, announce = panel === null }: AlarmStripProps) {
-  const [layout, setLayout] = useState({ top: 0, visible: false });
+  const [pastPanel, setPastPanel] = useState(false);
   const [live, setLive] = useState('');
   const announced = useRef(new Set<string>());
   const hasAlarms = alarms.length > 0;
 
   useEffect(() => {
-    const mobile = window.matchMedia(MOBILE_QUERY);
-    const update = () => {
-      const header = document.querySelector<HTMLElement>('.gui-header');
-      const top = header ? header.getBoundingClientRect().bottom : 0;
-      const panelAboveHeader = panel !== null && panel.getBoundingClientRect().bottom <= top;
-      const visible = hasAlarms && (mobile.matches || panel === null || panelAboveHeader);
-      setLayout(prev => (prev.top === top && prev.visible === visible ? prev : { top, visible }));
-    };
+    if (!panel) return;
+    const header = document.querySelector('.gui-header');
+    const update = () => setPastPanel(panel.getBoundingClientRect().bottom <= (header?.getBoundingClientRect().bottom ?? 0));
     update();
+    const observer = new ResizeObserver(update);
+    observer.observe(panel);
+    if (header) observer.observe(header);
     document.addEventListener('scroll', update, { capture: true, passive: true });
     window.addEventListener('resize', update);
-    mobile.addEventListener('change', update);
     return () => {
-      document.removeEventListener('scroll', update, { capture: true });
+      observer.disconnect();
+      document.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
-      mobile.removeEventListener('change', update);
     };
-  }, [hasAlarms, panel]);
+  }, [panel]);
 
   useEffect(() => {
     if (!announce) return;
@@ -174,37 +167,40 @@ export function AlarmStrip({ alarms, panel, onView, announce = panel === null }:
     setLive(copy.live.newAlarm(fresh.map(alarm => bedLabel(alarm.patient.bed)).join(', ')));
   }, [alarms, announce]);
 
-  if (!layout.visible) return null;
+  if (!hasAlarms || (panel && !pastPanel)) return null;
+  const blocking = alarms.find(alarm => alarm.blocking);
 
-  return createPortal(
-    <section className="alarm-flows alarm-strip" aria-label={copy.strip.label} data-testid="alarm-strip" style={{ top: layout.top }}>
+  return (
+    <section className="alarm-flows alarm-strip" data-past-panel={!!panel} aria-label={copy.strip.label} data-testid="alarm-strip">
       <div className="alarm-live" aria-live={announce ? 'assertive' : undefined}>{live}</div>
       <p className="alarm-strip-title">
-        {copy.panel.headline}
-        <span className="alarm-count">{alarms.length}</span>
+        <TriangleAlert size={20} aria-hidden="true" /> {copy.strip.count(alarms.length)}
       </p>
       <ul className="alarm-strip-list">
         {alarms.map(alarm => {
           const bed = bedLabel(alarm.patient.bed);
+          const locked = blocking && !alarm.blocking;
+          const tip = locked ? copy.panel.orderBlocked(bedLabel(blocking.patient.bed)) : undefined;
           return (
             <li key={alarm.id}>
-              <span className="alarm-strip-bed">{bed}</span>
+              <span className="alarm-strip-bed">{bed} · {alarm.patient.label}</span>
               <button
                 type="button"
                 className="alarm-btn alarm-strip-btn"
                 data-testid={`alarm-strip-view-${alarm.patient_id}`}
                 aria-label={`${copy.panel.view}: ${bed}`}
+                aria-disabled={!!locked}
+                title={tip ?? copy.panel.view}
                 onClick={() => onView(alarm.patient_id)}
               >
-                <Eye aria-hidden="true" size={20} />
-                {copy.panel.view}
+                <Eye aria-hidden="true" size={18} />
+                <span>{copy.panel.view}</span>
               </button>
             </li>
           );
         })}
       </ul>
-    </section>,
-    document.body,
+    </section>
   );
 }
 

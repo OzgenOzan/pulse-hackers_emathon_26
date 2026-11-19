@@ -25,6 +25,7 @@ export const copy = {
   },
   strip: {
     label: 'Kritik alarm özeti',
+    count: (n: number) => `${n} kritik alarm`,
   },
   sheet: {
     heading: 'Klinik değerlendirme kaydı',

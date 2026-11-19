@@ -34,6 +34,7 @@ export interface GuiShellProps {
   onAlarm: () => void;
   onAbout: () => void;
   demo?: ReactNode;
+  stickyAlarm?: ReactNode;
   alarm?: ReactNode;
   children: ReactNode;
   /** Sheets and notices. Rendered outside the scrolling body so no ancestor clips them. */
@@ -96,7 +97,7 @@ function NavButton({ route, icon: Icon, current, badge, onNavigate }: NavButtonP
 export function GuiShell({
   route, onNavigate, showOverview, theme, onTheme,
   role, state, busy, connection, lastSuccess, filter, onFilter, onRole, onAlarm, onAbout,
-  demo, alarm, children, floating,
+  demo, stickyAlarm, alarm, children, floating,
 }: GuiShellProps) {
   const alarmCount = state?.critical_alarms.length ?? 0;
   const pendingCount = state?.overview.bekleyen_islem ?? 0;
@@ -231,6 +232,7 @@ export function GuiShell({
         </div>
       )}
 
+      {stickyAlarm}
       {demo}
 
       <div className="gui-frame" data-expanded={expanded}>

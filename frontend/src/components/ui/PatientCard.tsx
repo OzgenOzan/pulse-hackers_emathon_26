@@ -1,5 +1,5 @@
-import { Lock } from 'lucide-react';
-import { bedLabel, reasonLabel, stayLabel } from '../../gui/clinical';
+import { Eye, Lock, TriangleAlert } from 'lucide-react';
+import { bedLabel, labDisplayLabel, reasonLabel, stayLabel } from '../../gui/clinical';
 import {
   ageSex,
   alertTitle,
@@ -33,8 +33,10 @@ export function PatientCard({
   const [reason] = patient.risk_status.reasons;
   const extraIssues = patient.risk_status.data_issues.filter(issue => issue.key !== reason?.key);
   const complaint = complaintOf(patient);
-  const labs = patient.pending_labs.map(lab => lab.label).join(', ') || copy.none;
+  const labs = patient.pending_labs.map(lab => labDisplayLabel(lab.label)).join(', ') || copy.none;
   const consults = patient.pending_consults.map(consult => consult.service).join(', ') || copy.none;
+  const cells = vitalCells(patient, offline);
+  const flagged = cells.filter(cell => cell.state.kind === 'value' && cell.flags.length);
   return (
     <article
       className="patient-card"
@@ -53,34 +55,48 @@ export function PatientCard({
     >
       <header className="card-head">
         <div>
-          <h3 className="card-name">{displayName(patient)}</h3>
+          <h3 className="card-name">{displayName(patient)} {locked && <Lock aria-label={copy.lockedBadge} size={14}><title>{copy.lockedBadge}</title></Lock>}</h3>
           <p className="card-meta">{bedLabel(patient.bed)} · {ageSex(patient)} · {protocolOf(patient)}</p>
         </div>
         <div className="card-status">
           <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient)} />
           {patient.risk_status.worsened && <span className="badge-worsened">{copy.worsened}</span>}
-          {locked && <span className="badge-locked"><Lock aria-hidden="true" size={14} />{copy.lockedBadge}</span>}
         </div>
       </header>
-      {reason && <p className="card-reason" title={reasonLabel(reason)}>{reasonLabel(reason)}</p>}
-      {extraIssues.map(issue => <p className="card-issue" key={issue.key}>{reasonLabel(issue)}</p>)}
-      {patient.reconnect_pending && <p className="card-issue">{copy.reconnect}</p>}
+      <div className="card-finding">
+        {reason && <p className="card-reason" title={reasonLabel(reason)}>{reasonLabel(reason)}</p>}
+        {complaint && <p className="card-complaint" title={complaint}>{complaint}</p>}
+      </div>
+      {(extraIssues.length > 0 || patient.reconnect_pending) && <p className="card-issue">
+        {[...extraIssues.map(reasonLabel), ...(patient.reconnect_pending ? [copy.reconnect] : [])].join(' · ')}
+      </p>}
       <div className="vitals">
-        {vitalCells(patient, offline).map(c => (
-          <VitalSign key={c.key} label={c.label} unit={c.unit} state={c.state} flags={c.flags} sub={c.sub} />
+        {cells.map(c => (
+          <VitalSign key={c.key} label={c.label} unit={c.unit} state={c.state} flags={c.flags} sub={c.sub} compact />
         ))}
       </div>
+      {flagged.length > 0 && <div className="card-flags">
+        {flagged.map(cell => {
+          const critical = cell.flags.some(flag => flag.level === 'kritik');
+          const Icon = critical ? TriangleAlert : Eye;
+          return <span key={cell.key} className={critical ? 'flag-kritik' : 'flag-yakin_takip'}><Icon size={14} aria-hidden="true" />
+            {cell.label}: {cell.flags.map(flag => flag.note).join(' · ')}
+          </span>;
+        })}
+      </div>}
       {tasks.length > 0 && (
         <ul className="card-tasks">
           {tasks.map(task => (
             <li key={task.id}>
-              <TaskChip>{alertTitle(task)}</TaskChip>
+              <TaskChip title={alertTitle(task)}>{task.level === 'GREEN'
+                ? `Taburculuk değerlendirmesi bekliyor${typeof task.params.minutes === 'number' ? ` · ${task.params.minutes} dk` : ''}`
+                : 'Veri eksikliği'}</TaskChip>
             </li>
           ))}
         </ul>
       )}
       <footer className="card-foot">
-        <div><span title={complaint ?? undefined}>{complaint}</span><span>{copy.stay}: {stayLabel(patient.minutes_in_zone)}</span></div>
+        <span>{copy.stay}: {stayLabel(patient.minutes_in_zone)}</span>
         <span>{copy.lastMeasure} {lastMeasureText(patient)}</span>
       </footer>
       <div className="card-pending">
