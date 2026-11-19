@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CircleCheck, ClipboardPlus, Eye } from 'lucide-react';
 import { ACTIONS, type ActionSpec } from '../../alertActions';
 import { AlarmCard } from '../../components/ui/AlarmCard';
@@ -55,8 +56,8 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
             : orderLocked && blocker
               ? copy.panel.orderBlocked(bedLabel(blocker.patient.bed))
               : undefined;
-          const reasonId = `${alarm.id}-reason`;
-          const offlineId = `${alarm.id}-offline`;
+          const reasonId = `${headingId}-${alarm.id}-reason`;
+          const offlineId = `${headingId}-${alarm.id}-offline`;
           return (
             <li key={alarm.id} data-testid={`alarm-${alarm.patient_id}`} data-emphasis={!mine || isWorsenedFor(alarm, role)}>
               <AlarmCard
@@ -123,6 +124,87 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
         })}
       </ol>
     </section>
+  );
+}
+
+export interface AlarmStripProps {
+  alarms: CriticalAlarm[];
+  /** The full panel element, or null when this route renders no panel. */
+  panel: HTMLElement | null;
+  onView: (id: string) => void;
+  /** Reports new alarms via aria-live. Defaults to reporting only when no full panel is rendered. */
+  announce?: boolean;
+}
+
+/** Below this width the controller hides the full panel, so the strip is shown whenever alarms exist. */
+const MOBILE_QUERY = '(max-width: 900px)';
+
+/** Compact sticky alarm strip. Portaled to body and pinned directly under the shell header. */
+export function AlarmStrip({ alarms, panel, onView, announce = panel === null }: AlarmStripProps) {
+  const [layout, setLayout] = useState({ top: 0, visible: false });
+  const [live, setLive] = useState('');
+  const announced = useRef(new Set<string>());
+  const hasAlarms = alarms.length > 0;
+
+  useEffect(() => {
+    const mobile = window.matchMedia(MOBILE_QUERY);
+    const update = () => {
+      const header = document.querySelector<HTMLElement>('.gui-header');
+      const top = header ? header.getBoundingClientRect().bottom : 0;
+      const panelAboveHeader = panel !== null && panel.getBoundingClientRect().bottom <= top;
+      const visible = hasAlarms && (mobile.matches || panel === null || panelAboveHeader);
+      setLayout(prev => (prev.top === top && prev.visible === visible ? prev : { top, visible }));
+    };
+    update();
+    document.addEventListener('scroll', update, { capture: true, passive: true });
+    window.addEventListener('resize', update);
+    mobile.addEventListener('change', update);
+    return () => {
+      document.removeEventListener('scroll', update, { capture: true });
+      window.removeEventListener('resize', update);
+      mobile.removeEventListener('change', update);
+    };
+  }, [hasAlarms, panel]);
+
+  useEffect(() => {
+    if (!announce) return;
+    const fresh = alarms.filter(alarm => !announced.current.has(alarm.id));
+    if (fresh.length === 0) return;
+    fresh.forEach(alarm => announced.current.add(alarm.id));
+    setLive(copy.live.newAlarm(fresh.map(alarm => bedLabel(alarm.patient.bed)).join(', ')));
+  }, [alarms, announce]);
+
+  if (!layout.visible) return null;
+
+  return createPortal(
+    <section className="alarm-flows alarm-strip" aria-label={copy.strip.label} data-testid="alarm-strip" style={{ top: layout.top }}>
+      <div className="alarm-live" aria-live={announce ? 'assertive' : undefined}>{live}</div>
+      <p className="alarm-strip-title">
+        {copy.panel.headline}
+        <span className="alarm-count">{alarms.length}</span>
+      </p>
+      <ul className="alarm-strip-list">
+        {alarms.map(alarm => {
+          const bed = bedLabel(alarm.patient.bed);
+          return (
+            <li key={alarm.id}>
+              <span className="alarm-strip-bed">{bed}</span>
+              <button
+                type="button"
+                className="alarm-btn alarm-strip-btn"
+                data-testid={`alarm-strip-view-${alarm.patient_id}`}
+                aria-label={`${copy.panel.view}: ${bed}`}
+                onClick={() => onView(alarm.patient_id)}
+              >
+                <Eye aria-hidden="true" size={20} />
+                {copy.panel.view}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>,
+    document.body,
   );
 }
 
@@ -258,12 +340,14 @@ export interface TaskActionsProps {
   role: Role;
   busy: boolean;
   offline: boolean;
+  /** Locks every action with this reason (e.g. physician lock). A role-specific reason takes precedence. */
+  lockReason?: string;
   onAck: (alert: Alert, action: string, reason?: string) => void;
   onVitals: (id: string) => void;
 }
 
 /** Physician and nurse tasks. Actions outside the owner's role are shown disabled with a reason. */
-export function TaskActions({ tasks, patients, role, busy, offline, onAck, onVitals }: TaskActionsProps) {
+export function TaskActions({ tasks, patients, role, busy, offline, lockReason, onAck, onVitals }: TaskActionsProps) {
   const headingId = useId();
   const [picked, setPicked] = useState<string | null>(null);
 
@@ -275,9 +359,10 @@ export function TaskActions({ tasks, patients, role, busy, offline, onAck, onVit
         {tasks.map(task => {
           const patient = patients?.find(p => p.id === task.patient_id);
           const mine = task.target_role === role;
-          const reason = mine ? undefined : copy.tasks.roleDisabled(task.target_role);
-          const disabled = busy || offline || !mine;
-          const reasonId = `${task.id}-reason`;
+          const lock = lockReason || undefined;
+          const reason = mine ? lock : copy.tasks.roleDisabled(task.target_role);
+          const disabled = busy || offline || !mine || lock !== undefined;
+          const reasonId = `${headingId}-${task.id}-reason`;
           return (
             <li key={task.id}>
               <AlarmCard
