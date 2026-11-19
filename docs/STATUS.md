@@ -14,6 +14,7 @@
 - Verified Y05's filtered lactate in English and Turkish, Turkish preference after reload, the two vital sparklines, the honesty panel, and the Y08 chronic-baseline override in the audit. No external runtime origin was requested in the smoke run.
 - [Demo script](demo-script.md), [decoded 60-second backup video](demo-backup.mp4), [clinical rules](clinical-rules.md), and [four browser screenshots](screenshots/) are available.
 - Verified manual drafts do not cross patient identities or replays, the pre-alert selection survives refresh, and a latched RED distinguishes current score from earlier trigger evidence.
+- The final re-review confirmed all ten review fixes. P0 and P1 are published on `feat/sahin-goz-v0`; no PR was opened because GitHub CLI was unavailable.
 
 ## Real vs simulated
 
