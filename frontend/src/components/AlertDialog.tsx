@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ACTIONS } from '../alertActions';
-import { fmtTime } from '../format';
+import { fmtLab, fmtTime, fmtValue } from '../format';
 import { ruleLabel, t } from '../i18n';
 import type { Alert, Component, Level, Role, Summary, VitalReading } from '../types';
 import { VitalTrends } from './VitalTrends';
@@ -58,7 +58,7 @@ export function ComponentTable({ components, empty }: { components: Component[];
           <tr key={c.key}>
             <td>{t(`component.${c.key}`, undefined, c.label)}</td>
             <td>
-              {c.value} {c.unit}
+              {c.key.startsWith('lab_') ? fmtLab(c.key.slice(4), c.value) : fmtValue(c.value, c.unit === '°C' ? 1 : 0)} {c.unit}
             </td>
             <td>{ruleLabel(c)}</td>
             <td>{c.points}</td>

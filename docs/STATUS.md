@@ -56,4 +56,5 @@
 - D4 — `banana` reproduced a 204; unsupported physician action types now return `422 invalid_action_type` without changing Y06's GREEN. The RED navigation guard still runs first.
 - U1 — Edge at 1280×720 showed 11/11 44 px rows in both roles with no banner and 10 rows with one GREEN or YELLOW strip, with no page scroll. At 1920×1080 all 11 were visible with a banner.
 - U2 — at 04:00, all four 56 px RED buttons were visible without scrolling in Edge (bottom at y=650). Opening the reason picker kept all three options and all four actions in view; only the evidence area scrolls.
+- U3 — Edge showed all six RED evidence rows at 04:00 with consistent precision and no visible value over two decimals. The engine still uses raw values; the focused engine and replay suite passed (10 tests).
 - Intentional behavior: a valid manual entry or acknowledgement re-evaluates immediately, so an alert can appear between the scheduled 15-minute evaluations.

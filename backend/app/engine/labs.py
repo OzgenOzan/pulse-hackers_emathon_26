@@ -8,12 +8,17 @@ def ordered_labs(patient: PatientSnapshot, now: datetime) -> list[LabOrder]:
     return [lab for lab in patient.labs if lab.ordered_at <= now]
 
 
-def critical_rule(bounds: CriticalBounds, value: float, unit: str) -> str | None:
+def critical_rule(bounds: CriticalBounds, value: float, unit: str, test: str) -> str | None:
     if bounds.critical_low is not None and value <= bounds.critical_low:
-        return f'≤ {bounds.critical_low:g} {unit}'.rstrip()
-    if bounds.critical_high is not None and value >= bounds.critical_high:
-        return f'≥ {bounds.critical_high:g} {unit}'.rstrip()
-    return None
+        op, bound = '≤', bounds.critical_low
+    elif bounds.critical_high is not None and value >= bounds.critical_high:
+        op, bound = '≥', bounds.critical_high
+    else:
+        return None
+    number = f'{bound:.2f}'
+    if test != 'ph':
+        number = number.rstrip('0').rstrip('.')
+    return f'{op} {number} {unit}'.rstrip()
 
 
 def score_labs(patient: PatientSnapshot, orders: list[LabOrder], now: datetime, config: EngineConfig
@@ -41,9 +46,9 @@ def score_labs(patient: PatientSnapshot, orders: list[LabOrder], now: datetime, 
             key = 'unit_mismatch'
             reason = f'Result unit does not match the configured unit ({rule.unit or "unitless"}); not scored.'
         else:
-            critical = critical_rule(rule, value, unit)
+            critical = critical_rule(rule, value, unit, test)
             panic_rule = config.universal_panic.get(test)
-            panic = critical_rule(panic_rule, value, unit) if panic_rule is not None else None
+            panic = critical_rule(panic_rule, value, unit, test) if panic_rule is not None else None
             if panic is not None or (critical is not None and test in related):
                 clause = f'Universal panic cutoff: {panic}' if panic is not None else f'Diagnosis-related critical cutoff: {critical}'
                 components.append(Component(key=f'lab_{test}', label=rule.label, value=value, unit=unit,

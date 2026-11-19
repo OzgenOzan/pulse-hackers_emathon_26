@@ -5,6 +5,7 @@ from app.domain.models import Component, PatientSnapshot, VitalReading
 from app.engine.config import RedRules
 
 OPERATORS = {'<': lt, '<=': le, '>': gt, '>=': ge}
+DISPLAY_OPERATORS = {'<=': '≤', '>=': '≥'}
 LABELS = {
     'hr': ('Heart rate', 'bpm'), 'sbp': ('Systolic BP', 'mmHg'), 'dbp': ('Diastolic BP', 'mmHg'),
     'map': ('MAP', 'mmHg'), 'temp': ('Temperature', '°C'), 'spo2': ('SpO₂', '%'), 'rr': ('Respiratory rate', '/min'),
@@ -47,8 +48,10 @@ def score_vitals(fresh: dict[str, tuple[float, datetime]], baseline: dict[str, t
         value, observed_at = fresh[rule.param]
         if OPERATORS[rule.op](value, rule.value):
             label, unit = LABELS[rule.param]
+            digits = 1 if rule.param == 'temp' else 0
+            op = DISPLAY_OPERATORS.get(rule.op, rule.op)
             components.append(Component(key=rule.key, label=label, value=value, unit=unit,
-                                        rule=f'{rule.op} {rule.value:g} {unit}', points=rule.points, observed_at=observed_at))
+                                        rule=f'{op} {rule.value:.{digits}f} {unit}', points=rule.points, observed_at=observed_at))
     for rule in rules.trend_rules:
         if rule.param not in fresh:
             continue
@@ -58,8 +61,10 @@ def score_vitals(fresh: dict[str, tuple[float, datetime]], baseline: dict[str, t
         change = first - current if drop else current - first
         if change >= rule.delta:
             label, unit = LABELS[rule.param]
+            digits = 1 if rule.param == 'temp' else 0
             components.append(Component(key=rule.key, label=f"{label} {'drop' if drop else 'rise'} from baseline",
                                         value=change, unit=unit,
-                                        rule=f'≥ {rule.delta:g} {unit} from baseline; {label} now {current:g} {unit}',
+                                        rule=f'≥ {rule.delta:.{digits}f} {unit} from baseline; '
+                                             f'{label} now {current:.{digits}f} {unit}',
                                         points=rule.points, observed_at=observed_at))
     return components

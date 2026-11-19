@@ -1,4 +1,4 @@
-import { fmtTime, fmtValue } from '../format';
+import { fmtLab, fmtTime, fmtValue } from '../format';
 import { t } from '../i18n';
 import type { Alert, Detail, Role } from '../types';
 import { type ActAlert, AlertActions, ComponentTable, EscalatedTag, LevelChip, alertTitle } from './AlertDialog';
@@ -87,7 +87,7 @@ export function PatientDetail({
           <ul>
             {assessment.suppressed_labs.map(s => (
               <li key={`${s.test}-${s.observed_at}`}>
-                {s.test} {s.value} {s.unit}: {t(`suppression.${s.reason_key}`, undefined, s.reason)}
+                {s.test} {fmtLab(s.test, s.value)} {s.unit}: {t(`suppression.${s.reason_key}`, undefined, s.reason)}
               </li>
             ))}
           </ul>
@@ -150,7 +150,7 @@ export function PatientDetail({
               {detail.labs.map(l => (
                 <tr key={`${l.test}-${l.ordered_at}`}>
                   <td>{l.test}</td>
-                  <td>{l.value === null ? t('detail.pending') : `${l.value} ${l.unit ?? ''}`}</td>
+                  <td>{l.value === null ? t('detail.pending') : `${fmtLab(l.test, l.value)} ${l.unit ?? ''}`}</td>
                   <td>{fmtTime(l.ordered_at)}</td>
                   <td>{fmtTime(l.resulted_at)}</td>
                 </tr>
