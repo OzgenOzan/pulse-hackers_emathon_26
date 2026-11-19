@@ -172,9 +172,15 @@ def test_gui_hero_counts_and_lock():
         assert counts(watch) == (11, 0, 1, 10, 0, 1, 1)
         result = patient_at(watch, 'Y01')['risk_status']
         assert (result['key'], result['worsened'], result['since']) == ('yakin_takip', True, '2026-11-20T03:00:00')
+        nurse_read = state(client, 'nurse')
+        assert counts(nurse_read)[5:] == (1, 0)
+        assert [(a['patient_id'], a['target_role']) for a in nurse_read['tasks']] == [('Y06', 'physician')]
+        assert nurse_read['alerts'] == []
         green = watch['alerts'][0]
         assert client.post(f"/api/alerts/{green['id']}/ack", json={'action': 'discharge_decided'}).status_code == 204
-        assert counts(state(client)) == (10, 0, 1, 9, 0, 0, 0)
+        after_discharge = state(client)
+        assert counts(after_discharge) == (10, 0, 1, 9, 0, 0, 0)
+        assert patient_at(after_discharge, 'Y01')['risk_status']['worsened'] is True
         step(client)
         nurse = state(client, 'nurse')
         assert counts(nurse) == (10, 0, 1, 8, 1, 0, 1)
@@ -195,8 +201,9 @@ def test_gui_hero_counts_and_lock():
         assert patient_at(critical, 'Y03')['risk_status']['key'] == 'stabil'
         [alarm] = critical['critical_alarms']
         assert (alarm['patient_id'], alarm['blocking']) == ('Y01', True)
-        assert state(client, 'nurse')['critical_alarms'][0]['id'] == alarm['id']
-        assert not state(client, 'nurse')['blocking_alert_id']
+        nurse_view = state(client, 'nurse')
+        assert [(a['id'], a['blocking']) for a in nurse_view['critical_alarms']] == [(alarm['id'], False)]
+        assert not nurse_view['blocking_alert_id']
         root = f"/api/alerts/{alarm['id']}"
         assert client.get('/api/patients/Y02').status_code == 409
         assert client.post(f'{root}/seen', json={'role': 'physician'}).status_code == 204
@@ -228,6 +235,9 @@ def test_unattended_counts_and_flags_preserve_clinical_assessment():
         assert patient_at(view, 'Y03')['latest_measurements']['spo2'] == {
             'value': 94, 'observed_at': '2026-11-20T03:00:00', 'stale': True, 'source': 'monitor',
         }
+        issue = patient_at(view, 'Y03')['risk_status']
+        assert issue['key'] == 'siniflandirilmamis'
+        assert {'key': 'insufficient_data', 'params': {}} in issue['data_issues']
         assert patient_at(view, 'Y02')['pending_consults'] == [
             {'service': 'Kardiyoloji', 'requested_at': '2026-11-20T03:55:00'},
         ]
@@ -251,3 +261,16 @@ def test_gcs_freshness_boundary_and_evaluated_high_risk_label():
         assert patient_at(state(client), 'Y01')['gcs']['stale'] is False
         client.app.state.session.clock.step(1)
         assert patient_at(state(client), 'Y01')['gcs']['stale'] is True
+
+
+def test_risk_since_does_not_drift_after_required_vitals_expire_between_cycles():
+    with client_for_night_shift() as client:
+        session = client.app.state.session
+        session.config.red.vital_max_age_minutes = 1
+        assert client.post('/api/sim/reset', json={}).status_code == 204
+        assert patient_at(state(client), 'Y01')['risk_status']['key'] == 'stabil'
+        for minutes in (2, 1):
+            session.clock.step(minutes)
+            status = patient_at(state(client), 'Y01')['risk_status']
+            assert status['key'] == 'siniflandirilmamis'
+            assert status['since'] == '2026-11-20T02:46:00'

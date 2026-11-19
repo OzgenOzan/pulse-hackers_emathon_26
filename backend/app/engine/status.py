@@ -14,13 +14,17 @@ def classify(snapshot: PatientSnapshot, result: EngineResult | None, alerts_for_
     latched = next((a for a in alerts_for_patient if a.patient_id == snapshot.profile.id
                     and a.level == 'RED' and a.status == 'active'), None)
     issues: list[RiskReason] = []
+    fresh_until = None
     if result is None:
         issues.append(RiskReason(key='awaiting_evaluation'))
         fresh = False
     else:
-        cutoff = now - timedelta(minutes=config.red.vital_max_age_minutes)
-        fresh = all((item := result.current_vital_evidence.get(param)) is not None and cutoff <= item[1] <= now
-                    for param in config.status.required_fresh_vitals)
+        max_age = timedelta(minutes=config.red.vital_max_age_minutes)
+        required = [result.current_vital_evidence.get(param) for param in config.status.required_fresh_vitals]
+        observed = [item[1] for item in required if item is not None]
+        if len(observed) == len(required) and max(observed) <= now:
+            fresh_until = min(observed) + max_age
+        fresh = fresh_until is not None and now <= fresh_until
         for candidate in result.candidates:
             if candidate.level == 'YELLOW':
                 for parameter, key in (('monitor_minutes', 'monitor_gap'), ('vitals_minutes', 'vitals_overdue')):
@@ -49,7 +53,7 @@ def classify(snapshot: PatientSnapshot, result: EngineResult | None, alerts_for_
         reasons = issues or [RiskReason(key='below_watch_threshold', params={'score': score})]
     else:
         reasons = [RiskReason(key='no_risk_findings')]
-    return RiskStatus(key=key, reasons=reasons, data_issues=issues, since=now)
+    return RiskStatus(key=key, reasons=reasons, data_issues=issues, since=now, required_fresh_until=fresh_until)
 
 
 def update_status(current: RiskStatus, previous: RiskStatus | None, *, scheduled: bool) -> RiskStatus:
@@ -57,5 +61,10 @@ def update_status(current: RiskStatus, previous: RiskStatus | None, *, scheduled
         return current
     if current.key == previous.key:
         return current.model_copy(update={'since': previous.since, 'worsened': previous.worsened and not scheduled})
+    deadline = previous.required_fresh_until
+    if (current.key == 'siniflandirilmamis' and previous.key in ('stabil', 'yakin_takip')
+            and deadline is not None and deadline < current.since
+            and any(issue.key == 'insufficient_data' for issue in current.data_issues)):
+        return current.model_copy(update={'since': deadline})
     worsened = current.key in ('yakin_takip', 'kritik') and RISK_RANK[current.key] > RISK_RANK[previous.key]
     return current.model_copy(update={'worsened': worsened})

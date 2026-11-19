@@ -147,6 +147,7 @@ class RiskStatus(Model):
     reasons: list[RiskReason]
     data_issues: list[RiskReason]
     since: datetime
+    required_fresh_until: datetime | None = Field(default=None, exclude=True)
     worsened: bool = False
 
 

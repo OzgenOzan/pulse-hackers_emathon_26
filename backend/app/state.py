@@ -154,9 +154,10 @@ class Session:
             return None
         return next((a for a in self.active_alerts('physician') if a.level == 'RED'), None)
 
-    def critical_alarms(self, *, history: bool = False) -> list[CriticalAlarm]:
+    def critical_alarms(self, *, history: bool = False, role: Role = 'physician') -> list[CriticalAlarm]:
         alarms = sorted((a for a in self.alerts if a.level == 'RED' and (history or a.status == 'active')), key=priority_key)
-        blocking_id = alarms[0].id if alarms and alarms[0].status == 'active' and self.config.alerting.red_blocks_navigation else None
+        blocking_id = (alarms[0].id if role == 'physician' and alarms and alarms[0].status == 'active'
+                       and self.config.alerting.red_blocks_navigation else None)
         return [CriticalAlarm(
             **a.model_dump(), patient=self.patients[a.patient_id].profile,
             initial_score=self.critical_initial_scores[a.id], blocking=a.id == blocking_id,
@@ -171,7 +172,7 @@ class Session:
     def view(self, role: Role) -> StateView:
         patients = [self.summary(p) for p in self.patients.values() if p.status == 'in_zone']
         patients.sort(key=lambda p: p.bed)
-        alarms = self.critical_alarms()
+        alarms = self.critical_alarms(role=role)
         alerts = self.active_alerts(role)
         blocking = alarms[0].id if role == 'physician' and alarms and alarms[0].blocking else None
         count_by_status = {key: 0 for key in ('kritik', 'yakin_takip', 'stabil', 'siniflandirilmamis')}
