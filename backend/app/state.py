@@ -207,6 +207,8 @@ class Session:
 
     def physician_action(self, patient_id: str, action: str) -> None:
         self.require_navigation(patient_id, 'physician')
+        if action not in {'order_placed', 'prescription_written', 'consult_requested', 'reassessed'}:
+            raise SessionError(422, 'invalid_action_type')
         patient = self.patient(patient_id, in_zone=True)
         patient.actions.append(PhysicianAction(time=self.now, type=action))
         self.record('physician_action', patient_id, role='physician', action=action)

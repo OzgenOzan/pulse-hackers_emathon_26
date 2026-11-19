@@ -214,3 +214,13 @@ def test_bad_manual_vitals_are_rejected_before_mutation(values, error):
         assert response.json()['detail'] == error
         assert state(client) == before
         assert not any(e['event'] == 'manual_vitals' for e in client.get('/api/audit').json())
+
+
+def test_unknown_physician_action_does_not_suppress_green():
+    with client_for_night_shift() as client:
+        state(client)
+        response = client.post('/api/patients/Y06/actions', json={'type': 'banana'})
+        assert response.status_code == 422
+        assert response.json()['detail'] == 'invalid_action_type'
+        step(client)
+        assert [(a['level'], a['patient_id']) for a in state(client)['alerts']] == [('GREEN', 'Y06')]
