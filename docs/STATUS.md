@@ -52,3 +52,4 @@
 
 - D1 — regressions reproduced the score drop (3 → 1) and stale-field masking. Freshness and baseline now resolve per parameter, and the board uses evaluated values. The focused engine, API and timeline checks passed (38 tests).
 - D2 — the reconnect fixture reproduced a missing GREEN at 03:15; nurse acknowledgements now remain in audit without entering physician decision history.
+- D3 — the new invalid-entry cases first returned 204. The server and bilingual form now enforce the clinician-supplied `manual_entry` rules; those limits are **CLINICAL-REVIEW** data-entry checks, not alert thresholds. The HR-only D1 replay is rejected after D3; the API test now supplies HR and BP while omitting optional fields, and engine tests still exercise HR-only observations.

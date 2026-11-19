@@ -278,10 +278,11 @@ export function App() {
               />
               <section className="detail-pane" aria-label={t('app.region.detail')}>
                 {view.role === 'nurse' && vitalsFor?.patientId === patientId
-                  && vitalsFor.replayId === state.sim.replay_id && summary && (
+                  && vitalsFor.replayId === state.sim.replay_id && summary && config && (
                   <ManualVitals
                     key={`${vitalsFor.replayId}/${summary.id}`}
                     profile={summary}
+                    rules={config.manual_entry}
                     busy={busy}
                     onSave={values => void saveVitals(values)}
                     onCancel={() => setVitalsFor(null)}

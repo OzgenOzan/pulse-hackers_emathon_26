@@ -192,5 +192,11 @@
   "alert.previousComponents": "Previous triggering evidence",
   "demo.invalidScenario": "{name} (invalid scenario)",
   "error.staleReplay": "This action belongs to an earlier replay. Review the current board before trying again.",
+  "vitals.fieldRequired": "This field is required.",
+  "vitals.fieldRange": "Enter a value from {min} to {max}.",
+  "vitals.error.vital_required_missing": "Fill in all required vital measurements.",
+  "vitals.error.vital_out_of_range": "One or more vital measurements are outside the allowed range.",
+  "vitals.error.sbp_not_above_dbp": "Systolic pressure must be higher than diastolic pressure.",
+  "vitals.error.map_outside_bp": "MAP must be between diastolic and systolic pressure.",
   "about.close": "Close"
 }

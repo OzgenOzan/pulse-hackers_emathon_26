@@ -49,4 +49,8 @@ export interface AuditEntry {
   event: string; role: Role | null; action: string | null; reason: string | null; latency_minutes: number | null; score: number | null;
 }
 export interface ScenarioInfo { id: string; title: string; error: string | null }
-export interface RulesView { red: { threshold: number }; alerting: { red_blocks_navigation: boolean } }
+export interface RulesView {
+  red: { threshold: number };
+  alerting: { red_blocks_navigation: boolean };
+  manual_entry: { required: (keyof VitalValues)[]; limits: Record<keyof VitalValues, {min: number; max: number}> };
+}

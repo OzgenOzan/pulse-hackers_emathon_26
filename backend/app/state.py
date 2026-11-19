@@ -188,10 +188,20 @@ class Session:
                              alert_history=[a for a in self.alerts if a.patient_id == patient_id])
 
     def add_vitals(self, patient_id: str, values: VitalValues) -> None:
-        if not any(value is not None for value in values.model_dump().values()):
-            raise SessionError(422, 'no_vitals_entered')
+        entry = self.config.manual_entry
+        supplied = values.model_dump(exclude_none=True)
+        # Diagnose invalid measurements before missing fields so a typo gets specific feedback.
+        if any(not entry.limits[key].min <= value <= entry.limits[key].max for key, value in supplied.items()):
+            raise SessionError(422, 'vital_out_of_range')
+        if values.sbp is not None and values.dbp is not None:
+            if values.sbp <= values.dbp:
+                raise SessionError(422, 'sbp_not_above_dbp')
+            if values.map is not None and not values.dbp <= values.map <= values.sbp:
+                raise SessionError(422, 'map_outside_bp')
+        if any(key not in supplied for key in entry.required):
+            raise SessionError(422, 'vital_required_missing')
         patient = self.patient(patient_id, in_zone=True)
-        patient.vitals.append(VitalReading(time=self.now, source='manual', **values.model_dump()))
+        patient.vitals.append(VitalReading(time=self.now, source='manual', **supplied))
         self.record('manual_vitals', patient_id, role='nurse')
         self.evaluate_patient(patient)
 

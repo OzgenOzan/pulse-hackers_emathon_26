@@ -1,5 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+
 from test_scenario_night_shift import client_for_night_shift, state, step
 
 
@@ -114,7 +116,7 @@ def test_stale_replay_cannot_acknowledge_a_reused_alert_id():
 def test_same_timestamp_manual_vitals_are_reported_as_the_latest_sample():
     with client_for_night_shift() as client:
         state(client)
-        response = client.post('/api/patients/Y01/vitals', json={'map': 64})
+        response = client.post('/api/patients/Y01/vitals', json={'hr': 94, 'sbp': 90, 'dbp': 50, 'map': 64})
         assert response.status_code == 204
         last = next(p for p in state(client)['patients'] if p['id'] == 'Y01')
         assert (last['last_vitals']['map'], last['last_vitals']['source'], last['score']) == (64, 'manual', 4)
@@ -124,9 +126,8 @@ def test_finite_extreme_pressure_values_do_not_raise_a_server_error():
     with client_for_night_shift() as client:
         state(client)
         response = client.post('/api/patients/Y01/vitals', json={'sbp': 1.7e308, 'dbp': -1.7e308})
-        assert response.status_code == 204
-        last = next(p for p in state(client)['patients'] if p['id'] == 'Y01')['last_vitals']
-        assert -1e308 < last['map'] < 0
+        assert response.status_code == 422
+        assert response.json()['detail'] == 'vital_out_of_range'
 
 
 def test_invalid_scenario_does_not_hide_valid_choices_or_replace_the_session(tmp_path):
@@ -153,7 +154,7 @@ def test_partial_manual_entry_preserves_fresh_red_evidence():
         for _ in range(3):
             step(client)
         before = state(client)
-        response = client.post('/api/patients/Y01/vitals', json={'hr': 108})
+        response = client.post('/api/patients/Y01/vitals', json={'hr': 108, 'sbp': 106, 'dbp': 58})
         assert response.status_code == 204
         after = state(client)
         red = next(a for a in after['alerts'] if a['id'] == before['blocking_alert_id'])
@@ -194,3 +195,22 @@ def test_nurse_reconnect_does_not_clear_physician_idle_time(tmp_path):
                 for a in state(client)['alerts']] == [('GREEN', 'Z1', 35)]
         assert any(e['event'] == 'acknowledged' and e['role'] == 'nurse' and e['action'] == 'monitor_reconnected'
                    for e in client.get('/api/audit').json())
+
+
+@pytest.mark.parametrize(('values', 'error'), [
+    ({'hr': 108}, 'vital_required_missing'),
+    ({'hr': 1000}, 'vital_out_of_range'),
+    ({'sbp': 12, 'dbp': 8}, 'vital_out_of_range'),
+    ({'temp': -5}, 'vital_out_of_range'),
+    ({'sbp': 80, 'dbp': 120}, 'sbp_not_above_dbp'),
+    ({'spo2': 150}, 'vital_out_of_range'),
+    ({'hr': 80, 'sbp': 120, 'dbp': 80, 'map': 130}, 'map_outside_bp'),
+])
+def test_bad_manual_vitals_are_rejected_before_mutation(values, error):
+    with client_for_night_shift() as client:
+        before = state(client)
+        response = client.post('/api/patients/Y06/vitals', json=values)
+        assert response.status_code == 422
+        assert response.json()['detail'] == error
+        assert state(client) == before
+        assert not any(e['event'] == 'manual_vitals' for e in client.get('/api/audit').json())
