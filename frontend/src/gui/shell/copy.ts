@@ -17,6 +17,17 @@ export const shellCopy = {
   overview: 'Genel durum',
   filterChip: (label: string) => `Filtre: ${label}`,
   clearFilter: 'Filtreyi kaldır',
+  theme: {
+    toLight: 'Açık temaya geç',
+    toDark: 'Koyu temaya geç',
+  },
+  nav: {
+    label: 'Ana gezinme',
+    expand: 'Menüyü genişlet',
+    collapse: 'Menüyü daralt',
+    more: 'Daha fazla',
+    pending: (count: number) => `Bekleyen işlem: ${count}`,
+  },
   connection: {
     connected: 'Bağlı',
     weak: 'Bağlantı zayıf',
@@ -39,6 +50,10 @@ export const shellCopy = {
     bekleyen_islem: 'Bekleyen işlem',
     taburculuk_bekleyen: 'Taburculuk değerlendirmesi bekleyen',
   } satisfies Record<OverviewKey, string>,
+  /** Visible card labels only; the full label stays in aria-label and title. */
+  statsShort: {
+    taburculuk_bekleyen: 'Taburculuk değ. bekleyen',
+  } satisfies Partial<Record<OverviewKey, string>>,
 };
 
 const clockFormat = new Intl.DateTimeFormat('tr-TR', {
