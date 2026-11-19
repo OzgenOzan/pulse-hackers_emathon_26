@@ -48,3 +48,9 @@ manual_entry:                         # data-entry plausibility limits, NOT aler
     temp: {min: 30.0, max: 43.0}
     spo2: {min: 50,   max: 100}
     rr:   {min: 4,    max: 60}
+    gcs:  {min: 3,    max: 15}          # CLINICAL-REVIEW (whole numbers only)
+status:                               # GUI risk-status mapping. CLINICAL-REVIEW
+  watch_min_score: 1
+  required_fresh_vitals: [hr, map]
+display:
+  gcs_fresh_minutes: 120               # CLINICAL-REVIEW (display only)

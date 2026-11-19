@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 Level = Literal['RED', 'YELLOW', 'GREEN']
 Role = Literal['physician', 'nurse']
 PatientStatus = Literal['in_zone', 'transferred_red', 'discharged']
+RiskKey = Literal['kritik', 'yakin_takip', 'siniflandirilmamis', 'stabil']
 AlertEvent = Literal['created', 'updated', 'escalated', 'acknowledged', 'auto_resolved', 'superseded']
 AuditEvent = Literal[
     'created', 'updated', 'escalated', 'acknowledged', 'auto_resolved', 'superseded',
@@ -111,6 +112,19 @@ class AlertCandidate(Model):
     recommended_actions: list[str] = Field(default_factory=list)
     components: list[Component] = Field(default_factory=list)
     escalated: bool = False
+
+
+class RiskReason(Model):
+    key: str
+    params: dict[str, str | int | float] = Field(default_factory=dict)
+
+
+class RiskStatus(Model):
+    key: RiskKey
+    reasons: list[RiskReason]
+    data_issues: list[RiskReason]
+    since: datetime
+    worsened: bool = False
 
 
 class EngineResult(Model):

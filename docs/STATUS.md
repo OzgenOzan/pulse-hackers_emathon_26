@@ -69,3 +69,4 @@
 
 - The remote `v1-audited` fallback points to the audited `main` commit `ba0261a`, before any GUI changes. Baseline: 94 backend tests, TypeScript, build, clinical rules and seeded noise checks passed.
 - [Approved GUI brief](gui-2.0-brief.md) and [execution plan](superpowers/plans/2026-11-19-sahin-goz-gui-2.md). The engine and protected tests remain the control for this UI redesign.
+- Added the pure risk classifier and GUI-only configuration: status precedence follows the existing engine, data gaps remain independent, and deterioration emphasis expires at the next scheduled assessment. `status.*`, `display.gcs_fresh_minutes`, and `manual_entry.limits.gcs` require clinical review; none changes scoring.
