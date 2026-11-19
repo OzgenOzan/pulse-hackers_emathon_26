@@ -1,0 +1,84 @@
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 96px;
+  padding: 10px 12px 10px 16px;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.stat-card[aria-pressed='true'] {
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--text), var(--shadow);
+}
+
+.stat-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.stat-label {
+  overflow-wrap: anywhere;
+}
+
+.stat-count {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-kritik {
+  border-left-color: var(--kritik);
+  background: var(--kritik-bg);
+  color: var(--kritik);
+}
+
+.stat-kritik .stat-count,
+.stat-kritik .stat-head {
+  color: var(--kritik);
+}
+
+.stat-yakin-takip {
+  border-left-color: var(--text);
+  background: var(--yakin-takip);
+  color: var(--status-on-yellow);
+}
+
+.stat-stabil {
+  border-left-color: var(--stabil);
+  background: var(--stabil-bg);
+  color: var(--stabil);
+}
+
+.stat-unclassified {
+  border-left-color: var(--text);
+  background: repeating-linear-gradient(
+      135deg,
+      var(--siniflandirilmamis) 0 6px,
+      var(--surface) 6px 12px
+    );
+  color: var(--unclassified-ink);
+}
+
+.stat-unclassified .stat-head,
+.stat-unclassified .stat-count {
+  background: var(--surface);
+  color: var(--unclassified-ink);
+  align-self: flex-start;
+  padding: 0 6px;
+  border-radius: 4px;
+}
