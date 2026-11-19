@@ -8,7 +8,11 @@
 - Wrote the 12-profile, 120-event synthetic night shift. `scripts/generate_noise.py --check` reproduced the six noise patients' readings.
 - Implemented deterministic clock and validated scenario playback. The clinical rule table renders from the active YAML config.
 - `make test` passed: 74 backend tests, TypeScript type check, and Vite build. `make setup` also succeeded in a clean clone.
-- `make demo` served the client and the API from one Uvicorn process. At 1280×720 in Edge, the GREEN discharge, YELLOW reconnect, and RED transfer ran through; the RED blocked another patient and survived reload. Final-state and audit assertions passed.
+- `make dev` served Vite with a working API proxy; `make demo` served the built client and API from one Uvicorn process.
+- Two 1280×720 Edge runs completed GREEN discharge → YELLOW reconnect → RED transfer. Each RED blocked another patient and survived reload. Audit entries matched except for actual UTC wall time.
+- Verified the 56 px RED buttons were visible without scrolling, and the keyboard trap reached role/demo controls without entering the patient board.
+- Verified Y05's filtered lactate in English and Turkish, Turkish preference after reload, the two vital sparklines, the honesty panel, and the Y08 chronic-baseline override in the audit. No external runtime origin was requested in the smoke run.
+- [Demo script](demo-script.md), [clinical rules](clinical-rules.md), and [four browser screenshots](screenshots/) are available.
 
 ## Real vs simulated
 
@@ -25,6 +29,7 @@
 - URL fragment preserves navigation through refresh; patients, results, and acknowledgement state remain on the server. No real integration or outbound runtime calls.
 - The role switch controls demo views, not authentication or authorization. `wait_justified` is recorded as a physician action; its explicit 30-minute snooze is the exception to clearing GREEN indefinitely after an action.
 - Monitor reconnection takes effect at the next cycle. Opening manual entry does not dismiss YELLOW; the nurse must submit a reading.
+- The clinician team owns the numeric bounds. A scenario event cannot be an empty vital sample or a lab result without a value; a supplied MAP is accepted as measured rather than overwritten by the blood-pressure estimate.
 
 ## CLINICAL-REVIEW items
 
@@ -38,4 +43,4 @@
 
 ## Next steps
 
-- Finish the bilingual explanations and transparency panel, then rehearse the demo twice and publish the evidence.
+- Review prototype defaults with the clinical team and rehearse with an independent clinician before the jury. [P2 backlog](backlog.md) is not implemented.
