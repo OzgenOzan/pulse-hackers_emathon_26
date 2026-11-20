@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:,">
+  <title>ŞAHİN GÖZ 2.0 · Clinical Monitoring and Decision Support</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.5; }
+    body { margin: 0 auto; max-width: 960px; padding: 24px 16px 48px; }
+    h1 { margin-bottom: 4px; overflow-wrap: anywhere; }
+    .pill { display: inline-block; font-weight: 700; border: 2px solid currentColor; padding: 2px 10px; border-radius: 6px; }
+    .notice { border-left: 4px solid currentColor; padding: 8px 12px; margin: 16px 0; }
+    img, video { max-width: 100%; height: auto; border-radius: 6px; }
+    .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    pre { overflow-x: auto; }
+    a:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
+    nav ul { padding-left: 20px; }
+    hr { margin: 40px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ŞAHİN GÖZ 2.0 · Clinical Monitoring and Decision Support</h1>
+    <p><span class="pill">SIMULATED DATA</span> Not validated for clinical use.</p>
+    <p>Team 4 PULSE HACKERS · EM@THON 2026 · Synthetic demonstration only.</p>
+  </header>
+
+  <section lang="en" aria-labelledby="en-title">
+    <h2 id="en-title">English</h2>
+    <div class="notice">
+      <strong>Static preview.</strong> The interactive simulation is not running on this page. This page shows the 60-second backup video and screenshots of the local demo. All data is synthetic. The prototype is not validated for clinical use, and it does not make clinical decisions.
+    </div>
+
+    <h3 id="media">60-second backup video and screenshots</h3>
+    <p>The video and screenshots show the Turkish UI, the default recording. The English UI opens by default; the Turkish section below links to this same media.</p>
+    <video controls preload="metadata" src="demo-backup.mp4">
+      <a href="demo-backup.mp4">Download the 60-second backup video (MP4)</a>
+    </video>
+    <div class="shots">
+      <figure><img src="gui-light.png" alt="Şahin Göz clinical overview, light theme"><figcaption>Light theme</figcaption></figure>
+      <figure><img src="gui-dark.png" alt="Şahin Göz clinical overview, dark theme"><figcaption>Dark theme</figcaption></figure>
+      <figure><img src="gui-mobile.png" alt="Şahin Göz clinical overview, mobile layout"><figcaption>Mobile layout</figcaption></figure>
+    </div>
+
+    <h3>Run it locally</h3>
+    <p>Python 3.11+ and Node.js 20+ are required. From the repository root:</p>
+    <pre><code>make setup
+make demo</code></pre>
+    <p>Then open <code>http://127.0.0.1:8000</code>. The UI opens in English; choose Settings → Language → Turkish for Turkish.</p>
+
+    <h3>Links</h3>
+    <nav aria-label="English links">
+      <ul>
+        <li><a href="https://github.com/OzgenOzan/pulse-hackers_emathon_26">Source code and local setup (GitHub)</a></li>
+        <li><a href="https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/main/raw_data/">Synthetic data (raw_data/)</a></li>
+        <li><a href="https://github.com/OzgenOzan/pulse-hackers_emathon_26/blob/main/docs/demo-script.md">Demo script</a></li>
+      </ul>
+    </nav>
+  </section>
+
+  <hr>
+
+  <section lang="tr" aria-labelledby="tr-title">
+    <h2 id="tr-title">Türkçe</h2>
+    <p><span class="pill">SİMÜLE VERİ</span> Klinik kullanım için doğrulanmamıştır.</p>
+    <div class="notice">
+      <strong>Statik önizleme.</strong> Bu sayfada etkileşimli simülasyon çalışmaz. Yerel demonun 60 saniyelik yedek videosu ve ekran görüntüleri İngilizce bölümde yer alır. Tüm veriler sentetiktir. Prototip klinik kullanım için doğrulanmamıştır ve klinik karar vermez.
+    </div>
+
+    <p>Video ve ekran görüntüleri Türkçe arayüzü gösterir. Videoyu ve ekran görüntülerini <a href="#media">İngilizce bölümde</a> bulabilirsiniz.</p>
+
+    <h3>Yerel olarak çalıştırma</h3>
+    <p>Python 3.11+ ve Node.js 20+ gerekir. Depo kök dizininde:</p>
+    <pre><code>make setup
+make demo</code></pre>
+    <p>Ardından <code>http://127.0.0.1:8000</code> adresini açın. Arayüz İngilizce açılır; Türkçe için Ayarlar → Dil → Türkçe seçin.</p>
+
+    <h3>Bağlantılar</h3>
+    <nav aria-label="Türkçe bağlantılar">
+      <ul>
+        <li><a href="https://github.com/OzgenOzan/pulse-hackers_emathon_26">Kaynak kod ve yerel kurulum (GitHub)</a></li>
+        <li><a href="https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/main/raw_data/">Sentetik veriler (raw_data/)</a></li>
+        <li><a href="https://github.com/OzgenOzan/pulse-hackers_emathon_26/blob/main/docs/demo-script.md">Demo senaryosu</a></li>
+      </ul>
+    </nav>
+  </section>
+</body>
+</html>

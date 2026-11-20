@@ -29,3 +29,18 @@ test:
 demo:
 	cd frontend && $(NPM) run build
 	$(VENV_PYTHON) -m uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
+
+.PHONY: pages pages-fallback pages-preview pages-smoke
+pages:
+	$(VENV_PYTHON) scripts/build_pages.py
+
+pages-fallback:
+	$(PYTHON) scripts/build_pages.py --fallback
+
+pages-preview:
+	$(PYTHON) scripts/build_pages.py --preview
+
+pages-smoke:
+	$(VENV_PYTHON) -m pip install playwright==1.58.0
+	$(VENV_PYTHON) -m playwright install chromium
+	$(VENV_PYTHON) scripts/smoke_pages.py $(PAGES_SMOKE_ARGS)

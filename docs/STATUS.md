@@ -134,3 +134,26 @@
 - Review follow-through: `8fded86` bounds clock arithmetic to the whole replay and keeps active/default model objects separate; reset guard tests caught deliberate regressions in role and replay checks. `43b3545` binds the config response to its own replay; Edge discarded newer config received with an older board snapshot. `892fbc6` makes the artifact check reject BOM-less CSVs while still accepting CRLF checkouts.
 - `d120e3a` preserves exact edited cutoff and trend-threshold text without changing the comparisons or the default evidence. It rejects a manual trend range that cannot produce a finite difference. Four focused cases failed before the fix and passed afterward.
 - The final `make demo` build repeated the two default hero runs at 1280×720: identical visible audit, no custom badge, no console errors, and only `127.0.0.1:8000` resource requests. The view was reset to 02:45 with default rules at the end.
+
+## English default and GitHub Pages
+
+- Baseline fallback tag [`v3-rules`](https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/v3-rules) was pushed at `718545d` before edits. The [execution plan](superpowers/plans/2026-11-20-github-pages.md) records the Istanbul start and the shortened deadline.
+- `fc8dbc7`: English is the initial UI language and HTML metadata. A saved Turkish choice still wins, even after reload; a fresh browser with blocked storage starts in English. Chromium verified **Physician → Reset**, 11 **Stable** patients at 02:45, **SIMULATED DATA**, a connected status, and the Turkish round trip against `make demo`.
+- The English-default `make test` passed with 177 backend tests, 638 matching locale keys, palette and TypeScript checks, and all generated artifact checks. The default frontend bundle contains no Pyodide. CPython 3.13.12 also passed all 177 backend tests with `pydantic==2.12.5` and `pydantic-core==2.41.5`; the existing Starlette/AnyIO deprecation warning remains in both runs. No backend compatibility edit was needed.
+- [PR #5](https://github.com/OzgenOzan/pulse-hackers_emathon_26/pull/5) prepares the project Pages URL. The shortened handoff started inside the fallback window, so the static bilingual media page was built and pushed first. The interactive build then passed the local smoke and became the workflow default. There is no public API server; the owner must enable GitHub Actions as the Pages source and merge the PR before the URL works.
+- Pages CI runs pinned `make test` on Python 3.11/Node 20, the version-override backend suite on Python 3.13, and the selected artifact's Chromium smoke before upload. Deployment is main-only; PRs can build but cannot deploy. The fallback keeps the Turkish recording and screenshots unchanged.
+- Chromium passed the fallback smoke at 1280×720 and 390×844 under the repository subpath: English and Turkish notices, all screenshots, a decodable 60-second recording, no horizontal overflow, no browser errors, and only the preview origin. Each viewport loaded 502,204 response-body bytes; a separate direct check read all 1,649,337 bytes of the MP4.
+- The local hero also showed the Bed 06 discharge task at 03:00 and blocked Bed 02 at 03:30. The overview, Bed 01 detail, critical alarm panel, and expanded Settings passed the catalog-based English completeness check.
+- Interactive `make pages` and `make pages-smoke` passed on Chromium at 1280×720 (5.39 s, 25,578,588 response-body bytes across the English and Turkish boots) and 390×844 (4.33 s, 16,930,904 bytes for one cold load). The 03:00 and 03:30 checks, English completeness, saved Turkish, and reload reset passed, with no browser errors, network `/api` requests, or other origins.
+- Final local `make test`: 177 backend tests, 649 matching locale keys, clean palette and TypeScript checks, and unchanged backend and generated artifacts. The production stage bundle has no Pyodide references or worker assets.
+- The first PR checks passed `test` and `browser-parity`, but `ubuntu-latest` resolved to Ubuntu 26.04, which Playwright 1.58.0 did not support. The browser build uses Ubuntu 24.04; the non-browser jobs keep the latest Ubuntu runner.
+
+### Interactive browser packages
+
+| Where | Package versions |
+|---|---|
+| Self-hosted runtime | Pyodide 0.29.5 (CPython 3.13) |
+| Pyodide lockfile | pydantic-core 2.41.5, PyYAML 6.0.2, ssl 1.0.0, libopenssl 1.1.1w, typing-extensions 4.15.0 |
+| Vendored wheels | FastAPI 0.115.12, Starlette 0.46.2, AnyIO 4.16.0, idna 3.20, typing-extensions 4.16.0, annotated-types 0.8.0, typing-inspection 0.4.5, Pydantic 2.12.5 |
+
+The only engine dependency drift is Pydantic 2.11.4 → 2.12.5 and its core 2.33.2 → 2.41.5. Vendored typing-extensions 4.16.0 precedes the lockfile's 4.15.0 on `sys.path`. Compiled dependencies are copied from a hash-verified build-time cache; the browser does not fetch packages from a CDN.

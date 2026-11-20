@@ -47,7 +47,11 @@ function request<T>(method: Method, path: string, body?: unknown, replayId?: str
 }
 
 async function send<T>(method: Method, path: string, body: unknown, replayId?: string, deadline?: AbortSignal): Promise<T> {
-  const res = await fetch(path, {
+  // Pages mode loads the in-browser engine through a dynamic import, so the default bundle never contains it.
+  const transport: (input: string, init?: RequestInit) => Promise<Response> = import.meta.env.MODE === 'pages'
+    ? (await import('./engine/client')).engineFetch
+    : fetch;
+  const res = await transport(path, {
     method,
     signal: deadline,
     headers: body === undefined ? undefined : {

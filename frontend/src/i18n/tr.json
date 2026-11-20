@@ -636,5 +636,16 @@
   "gui.risk.awaiting_evaluation": "Değerlendirme bekliyor",
   "gui.risk.below_watch_threshold": "Yakın takip eşiğinin altında",
   "gui.risk.score_threshold": "Öncelikli klinik değerlendirme gerekli",
-  "gui.risk.no_risk_findings": "Değerlendirmede risk bulgusu yok"
+  "gui.risk.no_risk_findings": "Değerlendirmede risk bulgusu yok",
+  "pages.boot.title": "Şahin Göz tarayıcınızda başlatılıyor",
+  "pages.boot.body": "Kural motoru ve simülasyon bu cihazda çalışır; sunucuya veri gönderilmez. İlk açılış biraz sürebilir.",
+  "pages.boot.runtime": "Python çalışma ortamı indiriliyor…",
+  "pages.boot.packages": "Paketler yükleniyor…",
+  "pages.boot.engine": "Kural motoru başlatılıyor…",
+  "pages.boot.error": "Simülasyon başlatılamadı ({message}).",
+  "pages.boot.video": "60 saniyelik yedek videoyu izleyin",
+  "pages.boot.repo": "Kaynak kod ve yerel kurulum",
+  "pages.rulesAndData": "Veriler sentetiktir ve GitHub deposundaki raw_data/ klasöründe listelenir; hekimler Ayarlar'da simülasyon kurallarını varsayılanlara dönülene veya sayfa yenilenene kadar değiştirebilir.",
+  "pages.rules.confirmLifetime": "Özel kurallar bu sekmede, varsayılanlara dönülene veya sayfa yenilenene kadar geçerlidir.",
+  "pages.about.browser": "Bu genel sürüm, yerel demodaki Python kural motorunu değiştirmeden tarayıcınızda (WebAssembly) çalıştırır. Her sekme kendi simülasyonunu yürütür; sayfayı yenilemek vardiyayı 02:45'ten varsayılan kurallarla yeniden başlatır."
 }

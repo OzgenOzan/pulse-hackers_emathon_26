@@ -636,5 +636,16 @@
   "gui.risk.awaiting_evaluation": "Awaiting assessment",
   "gui.risk.below_watch_threshold": "Below Close Watch threshold",
   "gui.risk.score_threshold": "Priority clinical assessment needed",
-  "gui.risk.no_risk_findings": "No risk findings on assessment"
+  "gui.risk.no_risk_findings": "No risk findings on assessment",
+  "pages.boot.title": "Starting Şahin Göz in your browser",
+  "pages.boot.body": "The rules engine and simulation run on this device; no data is sent to a server. The first visit can take a moment.",
+  "pages.boot.runtime": "Downloading the Python runtime…",
+  "pages.boot.packages": "Loading packages…",
+  "pages.boot.engine": "Starting the rules engine…",
+  "pages.boot.error": "The simulation could not start ({message}).",
+  "pages.boot.video": "Watch the 60-second backup video",
+  "pages.boot.repo": "Source code and local setup",
+  "pages.rulesAndData": "The data is synthetic and listed in the repository's raw_data/ folder; physicians can tune the simulated rules in Settings until the defaults are restored or the page is reloaded.",
+  "pages.rules.confirmLifetime": "Custom rules stay active in this tab until defaults are restored or the page is reloaded.",
+  "pages.about.browser": "This public build runs the local demo's Python rules engine, unchanged, inside your browser (WebAssembly). Each tab runs its own simulation; reloading restarts the shift at 02:45 with the default rules."
 }

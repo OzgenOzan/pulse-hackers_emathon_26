@@ -179,7 +179,7 @@ export function RulesEditor({ config, defaults, replayId, language, editable, bu
         {openCriticalCount > 0 && <p data-testid="rules-confirm-open"><strong>
           {t('gui.rules.confirmOpenCount', { count: openCriticalCount })}
         </strong></p>}
-        <p>{t('gui.rules.confirmLifetime')}</p>
+        <p>{t(import.meta.env.MODE === 'pages' ? 'pages.rules.confirmLifetime' : 'gui.rules.confirmLifetime')}</p>
         <p>{t('gui.rules.confirmWhatIf')}</p>
         <ul className="rules-preview">
           {confirmation.changes.map(({ field, before, after }) => <li key={field.path}>
