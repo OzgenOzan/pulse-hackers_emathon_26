@@ -96,5 +96,37 @@
   Threshold regression failed on hard-coded `kritik`, then passed. At 1280×720 Edge kept the controls disabled without config, showed the default 15/30-minute labels once loaded, and stepped to 03:00.
 - §2.2 (`0d52ac3`) — Added the seven missing TR/EN error keys; `not_at_bed` accepts only `left_bed`, `in_procedure`, or `other`. Tests first caught missing text and a 204 for `banana`, then verified catalog coverage and 422/204 for the rejected/allowed reasons.
 - §2.3 (`5da36ac`) — **CLINICAL-REVIEW:** score-based re-alert within the cooldown applies to critical alarms only. The lifecycle and Y03 API regressions initially re-fired; both pass with the guard. The original RED test is unchanged.
-- §2.4 (`345d610` and the §3 export commit) — `make test` and the Windows PowerShell commands check the clinical rules export, seeded noise, and raw-data export. The initial §2 checkpoint passed with 127 backend tests and all frontend checks.
-- §3 — [Raw jury data](../raw_data/) includes 12 synthetic patient pages, all feed samples, orders and results, the canonical event timeline, and the documented first alerts. It derives delivery, MAP, and lab readings from the existing simulation and rule code.
+- §2.4 (`345d610`, `dd9dd99`) — `make test` and the Windows PowerShell commands check the clinical rules export, seeded noise, and raw-data export. Both P0 checkpoints passed with 127 backend tests and all frontend checks.
+- §3 (`dd9dd99`) — [Raw jury data](../raw_data/) includes 12 synthetic patient pages, 91 vital samples, all lab orders and results, 135 canonical events, and the five documented first alerts. `--check` passed, including a BOM and CRLF text comparison smoke; the projection preserved measured MAP in a synthetic variant, marked six undelivered Y03 samples, and showed the Y05 suppression. Excel opened the 91×14 vitals table and preserved ş, ğ and İ in the patient data.
+  The published Y01 page was also checked with GitHub's Markdown renderer: identity, vitals, and lab tables render with the synthetic notice.
+
+- §4.1–4.2 and §4.4 (`8f97026`) — Config defaults, guarded apply/reset, structured field errors and process-lived history. The original 32 rules API cases failed before implementation; seven further cases reproduced malformed keys, incorrect bound locations, invalid scenario reload, no-op replay rotation, and clock range. All 39 passed after the fixes. A concurrent-write smoke accepted one PUT and rejected the other with `stale_replay`, recording one change.
+
+### Clinical rules decisions
+
+- The clinician-owned YAML remains the default and is never written by the app. An override and its change history live in memory for the server process; the normal replay reset keeps the active rules, while **Varsayılan kurallara dön** or a server restart restores the shipped defaults.
+- The physician demo role can apply rules; the nurse sees the read-only view. This is not authentication and the rules apply session-wide, not per user or per tab.
+- Applying or restoring rules restarts the replay at 02:45 with a new replay ID. The confirmation warns that open critical alarms and replay records are cleared. The replay audit stays separate from rules history.
+- Only the whitelisted numeric and Boolean settings are editable. Cutoffs that are `null`, rule metadata, diagnosis mappings, required measurements, evaluation cadence, and the RED navigation interlock remain read-only. Validation preserves integer fields and checks the existing score, lab, overdue, manual-entry, and GCS constraints. An invalid request leaves the rules and replay unchanged.
+- **CLINICAL-REVIEW:** edited thresholds are simulation what-ifs only. Confirm the SpO₂/RR language and RED-only re-alert, and start the jury demo with default rules and no **ÖZEL KURAL SETİ** pill.
+
+- §4.3 (`12fec05`) — Edge at 1280×720 replayed the default hero twice with identical 03:30 seen/transfer records and no custom badge. In Settings, threshold 2 restarted at 02:45 and made Y01 critical at 03:15; both neutral badges appeared. Reset warned about the unrecorded critical alarm and removed both badges. Invalid Close Watch threshold 3 focused the field error without applying; decimal comma worked; the nurse view was read-only. With the next poll held in a second tab, a stale draft received the localized conflict and the active config refreshed. The browser observed no page errors and only loopback resource origins.
+
+### Optional P2 checks
+
+- §5 (`a4602e7`, `2020c98`) — Edge with `AbortSignal.any` and `AbortSignal.timeout` unavailable still loaded config and stepped to 03:00. In two tabs, the second tab followed playback at 60× and 120× and reset to 30×.
+- §5 (`bd0cf1b`) — The derived default replay CSV produced 90 patient evaluations across eight cycle boundaries, including Y01 at score 2 / Yakın Takip at 03:15 and score 3 / Kritik at 03:30.
+- §5 (`f841521`) — The YAML proposal is an attachment labelled `öneri — config.yaml'ın yerine geçmez`; the download matched active custom rules and did not reset the replay.
+
+### Deferred until after the jury
+
+- M2: return structured vital flag keys instead of Turkish strings from `gui_projection.py`.
+- M5: prune unused v1 locale keys and add a dead-key check.
+- C4: support scenarios crossing midnight; today invalid timelines are rejected at load.
+- Add Vitest/React Testing Library safety tests and GitHub Actions CI.
+- Add persistence, actual role-based authorization, and server-sent events.
+
+### Release checks
+
+- `make test`: 166 backend tests versus 122 on the verified baseline; palette and its two tests, 638 matching locale keys and placeholders, TypeScript, Vite, and all three generated-artifact checks passed. The existing Starlette/AnyIO deprecation warning remains.
+- The clinician-owned YAML, night-shift JSON, three protected tests, original RED re-alert test, screenshots, backup recording, and original hero text are unchanged. The what-if rehearsal is an optional Q&A beat only.

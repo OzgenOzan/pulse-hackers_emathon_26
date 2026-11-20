@@ -90,3 +90,9 @@ The project is rule-based and uses prototype thresholds only. It illustrates tra
 ### Raw data for the jury
 
 Browse [raw_data/](raw_data/) to inspect the synthetic patient profiles, vital and lab feeds, events, and expected first alerts without running the app. The [patient pages](raw_data/night_shift_0245/patients/) organize the same feed by patient; the CSVs indicate which monitor samples the unattended simulator delivers.
+
+### Editing clinical rules (Ayarlar)
+
+In the **Hekim** demo role, open **Ayarlar → Klinik kurallar** to compare and tune the simulated thresholds and limits. Applying a change restarts the shift at 02:45, clears the prior replay's alarms and records, and displays **ÖZEL KURAL SETİ**. Changes are shared across tabs for the current server process; **Varsayılan kurallara dön** or a server restart restores the default rules. The **Hemşire** view is read-only. The demo role is not authentication, and the editor never writes `config.yaml`. These are simulation what-ifs, not clinical recommendations.
+
+With the demo running, [download the active rules as an advisory YAML](http://127.0.0.1:8000/api/config/export). It is a proposal, not a replacement for `config.yaml`.
