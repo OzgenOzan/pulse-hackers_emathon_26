@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { api, ApiError } from '../api';
 import { AboutPrototype } from '../components/AboutPrototype';
 import { DemoControls } from '../components/DemoControls';
@@ -24,6 +24,7 @@ import type { Alert, AuditEntry, CriticalAlarm, Detail, Language, ManualValues, 
 import './integration.css';
 
 const lockNotice = () => t('gui.error.red_navigation_blocked');
+const RESOURCE_RETRY_MS = 2000;
 type ReplaySelection = { id: string; replay: string };
 
 export function ControlPanel() {
@@ -44,6 +45,7 @@ export function ControlPanel() {
   const [manual, setManual] = useState<ReplaySelection | null>(null);
   const [alarmAnchor, setAlarmAnchor] = useState<HTMLDivElement | null>(null);
   const mobile = useMediaQuery('(max-width: 767px)');
+  const manualReasonId = useId();
   const { state, revision, busy, connection, lastSuccess, mutate } = useSession(view.role, setNotice);
   const offline = connection === 'offline';
   const replay = state?.sim.replay_id;
@@ -114,11 +116,27 @@ export function ControlPanel() {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    void Promise.all([api.config(), api.scenarios()]).then(([rules, demos]) => {
-      if (active) { setConfig(rules); setScenarios(demos); }
-    }).catch(error => { if (active) setNotice(guiError(error)); });
-    return () => { active = false; };
+    const lifetime = new AbortController();
+    const load = <T,>(read: (signal: AbortSignal) => Promise<T>, accept: (value: T) => void) => {
+      let timer: number | undefined;
+      const attempt = async () => {
+        try {
+          const value = await read(AbortSignal.any([lifetime.signal, AbortSignal.timeout(5000)]));
+          if (!lifetime.signal.aborted) accept(value);
+        } catch {
+          if (!lifetime.signal.aborted) timer = window.setTimeout(attempt, RESOURCE_RETRY_MS);
+        }
+      };
+      void attempt();
+      return () => window.clearTimeout(timer);
+    };
+    const cancelConfigRetry = load(api.config, setConfig);
+    const cancelScenarioRetry = load(api.scenarios, setScenarios);
+    return () => {
+      lifetime.abort();
+      cancelConfigRetry();
+      cancelScenarioRetry();
+    };
   }, []);
 
   useEffect(() => {
@@ -179,7 +197,7 @@ export function ControlPanel() {
   }
 
   function openVitals(id: string) {
-    if (view.role === 'nurse' && config && !offline && replay && select(id)) setManual({ id, replay });
+    if (view.role === 'nurse' && config && !busy && !offline && replay && select(id)) setManual({ id, replay });
   }
 
   function saveVitals(values: ManualValues) {
@@ -189,6 +207,8 @@ export function ControlPanel() {
   }
 
   const alarms = state?.critical_alarms ?? [];
+  const activeAlarms = new Map(alarms.map(alarm => [alarm.patient_id, alarm]));
+  const patientsById = new Map(state?.patients.map(patient => [patient.id, patient]));
   const tasks = state?.tasks ?? [];
   const listPage = view.route === 'genel-bakis' || view.route === 'aktif-hastalar' || view.route === 'kritik-hastalar';
   const queuePage = view.route === 'bekleyen-islemler' || view.route === 'hekim-paneli' || view.route === 'hemsire-paneli';
@@ -206,14 +226,15 @@ export function ControlPanel() {
   const savedAlarms = history?.replay === replay ? history?.alarms : undefined;
   const statChip = criticalPreset ? { label: statusLabels.kritik, clear: () => goTo('aktif-hastalar') }
     : statFilter ? { label: shellCopy.stats[statFilter], clear: () => setStatFilter(null) } : undefined;
+  const vitalsUnavailable = config ? undefined : alarmCopy.tasks.vitalsRulesUnavailable;
   const taskProps = { role: view.role, busy, offline, onAck: taskAck, onVitals: openVitals,
-    lockReason: blockingPatientId ? lockNotice() : undefined };
+    lockReason: blockingPatientId ? lockNotice() : undefined, vitalsUnavailable };
   const openEvaluation = (alarm: CriticalAlarm) => {
     if (replay && view.role === 'physician' && (!blockingPatientId || alarm.blocking)) setEvaluation({ id: alarm.id, replay });
   };
-  const alarmPanel = alarms.length > 0 && <AlarmPanel alarms={alarms} role={view.role} busy={busy} offline={offline}
+  const alarmPanel = alarms.length > 0 && <AlarmPanel alarms={alarms} patients={patientsById} role={view.role} busy={busy} offline={offline}
     onView={select} onSeen={markSeen} onEvaluate={openEvaluation} />;
-  const selectedAlarm = alarms.find(alarm => alarm.patient_id === selectedId);
+  const selectedAlarm = selectedId ? activeAlarms.get(selectedId) : undefined;
   const seenByRole = selectedAlarm?.seen[view.role];
 
   return (
@@ -235,11 +256,11 @@ export function ControlPanel() {
         })} onPlay={speed => void mutate(() => api.play(speed))} onPause={() => void mutate(api.pause)}
         onStep={() => void mutate(api.step)} />}
       stickyAlarm={listPage && alarms.length > 0 &&
-        <AlarmStrip key={replay} alarms={alarms} panel={alarmAnchor} onView={select} announce={mobile || view.route !== 'genel-bakis'} />}
+        <AlarmStrip key={replay} alarms={alarms} panel={alarmAnchor} onView={select} />}
       alarm={alarmPanel && view.route === 'genel-bakis' && !mobile &&
         <div ref={setAlarmAnchor} className="gui-alarm-anchor" tabIndex={-1}>{alarmPanel}</div>}
       floating={<>
-        {summary && <PatientSheet summary={summary} detail={detail?.key === detailKey ? detail.value : null}
+        {summary && <PatientSheet summary={summary} activeAlarm={selectedAlarm} detail={detail?.key === detailKey ? detail.value : null}
           config={config} offline={offline} modal={mobile} onClose={() => { setManual(null); navigate({ ...view, patient: null }); }}
           primaryActions={mobile && selectedAlarm && <div className="mobile-alarm-actions">
             {seenByRole
@@ -256,10 +277,14 @@ export function ControlPanel() {
           actions={<>
             <TaskActions {...taskProps} tasks={selectedTasks} patients={state?.patients} />
             {view.role === 'nurse' && !selectedTasks.some(a => a.recommended_actions.includes('vitals_entered')) &&
-              <button type="button" className="gui-primary" data-testid="detail-enter-vitals" disabled={!config || busy || offline}
-                onClick={() => openVitals(summary.id)}>{alarmCopy.tasks.vitals}</button>}
+              <div className="alarm-action">
+                <button type="button" className="gui-primary" data-testid="detail-enter-vitals" disabled={!config || busy || offline}
+                  aria-describedby={vitalsUnavailable ? manualReasonId : undefined}
+                  onClick={() => openVitals(summary.id)}>{alarmCopy.tasks.vitals}</button>
+                {vitalsUnavailable && <span className="alarm-reason" id={manualReasonId}>{vitalsUnavailable}</span>}
+              </div>}
           </>} />}
-        {editing && <EvaluationSheet key={`${replay}/${editing.id}`} alarm={editing} busy={busy} offline={offline}
+        {editing && <EvaluationSheet key={`${replay}/${editing.id}`} alarm={editing} current={patientsById.get(editing.patient_id)} busy={busy} offline={offline}
           onClose={() => setEvaluation(null)} onSave={saveEvaluation} />}
         {entering && config && <ManualVitals key={`${replay}/${entering.id}`} profile={entering} rules={config.manual_entry}
           busy={busy || offline} onClose={() => setManual(null)} onSave={saveVitals} />}
@@ -279,7 +304,10 @@ export function ControlPanel() {
         <section aria-labelledby="gui-history-title">
           <div className="gui-list-head"><h2 id="gui-history-title">{routeLabels[view.route]}</h2></div>
           {alarmPanel}
-          {savedAlarms ? <AlarmHistory alarms={savedAlarms} onView={select} /> : <p role="status">{t('gui.alarmLoading')}</p>}
+          {savedAlarms ? <AlarmHistory alarms={savedAlarms} onView={select}
+            viewReason={id => !patientsById.has(id) ? t('gui.error.patientInactive')
+              : blockingPatientId && blockingPatientId !== id ? lockNotice() : undefined} />
+            : <p role="status">{t('gui.alarmLoading')}</p>}
         </section>
       ) : queuePage ? (
         <section aria-labelledby="gui-queue-title">
@@ -296,7 +324,7 @@ export function ControlPanel() {
                 if (criticalPreset) goTo('aktif-hastalar');
               }} />
           </div>
-          <Patients patients={filtered} tasks={tasks} blockingPatientId={blockingPatientId}
+          <Patients patients={filtered} activeAlarms={activeAlarms} tasks={tasks} blockingPatientId={blockingPatientId}
             offline={offline} mode={mode} onOpen={select} />
         </section>
       )}

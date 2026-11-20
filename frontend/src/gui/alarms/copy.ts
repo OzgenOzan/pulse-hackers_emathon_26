@@ -5,6 +5,9 @@ import { measurement } from '../clinical';
 export const NOTE_MAX = 280;
 
 export const copy = {
+  get previousFindings() { return t('alarm.previousFindings'); },
+  previousFindingsMore: (list: string, more: number) => t('alarm.previousFindingsMore', { list, more }),
+  currentScore: (score: number) => t('alarm.currentScore', { score }),
   live: {
     get newAlarm() { return (beds: string) => t('alarm.live.newAlarm', { beds }); },
   },
@@ -42,7 +45,6 @@ export const copy = {
   sheet: {
     get heading() { return t('alarm.sheet.heading'); },
     get evidence() { return t('alarm.sheet.evidence'); },
-    score: (score: number) => t('alarm.sheet.score', { score }),
     get note() { return t('alarm.sheet.note'); },
     noteCount: (count: number, max: number) => `${count} / ${max}`,
     get decision() { return t('alarm.sheet.decision'); },
@@ -57,7 +59,7 @@ export const copy = {
     roleDisabled: (role: string) => (role === 'physician' ? t('alarm.lock.physician') : t('alarm.lock.nurse')),
     get vitals() { return t('alarm.tasks.vitals'); },
     discharge: (duration: string) => t('alarm.tasks.discharge', { duration }),
-    gap: (duration: string) => t('alarm.tasks.gap', { duration }),
+    get vitalsRulesUnavailable() { return t('alarm.tasks.vitalsRulesUnavailable'); },
   },
   history: {
     get heading() { return t('alarm.history.heading'); },

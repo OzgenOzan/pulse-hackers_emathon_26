@@ -20,7 +20,7 @@ export function useSession(role: Role, notify: (notice: string) => void) {
   const [pollKey, requestPoll] = useState(0);
   const failures = useRef(0);
   const generation = useRef(0);
-  const mutation = useRef(false);
+  const mutation = useRef<'posting' | 'reconciling' | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -30,20 +30,27 @@ export function useSession(role: Role, notify: (notice: string) => void) {
       const start = performance.now();
       const guard = generation.current;
       const slow = window.setTimeout(() => {
-        if (alive && !mutation.current && guard === generation.current) {
+        if (alive) {
           setConnection(current => current === 'offline' ? current : 'weak');
         }
       }, 2000);
       try {
         const state = await api.state(role, AbortSignal.any([lifetime.signal, AbortSignal.timeout(5000)]));
-        if (alive && !mutation.current && guard === generation.current) {
+        if (alive) {
           failures.current = 0;
           setLastSuccess(new Date());
           setConnection(performance.now() - start > 2000 ? 'weak' : 'connected');
+          if (mutation.current === 'posting' || guard !== generation.current) return;
           setSnapshot({ role, state });
+          if (mutation.current === 'reconciling') {
+            mutation.current = null;
+            setRevision(value => value + 1);
+            setBusy(false);
+            notify('');
+          }
         }
       } catch {
-        if (alive && !mutation.current && guard === generation.current) {
+        if (alive) {
           setConnection(++failures.current >= 3 ? 'offline' : 'weak');
         }
       } finally {
@@ -57,23 +64,26 @@ export function useSession(role: Role, notify: (notice: string) => void) {
       window.clearTimeout(timer);
       lifetime.abort();
     };
-  }, [role, pollKey]);
+  }, [role, pollKey, notify]);
 
   const mutate = useCallback(async (action: () => Promise<unknown>): Promise<boolean> => {
     if (mutation.current || connection === 'offline') return false;
-    mutation.current = true;
+    mutation.current = 'posting';
     generation.current += 1;
     setBusy(true);
     let succeeded = false;
+    let uncertain = false;
     try {
       await action();
       succeeded = true;
     } catch (error) {
-      notify(guiError(error));
+      // A transport failure, timeout or server error may follow a committed mutation.
+      uncertain = !(error instanceof ApiError && error.status >= 400 && error.status < 500 && error.status !== 408);
+      notify(uncertain ? t('gui.error.mutationUncertain') : guiError(error));
     } finally {
       generation.current += 1;
-      mutation.current = false;
-      setBusy(false);
+      mutation.current = uncertain ? 'reconciling' : null;
+      if (!uncertain) setBusy(false);
       requestPoll(key => key + 1);
       if (succeeded) setRevision(value => value + 1);
     }

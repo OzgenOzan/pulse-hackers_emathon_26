@@ -1,12 +1,15 @@
 import { Eye, Lock, TriangleAlert } from 'lucide-react';
 import { StatusLabel } from '../../components/ui/StatusLabel';
-import type { Alert, Summary } from '../../types';
+import type { Alert, CriticalAlarm, Summary } from '../../types';
+import { copy as alarmCopy } from '../alarms/copy';
+import { alertTitle } from '../alarms/model';
 import { bedLabel, consultLabel, labDisplayLabel, reasonLabel, stayLabel, statusLabels, vitalFlagLabel } from '../clinical';
 import { copy } from './copy';
-import { ageSex, alertTitle, complaintOf, describeState, displayName, lastMeasureText, protocolOf, statusSublabel, vitalCells } from './model';
+import { ageSex, complaintOf, describeState, displayName, lastMeasureText, protocolOf, statusSublabel, vitalCells } from './model';
 
-export function PatientTable({ patients, tasks, blockingPatientId, offline, onOpen }: {
-  patients: Summary[]; tasks: Alert[]; blockingPatientId: string | null; offline: boolean; onOpen: (id: string) => void;
+export function PatientTable({ patients, activeAlarms, tasks, blockingPatientId, offline, onOpen }: {
+  patients: Summary[]; activeAlarms: ReadonlyMap<string, CriticalAlarm>; tasks: Alert[];
+  blockingPatientId: string | null; offline: boolean; onOpen: (id: string) => void;
 }) {
   return <div className="patient-table-scroll" role="region" aria-label={copy.tableLabel} tabIndex={0}>
     <table className="patient-table">
@@ -20,7 +23,12 @@ export function PatientTable({ patients, tasks, blockingPatientId, offline, onOp
       </tr></thead>
       <tbody>{patients.map(patient => {
         const locked = !!blockingPatientId && blockingPatientId !== patient.id;
-        const issues = [...new Set([...patient.risk_status.reasons, ...patient.risk_status.data_issues].map(reasonLabel))];
+        const alarm = activeAlarms.get(patient.id);
+        const reasons = patient.risk_status.reasons.map(reasonLabel);
+        const dataIssues = patient.risk_status.data_issues.map(reasonLabel);
+        const issues = alarm?.criteria_met === false
+          ? [`${alarmCopy.previousFindings}: ${reasons.join(' · ')}`, ...dataIssues]
+          : [...new Set([...reasons, ...dataIssues])];
         const activeTasks = tasks.filter(a => a.patient_id === patient.id && a.status === 'active');
         return <tr key={patient.id} data-testid={`board-row-${patient.id}`} data-status={patient.risk_status.key}
           data-locked={locked || undefined} onClick={() => onOpen(patient.id)}>
@@ -30,12 +38,14 @@ export function PatientTable({ patients, tasks, blockingPatientId, offline, onOp
           </button></th>
           <td>{bedLabel(patient.bed)}</td>
           <td className="table-risk" title={[...issues, ...activeTasks.map(alertTitle)].join(' · ')}>
-            <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient)} />
+            <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient, !!alarm)} />
             {patient.risk_status.worsened && <span className="badge-worsened">{copy.worsened}</span>}
             {patient.risk_status.key === 'siniflandirilmamis' && issues[0] && <small className="table-issue">{issues[0]}</small>}
-            {patient.risk_status.key !== 'siniflandirilmamis' && patient.risk_status.data_issues[0] &&
-              <small className="table-issue">{reasonLabel(patient.risk_status.data_issues[0])}</small>}
-            {patient.risk_status.key === 'stabil' && activeTasks.length > 0 && <small className="table-issue">{copy.dischargePending}</small>}
+            {patient.risk_status.key !== 'siniflandirilmamis' && dataIssues[0] && !activeTasks.some(task => task.level === 'YELLOW') &&
+              <small className="table-issue">{dataIssues[0]}</small>}
+            {activeTasks.map(task => <small key={task.id} className="table-issue">
+              {task.level === 'GREEN' ? alarmCopy.tasks.title('GREEN') : alertTitle(task)}
+            </small>)}
           </td>
           <td>{offline ? <span className="table-gap">{copy.stale}</span> : patient.score}</td>
           <td className="table-extra">{complaintOf(patient) ?? copy.none}</td><td>{stayLabel(patient.minutes_in_zone)}</td>

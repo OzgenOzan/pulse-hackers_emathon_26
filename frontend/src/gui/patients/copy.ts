@@ -33,7 +33,6 @@ export const copy = {
   get dataIssues() { return t('patients.surface.dataIssues'); },
   get reconnect() { return t('patients.surface.reconnect'); },
   get resultsIdle() { return t('patients.surface.resultsIdle'); },
-  get alertFallback() { return t('patients.surface.alertFallback'); },
   get alertOpen() { return t('patients.surface.alertOpen'); },
   get unknownTest() { return t('patients.surface.unknownTest'); },
   get suppressedFallback() { return t('patients.surface.suppressedFallback'); },
@@ -68,9 +67,11 @@ export const copy = {
   get vitals() { return t('patients.vitals'); },
   get trends() { return t('patients.trends'); },
   get trendNone() { return t('patients.trendNone'); },
-  get trendSummary() {
-    return (latest: string, low: string, high: string) => t('patients.trendSummary', { latest, low, high });
-  },
+  trendLatest: (latest: string, time: string) => t('patients.trendLatest', { latest, time }),
+  trendHistorical: (latest: string, time: string) => t('patients.trendHistorical', {
+    latest, time, freshness: t('patients.surface.stale'),
+  }),
+  trendSummary: (reading: string, low: string, high: string) => t('patients.trendSummary', { reading, low, high }),
   get sex() { return { M: t('patients.surface.sexM'), F: t('patients.surface.sexF') }; },
   get vital() {
     return {
@@ -87,8 +88,6 @@ export const copy = {
   get riskHead() { return t('patients.filter.risk'); },
   get bedHead() { return t('patients.surface.bedHead'); },
   get scoreHead() { return t('patients.surface.scoreHead'); },
-  get dischargePending() { return t('patients.surface.dischargePending'); },
-  get dischargeWaiting() { return t('patients.surface.dischargeWaiting'); },
   get dischargeWaitingMinutes() {
     return (minutes: number) => t('patients.surface.dischargeWaitingMinutes', { minutes });
   },
