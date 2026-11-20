@@ -40,7 +40,7 @@ def vital_flags(components: list[Component], rules: RedRules) -> dict[str, Vital
                 op = '≤' if rule.op == '<=' else '<'
                 cutoff = format_rule_value(rule.value, int(param == 'temp')).replace('.', ',')
                 note = f'{op} {cutoff}'
-        level = 'kritik' if component.points >= 3 else 'yakin_takip'
+        level = 'kritik' if component.points >= rules.threshold else 'yakin_takip'
         if param not in flags:
             flags[param] = VitalFlag(level=level, note=note)
         elif note not in flags[param].note.split(' · '):

@@ -23,7 +23,7 @@ export function ListModeButtons({ mode, onMode }: { mode: ListMode; onMode: (mod
   </div>;
 }
 
-export function FilterBar({ filters, onChange, allPatients, defaultExpanded, mode, onMode, statChip, onClear }: {
+export function FilterBar({ filters, onChange, allPatients, defaultExpanded, mode, onMode, statChip, overdueMinutes, onClear }: {
   filters: Filters;
   onChange: (filters: Filters) => void;
   allPatients: Summary[];
@@ -31,6 +31,7 @@ export function FilterBar({ filters, onChange, allPatients, defaultExpanded, mod
   mode: ListMode;
   onMode: (mode: ListMode) => void;
   statChip?: { label: string; clear: () => void };
+  overdueMinutes?: number;
   onClear: () => void;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -46,7 +47,9 @@ export function FilterBar({ filters, onChange, allPatients, defaultExpanded, mod
   if (filters.physician) chips.push({ label: staffLabel(filters.physician), clear: () => set('physician', '') });
   if (filters.nurse) chips.push({ label: staffLabel(filters.nurse), clear: () => set('nurse', '') });
   if (filters.stay) chips.push({ label: t('patients.filter.stayChip', { hours: Number(filters.stay) / 60 }), clear: () => set('stay', '') });
-  if (filters.oldVitals) chips.push({ label: t('patients.filter.oldVitals'), clear: () => set('oldVitals', false) });
+  const oldVitalsLabel = overdueMinutes === undefined ? t('patients.filter.oldVitalsLoading')
+    : t('patients.filter.oldVitals', { minutes: overdueMinutes });
+  if (filters.oldVitals && overdueMinutes !== undefined) chips.push({ label: oldVitalsLabel, clear: () => set('oldVitals', false) });
   if (filters.sort !== 'risk') chips.push({ label: t('patients.filter.sortOff'), clear: () => set('sort', 'risk') });
 
   return <div className="patient-filter">
@@ -87,8 +90,8 @@ export function FilterBar({ filters, onChange, allPatients, defaultExpanded, mod
           <option value="120">{t('patients.filter.stayOption', { hours: 2 })}</option>
           <option value="240">{t('patients.filter.stayOption', { hours: 4 })}</option>
         </select></label>
-        <label className="filter-check"><input type="checkbox" checked={filters.oldVitals}
-          onChange={e => set('oldVitals', e.target.checked)} />{t('patients.filter.oldVitals')}</label>
+        <label className="filter-check"><input type="checkbox" checked={filters.oldVitals} disabled={overdueMinutes === undefined}
+          onChange={e => set('oldVitals', e.target.checked)} />{oldVitalsLabel}</label>
       </div>
     </div>}
   </div>;

@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 
 import pytest
@@ -243,6 +244,18 @@ def test_unattended_counts_and_flags_preserve_clinical_assessment():
         ]
         step(client)
         assert counts(state(client))[:5] == (12, 3, 0, 8, 1)
+
+
+def test_vital_flags_follow_red_threshold():
+    from app.domain.models import Component
+    from app.engine.config import load_config
+    from app.gui_projection import vital_flags
+
+    component = Component(key='map_low', label='MAP', value=64, unit='mmHg', rule='< 65', points=3,
+                          observed_at=datetime(2026, 11, 20, 3, 30))
+    rules = load_config().red
+    assert vital_flags([component], rules)['map'].level == 'kritik'
+    assert vital_flags([component], rules.model_copy(update={'threshold': 4}))['map'].level == 'yakin_takip'
 
 
 def test_gcs_freshness_boundary_and_evaluated_high_risk_label():

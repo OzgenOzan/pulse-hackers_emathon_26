@@ -62,5 +62,5 @@ export const api = {
   reset: (scenarioId: string) => request<void>('POST', '/api/sim/reset', { scenario_id: scenarioId }),
   play: (speed: Speed) => request<void>('POST', '/api/sim/play', { speed }),
   pause: () => request<void>('POST', '/api/sim/pause'),
-  step: () => request<void>('POST', '/api/sim/step', { minutes: 15 }),
+  step: (minutes: number) => request<void>('POST', '/api/sim/step', { minutes }),
 };

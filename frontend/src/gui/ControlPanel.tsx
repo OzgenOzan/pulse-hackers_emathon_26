@@ -221,7 +221,8 @@ export function ControlPanel() {
       || tasks.some(a => a.target_role === view.role && a.patient_id === patient.id);
     return patient.risk_status.key === statFilter;
   }) ?? [];
-  const filtered = listPage && simTime ? filterPatients(stats, filters, simTime) : [];
+  const overdueMinutes = config?.yellow.vitals_overdue_minutes;
+  const filtered = listPage && simTime ? filterPatients(stats, filters, simTime, overdueMinutes) : [];
   const selectedTasks = tasks.filter(a => a.patient_id === selectedId);
   const savedAlarms = history?.replay === replay ? history?.alarms : undefined;
   const statChip = criticalPreset ? { label: statusLabels.kritik, clear: () => goTo('aktif-hastalar') }
@@ -248,13 +249,14 @@ export function ControlPanel() {
         } else goTo('klinik-alarmlar');
       }}
       demo={state && <DemoControls sim={state.sim} scenarios={scenarios} busy={busy || offline}
+        cycleMinutes={config?.cycle_minutes}
         onReset={id => void mutate(() => api.reset(id)).then(ok => {
           if (!ok) return;
           setManual(null); setEvaluation(null); setStatFilter(null); setFilters(emptyFilters); setNotice('');
           navigate({ role: view.role, route: 'genel-bakis', patient: null }, true);
           window.scrollTo(0, 0);
         })} onPlay={speed => void mutate(() => api.play(speed))} onPause={() => void mutate(api.pause)}
-        onStep={() => void mutate(api.step)} />}
+        onStep={minutes => void mutate(() => api.step(minutes))} />}
       stickyAlarm={listPage && alarms.length > 0 &&
         <AlarmStrip key={replay} alarms={alarms} panel={alarmAnchor} onView={select} />}
       alarm={alarmPanel && view.route === 'genel-bakis' && !mobile &&
@@ -319,6 +321,7 @@ export function ControlPanel() {
           <div className="gui-list-head"><h2 id="gui-patient-title">{routeLabels[criticalPreset ? 'kritik-hastalar' : 'aktif-hastalar']}</h2>
             <FilterBar key={view.route} filters={filters} onChange={setFilters} allPatients={state.patients}
               defaultExpanded={view.route === 'aktif-hastalar'} mode={mode} onMode={setMode} statChip={statChip}
+              overdueMinutes={overdueMinutes}
               onClear={() => {
                 setFilters(emptyFilters); setStatFilter(null);
                 if (criticalPreset) goTo('aktif-hastalar');

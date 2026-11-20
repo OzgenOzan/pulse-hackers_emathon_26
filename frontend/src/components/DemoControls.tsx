@@ -9,6 +9,7 @@ const SPEEDS: readonly Speed[] = [30, 60, 120];
 export function DemoControls({
   sim,
   scenarios,
+  cycleMinutes,
   busy,
   onReset,
   onPlay,
@@ -17,11 +18,12 @@ export function DemoControls({
 }: {
   sim: SimStatus;
   scenarios: ScenarioInfo[];
+  cycleMinutes?: number;
   busy: boolean;
   onReset: (scenarioId: string) => void;
   onPlay: (speed: Speed) => void;
   onPause: () => void;
-  onStep: () => void;
+  onStep: (minutes: number) => void;
 }) {
   const [scenario, setScenario] = useState(sim.scenario_id);
   const [speed, setSpeed] = useState<Speed>(sim.speed);
@@ -71,8 +73,9 @@ export function DemoControls({
           ))}
         </select>
       </label>
-      <button type="button" data-testid="demo-step" disabled={busy || sim.playing} onClick={onStep}>
-        {t('demo.step')}
+      <button type="button" data-testid="demo-step" disabled={busy || sim.playing || cycleMinutes === undefined}
+        onClick={() => { if (cycleMinutes !== undefined) onStep(cycleMinutes); }}>
+        {cycleMinutes === undefined ? t('demo.stepLoading') : t('demo.step', { minutes: cycleMinutes })}
       </button>
       <span className="demo-status" role="status">
         {sim.playing ? t('demo.playing') : t('demo.paused')} · {fmtTime(sim.time)}

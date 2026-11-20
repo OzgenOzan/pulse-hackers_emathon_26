@@ -84,7 +84,13 @@
 - P2 started after P1 was published at 23:46 Istanbul time, before the 04:30 cutoff. Settings enables English only when both catalogs have matching nonempty messages and placeholder names. Turkish remains the default; the chosen language survives reload.
 - The shift summary counts actual audit records and labels them as simulation activity, not clinical performance. In two final replays Edge showed one seen record, one recorded critical evaluation, and one filtered lab. Both runs produced the same 10 audit entries except for wall-clock timestamps.
 - Final browser checks also covered a 48 px primary action and locked secondary alarm at 04:00, and English patient detail at 390×844 with localized staff/lab names and the disabled physician action.
-- Published on [`feat/gui-2`](https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/feat/gui-2) in [PR #3](https://github.com/OzgenOzan/pulse-hackers_emathon_26/pull/3); not merged.
+- Published on [`feat/gui-2`](https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/feat/gui-2) and merged in [PR #3](https://github.com/OzgenOzan/pulse-hackers_emathon_26/pull/3) (`baca20b`).
 - Review fixes distinguish a latched alarm's earlier findings from its current score, keep a prior evaluation out of a newly active alarm’s status, and show the seen/decision timeline and note in patient detail. A departed patient remains visible in the history with its detail action disabled and explained. The clinical engine and server-side lock are unchanged.
 - Stale trend endpoints show the measurement time and the chart breaks at missing samples. Monitor-only gaps are distinct from overdue vitals, tablet navigation no longer covers the detail sheet, and one assertive critical alert region works on every route.
 - Failed startup resources reload independently. A timed-out mutation keeps actions disabled until reconciliation. Edge held a real successful seen response: the connection showed offline, then accepted the saved seen record after recovery without sending a duplicate POST. The palette regression tests and final 571-key locale check passed.
+
+## Follow-up 03
+
+- The remote [`v2-gui`](https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/v2-gui) fallback was published before edits at `660407a` (the same tree as `baca20b`). Baseline: `make test` passed with 122 backend tests.
+- §2.1 — Vital flag severity, demo step, and overdue-vitals filter read the active rules. **CLINICAL-REVIEW:** localized hypoxaemia (SpO₂) and tachypnoea (RR) findings for the disabled candidate rules.
+  Threshold regression failed on hard-coded `kritik`, then passed. At 1280×720 Edge kept the controls disabled without config, showed the default 15/30-minute labels once loaded, and stepped to 03:00.
