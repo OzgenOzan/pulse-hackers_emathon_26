@@ -89,6 +89,12 @@ Y03's monitor disconnects at 03:00 (`monitor_disconnect`; it resumes only on nur
 - **Y08's chronically low MAP still raises a critical alarm.** All three Y08 samples have MAP at or below 65 mmHg (64.00, 64.00 and 63.67), and the scenario documents a RED alert at 04:15.
 - **Y05's lactate of 4.2 mmol/L is suppressed.** It is above the 4.0 critical cutoff, but convulsions (R56.8) are not mapped to lactate in `icd_lab_relevance`, so the lab adds no points and is listed as `unrelated_diagnosis`.
 
+## Derived replay (engine output)
+
+The [derived replay CSV](night_shift_0245/derived/engine_replay_default_rules.csv) is engine output, not a feed.
+It records the score, scoring components (JSON), and risk status for each in-zone patient at each evaluation
+of the unattended replay under the shipped rules.
+
 ## Regenerate and check
 
 ```
@@ -113,8 +119,8 @@ SYNTHETIC: no real patients; all names and protocol numbers are invented.
 - Zaman: 20 Kasım 2026, simüle yerel saat, `YYYY-MM-DD HH:MM`. Vardiya 02:45 ile 04:30 arasındadır; 01:55'ten başlayan
   ön geçmiş vardır.
 - MAP = DBP + (SBP − DBP) / 3.
-- Y04, Y07, Y09, Y10, Y11 ve Y12'nin arka plan vitalleri `scripts/generate_noise.py` ile, tohum 20261120 kullanılarak
-  üretilir.
+- Y04, Y07, Y09, Y10, Y11, Y12 hastalarının arka plan vitalleri `scripts/generate_noise.py` ile,
+  tohum 20261120 kullanılarak üretilir.
 - Y03: monitör 03:00'te bağlantısını kaybeder. Sonraki monitör örnekleri `vitals.csv` içinde kalır, ancak
   `delivered_unattended = no` ile işaretlidir; motora ulaşmazlar.
 - Yeniden üretme: `python scripts/export_raw_data.py`. Denetim: `python scripts/export_raw_data.py --check`.

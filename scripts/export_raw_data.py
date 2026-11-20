@@ -14,12 +14,13 @@ import io
 import json
 import sys
 from collections import Counter, defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 
+from app.adapters.simulator import SimulatorSource  # noqa: E402
 from app.domain.models import LabOrder, PatientProfile, PatientSnapshot, VitalValues  # noqa: E402
 from app.engine.config import EngineConfig, LabRule, load_config  # noqa: E402
 from app.engine.labs import score_labs  # noqa: E402
@@ -39,6 +40,7 @@ from app.sim.player import (  # noqa: E402
     _at,
     apply_event,
 )
+from app.state import Session  # noqa: E402
 from generate_noise import NOISE_ORDER  # noqa: E402
 
 SCENARIO_PATH = ROOT / 'backend' / 'app' / 'sim' / 'scenarios' / 'night_shift_0245.json'
@@ -62,6 +64,7 @@ LAB_COLUMNS = ['patient_id', 'bed', 'test', 'label', 'unit', 'ordered_at', 'resu
                'critical_low', 'critical_high', 'default_rule_reading']
 EVENT_COLUMNS = ['time', 'patient_id', 'bed', 'type', 'details']
 ALERT_COLUMNS = ['first_at', 'patient_id', 'bed', 'level', 'shown_as']
+REPLAY_COLUMNS = ['time', 'patient_id', 'bed', 'score', 'components', 'risk_status']
 
 README = f"""{SYNTHETIC}
 
@@ -154,6 +157,12 @@ Y03's monitor disconnects at 03:00 (`monitor_disconnect`; it resumes only on nur
 - **Y08's chronically low MAP still raises a critical alarm.** All three Y08 samples have MAP at or below 65 mmHg (64.00, 64.00 and 63.67), and the scenario documents a RED alert at 04:15.
 - **Y05's lactate of 4.2 mmol/L is suppressed.** It is above the 4.0 critical cutoff, but convulsions (R56.8) are not mapped to lactate in `icd_lab_relevance`, so the lab adds no points and is listed as `unrelated_diagnosis`.
 
+## Derived replay (engine output)
+
+The [derived replay CSV](night_shift_0245/derived/engine_replay_default_rules.csv) is engine output, not a feed.
+It records the score, scoring components (JSON), and risk status for each in-zone patient at each evaluation
+of the unattended replay under the shipped rules.
+
 ## Regenerate and check
 
 ```
@@ -178,8 +187,8 @@ Veri → Metinden/CSV'den with a comma delimiter.
 - Zaman: 20 Kasım 2026, simüle yerel saat, `YYYY-MM-DD HH:MM`. Vardiya 02:45 ile 04:30 arasındadır; 01:55'ten başlayan
   ön geçmiş vardır.
 - MAP = DBP + (SBP − DBP) / 3.
-- Y04, Y07, Y09, Y10, Y11 ve Y12'nin arka plan vitalleri `scripts/generate_noise.py` ile, tohum {SEED} kullanılarak
-  üretilir.
+- {", ".join(NOISE_ORDER)} hastalarının arka plan vitalleri `scripts/generate_noise.py` ile,
+  tohum {SEED} kullanılarak üretilir.
 - Y03: monitör 03:00'te bağlantısını kaybeder. Sonraki monitör örnekleri `vitals.csv` içinde kalır, ancak
   `delivered_unattended = no` ile işaretlidir; motora ulaşmazlar.
 - Yeniden üretme: `python scripts/export_raw_data.py`. Denetim: `python scripts/export_raw_data.py --check`.
@@ -431,6 +440,30 @@ def _csv(columns: list[str], rows: list[dict[str, str]]) -> str:
     return buffer.getvalue()
 
 
+def evaluation_rows(config: EngineConfig, scenario_path: Path) -> list[dict[str, str]]:
+    wall_time = datetime(2026, 11, 20, tzinfo=timezone.utc)
+    session = Session(config, SimulatorSource(scenario_path.parent), lambda: 0.0, lambda: wall_time)
+    rows = []
+    while True:
+        for patient_id, patient in sorted(session.patients.items()):
+            if patient.status != 'in_zone':
+                continue
+            assessment = session.assessments[patient_id]
+            rows.append({
+                'time': stamp(session.now),
+                'patient_id': patient_id,
+                'bed': patient.profile.bed,
+                'score': str(assessment.score),
+                'components': json.dumps([c.model_dump(mode='json') for c in assessment.components],
+                                         ensure_ascii=False, separators=(',', ':')),
+                'risk_status': session.risk_statuses[patient_id].key,
+            })
+        next_cycle = session.player.next_cycle_at
+        if next_cycle is None:
+            return rows
+        session.advance_to(next_cycle)
+
+
 def build_files(config: EngineConfig | None = None, scenario_path: Path = SCENARIO_PATH) -> dict[Path, str]:
     config = config if config is not None else load_config()
     scenario = Scenario.load(scenario_path)
@@ -453,6 +486,7 @@ def build_files(config: EngineConfig | None = None, scenario_path: Path = SCENAR
         FOLDER / 'labs.csv': _csv(LAB_COLUMNS, labs),
         FOLDER / 'events.csv': _csv(EVENT_COLUMNS, events),
         FOLDER / 'expected_alerts.csv': _csv(ALERT_COLUMNS, alert_rows(scenario)),
+        FOLDER / 'derived' / 'engine_replay_default_rules.csv': _csv(REPLAY_COLUMNS, evaluation_rows(config, scenario_path)),
     }
     for row in patient_table:
         pid = row['patient_id']

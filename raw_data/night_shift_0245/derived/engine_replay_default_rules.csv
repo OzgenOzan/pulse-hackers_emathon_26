@@ -1,0 +1,91 @@
+﻿time,patient_id,bed,score,components,risk_status
+2026-11-20 02:45,Y01,S-01,0,[],stabil
+2026-11-20 02:45,Y02,S-02,0,[],stabil
+2026-11-20 02:45,Y03,S-03,0,[],stabil
+2026-11-20 02:45,Y04,S-04,0,[],stabil
+2026-11-20 02:45,Y05,S-05,0,[],stabil
+2026-11-20 02:45,Y06,S-06,0,[],stabil
+2026-11-20 02:45,Y07,S-07,0,[],stabil
+2026-11-20 02:45,Y09,S-09,0,[],stabil
+2026-11-20 02:45,Y10,S-10,0,[],stabil
+2026-11-20 02:45,Y11,S-11,0,[],stabil
+2026-11-20 02:45,Y12,S-12,0,[],stabil
+2026-11-20 03:00,Y01,S-01,1,"[{""key"":""temp_high"",""label"":""Temperature"",""value"":38.1,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T03:00:00""}]",yakin_takip
+2026-11-20 03:00,Y02,S-02,0,[],stabil
+2026-11-20 03:00,Y03,S-03,0,[],stabil
+2026-11-20 03:00,Y04,S-04,0,[],stabil
+2026-11-20 03:00,Y05,S-05,0,[],stabil
+2026-11-20 03:00,Y06,S-06,0,[],stabil
+2026-11-20 03:00,Y07,S-07,0,[],stabil
+2026-11-20 03:00,Y09,S-09,0,[],stabil
+2026-11-20 03:00,Y10,S-10,0,[],stabil
+2026-11-20 03:00,Y11,S-11,0,[],stabil
+2026-11-20 03:00,Y12,S-12,0,[],stabil
+2026-11-20 03:15,Y01,S-01,2,"[{""key"":""hr_high"",""label"":""Heart rate"",""value"":103.0,""unit"":""bpm"",""rule"":""> 100 bpm"",""points"":1,""observed_at"":""2026-11-20T03:15:00""},{""key"":""temp_high"",""label"":""Temperature"",""value"":38.3,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T03:15:00""}]",yakin_takip
+2026-11-20 03:15,Y02,S-02,0,[],stabil
+2026-11-20 03:15,Y03,S-03,0,[],siniflandirilmamis
+2026-11-20 03:15,Y04,S-04,0,[],stabil
+2026-11-20 03:15,Y05,S-05,0,[],stabil
+2026-11-20 03:15,Y06,S-06,0,[],stabil
+2026-11-20 03:15,Y07,S-07,0,[],stabil
+2026-11-20 03:15,Y09,S-09,0,[],stabil
+2026-11-20 03:15,Y10,S-10,0,[],stabil
+2026-11-20 03:15,Y11,S-11,0,[],stabil
+2026-11-20 03:15,Y12,S-12,0,[],stabil
+2026-11-20 03:30,Y01,S-01,3,"[{""key"":""hr_high"",""label"":""Heart rate"",""value"":108.0,""unit"":""bpm"",""rule"":""> 100 bpm"",""points"":1,""observed_at"":""2026-11-20T03:30:00""},{""key"":""temp_high"",""label"":""Temperature"",""value"":38.4,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T03:30:00""},{""key"":""map_drop"",""label"":""MAP drop from baseline"",""value"":18.0,""unit"":""mmHg"",""rule"":""≥ 15 mmHg from baseline; MAP now 74 mmHg"",""points"":1,""observed_at"":""2026-11-20T03:30:00""}]",kritik
+2026-11-20 03:30,Y02,S-02,0,[],stabil
+2026-11-20 03:30,Y03,S-03,0,[],siniflandirilmamis
+2026-11-20 03:30,Y04,S-04,0,[],stabil
+2026-11-20 03:30,Y05,S-05,0,[],stabil
+2026-11-20 03:30,Y06,S-06,0,[],stabil
+2026-11-20 03:30,Y07,S-07,0,[],stabil
+2026-11-20 03:30,Y09,S-09,0,[],stabil
+2026-11-20 03:30,Y10,S-10,0,[],stabil
+2026-11-20 03:30,Y11,S-11,0,[],stabil
+2026-11-20 03:30,Y12,S-12,0,[],stabil
+2026-11-20 03:45,Y01,S-01,6,"[{""key"":""hr_high"",""label"":""Heart rate"",""value"":112.0,""unit"":""bpm"",""rule"":""> 100 bpm"",""points"":1,""observed_at"":""2026-11-20T03:45:00""},{""key"":""temp_high"",""label"":""Temperature"",""value"":38.4,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T03:45:00""},{""key"":""map_drop"",""label"":""MAP drop from baseline"",""value"":22.0,""unit"":""mmHg"",""rule"":""≥ 15 mmHg from baseline; MAP now 70 mmHg"",""points"":1,""observed_at"":""2026-11-20T03:45:00""},{""key"":""lab_lactate"",""label"":""Lactate"",""value"":4.6,""unit"":""mmol/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 4 mmol/L"",""points"":3,""observed_at"":""2026-11-20T03:40:00""}]",kritik
+2026-11-20 03:45,Y02,S-02,0,[],stabil
+2026-11-20 03:45,Y03,S-03,0,[],siniflandirilmamis
+2026-11-20 03:45,Y04,S-04,0,[],stabil
+2026-11-20 03:45,Y05,S-05,0,[],stabil
+2026-11-20 03:45,Y06,S-06,0,[],stabil
+2026-11-20 03:45,Y07,S-07,0,[],stabil
+2026-11-20 03:45,Y09,S-09,0,[],stabil
+2026-11-20 03:45,Y10,S-10,0,[],stabil
+2026-11-20 03:45,Y11,S-11,0,[],stabil
+2026-11-20 03:45,Y12,S-12,0,[],stabil
+2026-11-20 04:00,Y01,S-01,10,"[{""key"":""map_low"",""label"":""MAP"",""value"":64.66666666666667,""unit"":""mmHg"",""rule"":""≤ 65 mmHg"",""points"":3,""observed_at"":""2026-11-20T04:00:00""},{""key"":""hr_high"",""label"":""Heart rate"",""value"":118.0,""unit"":""bpm"",""rule"":""> 100 bpm"",""points"":1,""observed_at"":""2026-11-20T04:00:00""},{""key"":""temp_high"",""label"":""Temperature"",""value"":38.5,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T04:00:00""},{""key"":""map_drop"",""label"":""MAP drop from baseline"",""value"":27.33333333333333,""unit"":""mmHg"",""rule"":""≥ 15 mmHg from baseline; MAP now 65 mmHg"",""points"":1,""observed_at"":""2026-11-20T04:00:00""},{""key"":""hr_rise"",""label"":""Heart rate rise from baseline"",""value"":24.0,""unit"":""bpm"",""rule"":""≥ 20 bpm from baseline; Heart rate now 118 bpm"",""points"":1,""observed_at"":""2026-11-20T04:00:00""},{""key"":""lab_lactate"",""label"":""Lactate"",""value"":4.6,""unit"":""mmol/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 4 mmol/L"",""points"":3,""observed_at"":""2026-11-20T03:40:00""}]",kritik
+2026-11-20 04:00,Y02,S-02,3,"[{""key"":""lab_troponin"",""label"":""hs-cTnT"",""value"":68.0,""unit"":""ng/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 52 ng/L"",""points"":3,""observed_at"":""2026-11-20T03:52:00""}]",kritik
+2026-11-20 04:00,Y03,S-03,0,[],siniflandirilmamis
+2026-11-20 04:00,Y04,S-04,0,[],stabil
+2026-11-20 04:00,Y05,S-05,0,[],stabil
+2026-11-20 04:00,Y06,S-06,0,[],stabil
+2026-11-20 04:00,Y07,S-07,0,[],stabil
+2026-11-20 04:00,Y09,S-09,0,[],stabil
+2026-11-20 04:00,Y10,S-10,0,[],stabil
+2026-11-20 04:00,Y11,S-11,0,[],stabil
+2026-11-20 04:00,Y12,S-12,0,[],stabil
+2026-11-20 04:15,Y01,S-01,10,"[{""key"":""map_low"",""label"":""MAP"",""value"":62.0,""unit"":""mmHg"",""rule"":""≤ 65 mmHg"",""points"":3,""observed_at"":""2026-11-20T04:15:00""},{""key"":""hr_high"",""label"":""Heart rate"",""value"":121.0,""unit"":""bpm"",""rule"":""> 100 bpm"",""points"":1,""observed_at"":""2026-11-20T04:15:00""},{""key"":""temp_high"",""label"":""Temperature"",""value"":38.6,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T04:15:00""},{""key"":""map_drop"",""label"":""MAP drop from baseline"",""value"":30.0,""unit"":""mmHg"",""rule"":""≥ 15 mmHg from baseline; MAP now 62 mmHg"",""points"":1,""observed_at"":""2026-11-20T04:15:00""},{""key"":""hr_rise"",""label"":""Heart rate rise from baseline"",""value"":27.0,""unit"":""bpm"",""rule"":""≥ 20 bpm from baseline; Heart rate now 121 bpm"",""points"":1,""observed_at"":""2026-11-20T04:15:00""},{""key"":""lab_lactate"",""label"":""Lactate"",""value"":4.6,""unit"":""mmol/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 4 mmol/L"",""points"":3,""observed_at"":""2026-11-20T03:40:00""}]",kritik
+2026-11-20 04:15,Y02,S-02,3,"[{""key"":""lab_troponin"",""label"":""hs-cTnT"",""value"":68.0,""unit"":""ng/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 52 ng/L"",""points"":3,""observed_at"":""2026-11-20T03:52:00""}]",kritik
+2026-11-20 04:15,Y03,S-03,0,[],siniflandirilmamis
+2026-11-20 04:15,Y04,S-04,0,[],stabil
+2026-11-20 04:15,Y05,S-05,0,[],stabil
+2026-11-20 04:15,Y06,S-06,0,[],stabil
+2026-11-20 04:15,Y07,S-07,0,[],stabil
+2026-11-20 04:15,Y08,S-08,3,"[{""key"":""map_low"",""label"":""MAP"",""value"":64.0,""unit"":""mmHg"",""rule"":""≤ 65 mmHg"",""points"":3,""observed_at"":""2026-11-20T04:15:00""}]",kritik
+2026-11-20 04:15,Y09,S-09,0,[],stabil
+2026-11-20 04:15,Y10,S-10,0,[],stabil
+2026-11-20 04:15,Y11,S-11,0,[],stabil
+2026-11-20 04:15,Y12,S-12,0,[],stabil
+2026-11-20 04:30,Y01,S-01,10,"[{""key"":""map_low"",""label"":""MAP"",""value"":59.333333333333336,""unit"":""mmHg"",""rule"":""≤ 65 mmHg"",""points"":3,""observed_at"":""2026-11-20T04:30:00""},{""key"":""hr_high"",""label"":""Heart rate"",""value"":124.0,""unit"":""bpm"",""rule"":""> 100 bpm"",""points"":1,""observed_at"":""2026-11-20T04:30:00""},{""key"":""temp_high"",""label"":""Temperature"",""value"":38.6,""unit"":""°C"",""rule"":""≥ 38.0 °C"",""points"":1,""observed_at"":""2026-11-20T04:30:00""},{""key"":""map_drop"",""label"":""MAP drop from baseline"",""value"":32.666666666666664,""unit"":""mmHg"",""rule"":""≥ 15 mmHg from baseline; MAP now 59 mmHg"",""points"":1,""observed_at"":""2026-11-20T04:30:00""},{""key"":""hr_rise"",""label"":""Heart rate rise from baseline"",""value"":30.0,""unit"":""bpm"",""rule"":""≥ 20 bpm from baseline; Heart rate now 124 bpm"",""points"":1,""observed_at"":""2026-11-20T04:30:00""},{""key"":""lab_lactate"",""label"":""Lactate"",""value"":4.6,""unit"":""mmol/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 4 mmol/L"",""points"":3,""observed_at"":""2026-11-20T03:40:00""}]",kritik
+2026-11-20 04:30,Y02,S-02,3,"[{""key"":""lab_troponin"",""label"":""hs-cTnT"",""value"":68.0,""unit"":""ng/L"",""rule"":""Diagnosis-related critical cutoff: ≥ 52 ng/L"",""points"":3,""observed_at"":""2026-11-20T03:52:00""}]",kritik
+2026-11-20 04:30,Y03,S-03,0,[],siniflandirilmamis
+2026-11-20 04:30,Y04,S-04,0,[],stabil
+2026-11-20 04:30,Y05,S-05,0,[],stabil
+2026-11-20 04:30,Y06,S-06,0,[],stabil
+2026-11-20 04:30,Y07,S-07,0,[],stabil
+2026-11-20 04:30,Y08,S-08,3,"[{""key"":""map_low"",""label"":""MAP"",""value"":63.666666666666664,""unit"":""mmHg"",""rule"":""≤ 65 mmHg"",""points"":3,""observed_at"":""2026-11-20T04:30:00""}]",kritik
+2026-11-20 04:30,Y09,S-09,0,[],stabil
+2026-11-20 04:30,Y10,S-10,0,[],stabil
+2026-11-20 04:30,Y11,S-11,0,[],stabil
+2026-11-20 04:30,Y12,S-12,0,[],stabil
