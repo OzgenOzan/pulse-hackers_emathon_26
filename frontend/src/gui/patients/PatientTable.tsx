@@ -1,4 +1,4 @@
-import { Eye, Lock, TriangleAlert } from 'lucide-react';
+import { Eye, ListChecks, Lock, TriangleAlert } from 'lucide-react';
 import { StatusLabel } from '../../components/ui/StatusLabel';
 import type { Alert, CriticalAlarm, Summary } from '../../types';
 import { copy as alarmCopy } from '../alarms/copy';
@@ -30,6 +30,8 @@ export function PatientTable({ patients, activeAlarms, tasks, blockingPatientId,
           ? [`${alarmCopy.previousFindings}: ${reasons.join(' · ')}`, ...dataIssues]
           : [...new Set([...reasons, ...dataIssues])];
         const activeTasks = tasks.filter(a => a.patient_id === patient.id && a.status === 'active');
+        const gapTask = activeTasks.find(task => task.level === 'YELLOW');
+        const briefIssue = dataIssues[0] ?? (patient.risk_status.key === 'siniflandirilmamis' ? issues[0] : undefined);
         return <tr key={patient.id} data-testid={`board-row-${patient.id}`} data-status={patient.risk_status.key}
           data-locked={locked || undefined} onClick={() => onOpen(patient.id)}>
           <th scope="row"><button type="button" className="table-patient" onClick={event => { event.stopPropagation(); onOpen(patient.id); }}>
@@ -40,11 +42,13 @@ export function PatientTable({ patients, activeAlarms, tasks, blockingPatientId,
           <td className="table-risk" title={[...issues, ...activeTasks.map(alertTitle)].join(' · ')}>
             <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient, !!alarm)} />
             {patient.risk_status.worsened && <span className="badge-worsened">{copy.worsened}</span>}
-            {patient.risk_status.key === 'siniflandirilmamis' && issues[0] && <small className="table-issue">{issues[0]}</small>}
-            {patient.risk_status.key !== 'siniflandirilmamis' && dataIssues[0] && !activeTasks.some(task => task.level === 'YELLOW') &&
-              <small className="table-issue">{dataIssues[0]}</small>}
-            {activeTasks.map(task => <small key={task.id} className="table-issue">
-              {task.level === 'GREEN' ? alarmCopy.tasks.title('GREEN') : alertTitle(task)}
+            {alarm?.criteria_met === false && <small className="table-issue">{alarmCopy.previousFindings}</small>}
+            {gapTask ? <small className="table-issue table-task" title={alertTitle(gapTask)}>
+              <ListChecks size={14} aria-label={alarmCopy.tasks.title('YELLOW')} />
+              {briefIssue ?? alertTitle(gapTask)}
+            </small> : briefIssue && <small className="table-issue">{briefIssue}</small>}
+            {activeTasks.filter(task => task.level === 'GREEN').map(task => <small key={task.id} className="table-issue table-task">
+              <ListChecks size={14} aria-hidden="true" />{alarmCopy.tasks.title('GREEN')}
             </small>)}
           </td>
           <td>{offline ? <span className="table-gap">{copy.stale}</span> : patient.score}</td>

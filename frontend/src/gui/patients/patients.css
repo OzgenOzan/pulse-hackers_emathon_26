@@ -437,7 +437,7 @@
 .patient-table { width: 100%; min-width: 850px; border-collapse: collapse; font-size: .875rem; line-height: 1.13; background: var(--surface); }
 .patient-table th, .patient-table td { padding: 2px 5px; text-align: start; vertical-align: middle; border-bottom: 1px solid var(--line); }
 .patient-table tbody th { padding-block: 0; }
-.patient-table thead th { height: 30px; background: var(--subtle); }
+.patient-table thead th { height: 24px; background: var(--subtle); white-space: nowrap; }
 .patient-table tbody tr { cursor: pointer; }
 .patient-table tbody tr:hover { background: var(--subtle); }
 .patient-table tbody th { border-inline-start: 5px solid var(--line-strong); }
@@ -455,6 +455,8 @@
 .table-risk .status-label { gap: .25rem; }
 .table-risk .status-pill { padding: .125rem .25rem; }
 .table-risk .badge-worsened, .table-vital > small, .table-issue { display: block; }
+.table-issue.table-task { display: flex; align-items: center; gap: .25rem; }
+.table-task svg { flex: none; }
 .table-vital { font-variant-numeric: tabular-nums; }
 .table-value { font-size: 1rem; font-weight: 680; white-space: nowrap; }
 .table-vital[data-flag='kritik'] { background: var(--kritik-bg); color: var(--kritik); }
@@ -467,7 +469,6 @@
 .card-flags span { display: flex; align-items: center; gap: 3px; }
 .card-flags .flag-kritik { color: var(--kritik); }
 .card-flags .flag-yakin_takip { padding-inline: .25rem; color: var(--status-on-yellow); background: var(--yakin-takip); border-radius: .25rem; }
-.patient-table thead th { height: 24px; }
 .table-gap small { display: block; }
 .table-vital { min-width: 60px; }
 .table-vital .table-gap { white-space: nowrap; }
