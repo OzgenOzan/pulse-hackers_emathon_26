@@ -9,6 +9,7 @@ and generate_noise.NOISE_ORDER. Nothing here re-implements delivery, MAP or lab 
 """
 
 import argparse
+from codecs import BOM_UTF8
 import csv
 import io
 import json
@@ -505,7 +506,13 @@ def _encode(path: Path, text: str) -> bytes:
 
 
 def _matches(path: Path, text: str) -> bool:
-    return path.is_file() and path.read_text(encoding='utf-8-sig') == text
+    if not path.is_file():
+        return False
+    if path.suffix == '.csv':
+        with path.open('rb') as stream:
+            if stream.read(len(BOM_UTF8)) != BOM_UTF8:
+                return False
+    return path.read_text(encoding='utf-8-sig') == text
 
 
 def main(argv: list[str] | None = None) -> int:
