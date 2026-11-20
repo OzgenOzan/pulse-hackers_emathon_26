@@ -16,8 +16,9 @@ export const englishAvailable = Object.keys(en).length === Object.keys(tr).lengt
   });
 
 function loadLanguage(): Language {
-  try { return englishAvailable && localStorage.getItem(STORAGE_KEY) === 'en' ? 'en' : 'tr'; }
-  catch { return 'tr'; }
+  if (!englishAvailable) return 'tr';
+  try { return localStorage.getItem(STORAGE_KEY) === 'tr' ? 'tr' : 'en'; }
+  catch { return 'en'; }
 }
 
 let language: Language = loadLanguage();
