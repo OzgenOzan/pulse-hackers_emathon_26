@@ -4,7 +4,7 @@ from datetime import datetime
 
 from app.domain.models import Component, DisplayMeasurement, VitalFlag, VitalReading, VitalValues
 from app.engine.config import RedRules
-from app.engine.display import format_rule_value
+from app.engine.display import format_cutoff, format_rule_value
 
 UNSCORED_LAB_LABELS = {'cbc': 'Tam kan sayımı', 'creatinine': 'Kreatinin', 'urinalysis': 'İdrar tahlili'}
 
@@ -38,9 +38,9 @@ def vital_flags(components: list[Component], rules: RedRules) -> dict[str, Vital
                 note = 'Yüksek'
             else:
                 op = '≤' if rule.op == '<=' else '<'
-                cutoff = format_rule_value(rule.value, int(param == 'temp')).replace('.', ',')
+                cutoff = format_cutoff(rule.value, int(param == 'temp')).replace('.', ',')
                 note = f'{op} {cutoff}'
-        level = 'kritik' if component.points >= 3 else 'yakin_takip'
+        level = 'kritik' if component.points >= rules.threshold else 'yakin_takip'
         if param not in flags:
             flags[param] = VitalFlag(level=level, note=note)
         elif note not in flags[param].note.split(' · '):

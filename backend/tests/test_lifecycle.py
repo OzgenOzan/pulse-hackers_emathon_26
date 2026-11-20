@@ -51,6 +51,16 @@ def test_cooldown_and_score_based_realert():
     assert len(alerts) == 2
 
 
+def test_non_red_cooldown_ignores_score_increase():
+    for level in ('YELLOW', 'GREEN'):
+        alerts = []
+        first = assess(alerts, 0, candidate(level))[0].alert
+        first.status, first.closed_at = 'acknowledged', NOW
+        assert assess(alerts, 2, candidate(level), minutes=29) == []
+        new = assess(alerts, 2, candidate(level), minutes=30)[0]
+        assert new.alert.id != first.id and not new.alert.escalated
+
+
 def test_cooldown_expires_at_exact_boundary():
     alerts = []
     first = assess(alerts, 3, candidate('RED'))[0].alert

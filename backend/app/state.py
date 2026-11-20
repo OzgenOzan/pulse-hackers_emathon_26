@@ -1,14 +1,20 @@
 """The in-memory session. The HTTP adapter holds its lock across each operation."""
 
+import re
 from asyncio import Lock
 from collections.abc import Callable, Iterable
 from datetime import datetime, timedelta
+from math import isfinite
+from typing import Any, Literal
+
+from pydantic import ValidationError
 
 from app.adapters.simulator import DataSource, InvalidScenario
 from app.domain.models import (
     AlarmSeen, Alert, AuditEntry, AuditEvent, CriticalAlarm, DisplayGcs, EngineResult, EvaluationRecord,
     GcsReading, Overview, PatientDetail, PatientSnapshot, PatientSummary, PendingConsult, PendingLab,
-    PhysicianAction, RiskStatus, Role, SimStatus, StateView, VitalFreshness, VitalReading, VitalValues,
+    PhysicianAction, RiskStatus, Role, RuleChange, RulesHistoryEntry, SimStatus, StateView, VitalFreshness,
+    VitalReading, VitalValues,
 )
 from app.engine.config import EngineConfig
 from app.engine.evaluate import evaluate
@@ -17,7 +23,7 @@ from app.engine.status import classify, update_status
 from app.engine.vitals import latest_vital
 from app.gui_projection import UNSCORED_LAB_LABELS, latest_measurements, vital_flags
 from app.sim.clock import SimClock
-from app.sim.player import Frame, Player, apply_event
+from app.sim.player import Frame, Player, Scenario, apply_event
 
 ACK_REASONS: dict[str, dict[str, frozenset[str] | None]] = {
     'RED': {
@@ -25,7 +31,7 @@ ACK_REASONS: dict[str, dict[str, frozenset[str] | None]] = {
         'expected_for_patient': frozenset({'chronic_baseline', 'artifact', 'already_managed'}),
     },
     # Selecting “Vitals entered” only opens the form; POSTing readings is the mutation.
-    'YELLOW': {'monitor_reconnected': None, 'not_at_bed': frozenset()},
+    'YELLOW': {'monitor_reconnected': None, 'not_at_bed': frozenset({'left_bed', 'in_procedure', 'other'})},
     'GREEN': {
         'discharge_decided': None, 'prescription_written': None,
         'wait_justified': frozenset({'consult', 'imaging', 'other'}),
@@ -33,17 +39,222 @@ ACK_REASONS: dict[str, dict[str, frozenset[str] | None]] = {
 }
 
 
+# Dotted paths a physician may change. Everything else in EngineConfig is read-only.
+_EDITABLE_RULE_PATH = re.compile(
+    r'red\.(threshold|vital_max_age_minutes|critical_lab_points)'
+    r'|red\.vital_rules\.[^.]+\.(value|points|enabled)'
+    r'|red\.trend_rules\.[^.]+\.(delta|points)'
+    r'|labs\.[^.]+\.(ref_low|ref_high|critical_low|critical_high)'
+    r'|universal_panic\.enabled'
+    r'|universal_panic\.(potassium|ph)\.(critical_low|critical_high)'
+    r'|yellow\.[^.]+'
+    r'|green\.idle_after_results_minutes'
+    r'|alerting\.(ack_cooldown_minutes|realert_score_increase)'
+    r'|status\.watch_min_score'
+    r'|display\.gcs_fresh_minutes'
+    r'|manual_entry\.limits\.[^.]+\.(min|max)'
+)
+# Model validators raise ValueError without a field; map their message to the editable field.
+_ABSOLUTE_LOCS: tuple[tuple[str, str], ...] = (
+    ('watch_min_score', 'status.watch_min_score'),
+    ('escalation cannot precede', 'yellow.vitals_overdue_escalate_minutes'),
+)
+_RELATIVE_LOCS: tuple[tuple[str, str], ...] = (
+    (r'\bcritical_low\b', 'critical_low'),
+    (r'\bcritical_high\b', 'critical_high'),
+    (r'at least one critical', 'critical_low'),
+    (r'\bmin\b', 'min'),
+    (r'\bmax\b', 'max'),
+)
+
+_LAB_BOUNDS = ('ref_low', 'ref_high', 'critical_low', 'critical_high')
+
+
+def _join(path: str, key: object) -> str:
+    return f'{path}.{key}' if path else str(key)
+
+
+def _is_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _is_number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _same_scalar(current: object, submitted: object) -> bool:
+    return isinstance(current, bool) == isinstance(submitted, bool) and current == submitted
+
+
+def _merge(current: Any, submitted: Any, path: str, not_editable: list[str],
+           invalid: list[tuple[str, str]]) -> Any:
+    """Return the candidate config: `current` with only whitelisted leaves replaced by `submitted`."""
+    if isinstance(current, dict):
+        if not isinstance(submitted, dict):
+            not_editable.append(path)
+            return current
+        merged = {}
+        for key, value in current.items():
+            child = _join(path, key)
+            if key in submitted:
+                merged[key] = _merge(value, submitted[key], child, not_editable, invalid)
+            else:
+                not_editable.append(child)
+                merged[key] = value
+        not_editable.extend(_join(path, key) for key in submitted if key not in current)
+        return merged
+    if isinstance(current, list):
+        return _merge_list(current, submitted, path, not_editable, invalid)
+    return _merge_leaf(current, submitted, path, not_editable, invalid)
+
+
+def _merge_list(current: list[Any], submitted: Any, path: str, not_editable: list[str],
+                invalid: list[tuple[str, str]]) -> list[Any]:
+    if not isinstance(submitted, list):
+        not_editable.append(path)
+        return current
+    if not (current and isinstance(current[0], dict) and 'key' in current[0]):
+        if submitted != current:
+            not_editable.append(path)
+        return current
+    if not all(isinstance(row, dict) and type(row.get('key')) is str for row in submitted):
+        not_editable.append(path)
+        return current
+    rows = {row['key']: row for row in submitted}
+    if len(rows) != len(submitted):
+        not_editable.append(path)
+        return current
+    known = {row['key'] for row in current}
+    not_editable.extend(_join(path, key) for key in rows if key not in known)
+    merged = []
+    for row in current:
+        child = _join(path, row['key'])
+        if row['key'] in rows:
+            merged.append(_merge(row, rows[row['key']], child, not_editable, invalid))
+        else:
+            not_editable.append(child)
+            merged.append(row)
+    return merged
+
+
+def _merge_leaf(current: Any, submitted: Any, path: str, not_editable: list[str],
+                invalid: list[tuple[str, str]]) -> Any:
+    if current is None or _EDITABLE_RULE_PATH.fullmatch(path) is None:
+        if not _same_scalar(current, submitted):
+            not_editable.append(path)
+        return current
+    if path.startswith('manual_entry.limits.gcs.'):
+        whole = _is_int(submitted) or (isinstance(submitted, float) and isfinite(submitted)
+                                       and submitted.is_integer())
+        if not whole or not 3 <= submitted <= 15:
+            invalid.append((path, 'must be an integer from 3 to 15'))
+            return current
+        return int(submitted)
+    if isinstance(current, bool):
+        valid, kind = isinstance(submitted, bool), 'a boolean'
+    elif isinstance(current, int):
+        valid, kind = _is_int(submitted), 'an integer'
+    else:
+        valid, kind = _is_number(submitted), 'a number'
+    if not valid:
+        invalid.append((path, f'must be {kind}'))
+        return current
+    if isinstance(submitted, float) and not isfinite(submitted):
+        invalid.append((path, 'must be a finite number'))
+        return current
+    return submitted
+
+
+def _loc_parts(candidate: Any, loc: tuple[Any, ...]) -> list[str]:
+    """Translate a pydantic loc (list indexes) into dotted keys, using rule `key`s for rule rows."""
+    parts: list[str] = []
+    node: Any = candidate
+    for part in loc:
+        if isinstance(node, list) and isinstance(part, int):
+            row = node[part]
+            parts.append(str(row['key']) if isinstance(row, dict) and 'key' in row else str(part))
+            node = row
+        else:
+            parts.append(str(part))
+            node = node.get(part) if isinstance(node, dict) else None
+    return parts
+
+
+def _model_loc(parts: list[str], msg: str) -> str:
+    for fragment, loc in _ABSOLUTE_LOCS:
+        if fragment in msg:
+            return loc
+    for pattern, field in _RELATIVE_LOCS:
+        if re.search(pattern, msg):
+            return _join('.'.join(parts), field)
+    return '.'.join(parts)
+
+
+def _edited_lab_bound(current: Any, candidate: Any, parts: list[str]) -> str:
+    """Reference-limit errors come from the whole lab rule; report the bound this edit changed."""
+    before, after = current['labs'][parts[1]], candidate['labs'][parts[1]]
+    changed = [field for field in _LAB_BOUNDS if before[field] != after[field]]
+    return _join('.'.join(parts), changed[0]) if changed else '.'.join(parts)
+
+
+def _validation_errors(current: Any, candidate: Any, exc: ValidationError) -> list[dict[str, str]]:
+    errors = []
+    for error in exc.errors():
+        parts = _loc_parts(candidate, error['loc'])
+        if error['type'] != 'value_error':
+            loc = '.'.join(parts)
+        elif 'reference' in error['msg'] and len(parts) == 2 and parts[0] == 'labs':
+            loc = _edited_lab_bound(current, candidate, parts)
+        else:
+            loc = _model_loc(parts, error['msg'])
+        errors.append({'loc': loc, 'msg': error['msg']})
+    return errors
+
+
+def _changes(before: Any, after: Any, path: str = '') -> list[RuleChange]:
+    """Leaf-level diff; rule rows match by `key`, so array order is never a change."""
+    if isinstance(before, dict):
+        return [change for key in before for change in _changes(before[key], after[key], _join(path, key))]
+    if isinstance(before, list) and before and isinstance(before[0], dict) and 'key' in before[0]:
+        rows = {row['key']: row for row in after}
+        return [change for row in before
+                for change in _changes(row, rows[row['key']], _join(path, row['key']))]
+    if before == after:
+        return []
+    return [RuleChange(path=path, before=before, after=after)]
+
+
+def _overflows_clock(scenario: Scenario, minutes: int) -> bool:
+    try:
+        _ = (scenario.start - timedelta(minutes=minutes), scenario.end + timedelta(minutes=minutes))
+    except OverflowError:
+        return True
+    return False
+
+
+def _trend_range_overflow(config: EngineConfig) -> str | None:
+    # Trends subtract two readings from one manual range, so the range width itself must stay finite.
+    for rule in config.red.trend_rules:
+        bound = config.manual_entry.limits[rule.param]
+        if not isfinite(bound.max - bound.min):
+            return rule.param
+    return None
+
+
 class SessionError(Exception):
-    def __init__(self, status_code: int, key: str):
+    def __init__(self, status_code: int, key: str, payload: dict[str, Any] | None = None):
         super().__init__(key)
         self.status_code = status_code
         self.key = key
+        self.payload = payload
 
 
 class Session:
     def __init__(self, config: EngineConfig, source: DataSource,
                  monotonic: Callable[[], float], wall_now: Callable[[], datetime]):
+        self.default_config = config.model_copy(deep=True)
         self.config = config
+        self.rules_history: list[RulesHistoryEntry] = []
         self.source = source
         self.monotonic = monotonic
         self.wall_now = wall_now
@@ -53,12 +264,17 @@ class Session:
         self.reset('night_shift_0245')
 
     def reset(self, scenario_id: str) -> None:
+        self._start(self._load_scenario(scenario_id))
+
+    def _load_scenario(self, scenario_id: str) -> Scenario:
         try:
-            scenario = self.source.load(scenario_id)
+            return self.source.load(scenario_id)
         except KeyError as exc:
             raise SessionError(404, 'unknown_scenario') from exc
         except InvalidScenario as exc:
             raise SessionError(422, str(exc)) from exc
+
+    def _start(self, scenario: Scenario) -> None:
         self.replay_number += 1
         self.replay_id = f'{self.replay_epoch}/{self.replay_number}'
         self.scenario_id = scenario.id
@@ -84,6 +300,48 @@ class Session:
             raise SessionError(428, 'replay_id_required')
         if replay_id != self.replay_id:
             raise SessionError(409, 'stale_replay')
+
+    def require_physician(self, role: Role) -> None:
+        if role != 'physician':
+            raise SessionError(403, 'physician_role_required')
+
+    def apply_rules(self, role: Role, submitted: dict[str, Any]) -> None:
+        self.require_physician(role)
+        current = self.config.model_dump(mode='json')
+        not_editable: list[str] = []
+        invalid: list[tuple[str, str]] = []
+        candidate = _merge(current, submitted, '', not_editable, invalid)
+        if not_editable:
+            raise SessionError(422, 'rule_not_editable', {'paths': not_editable})
+        if invalid:
+            raise SessionError(422, 'rules_invalid', {'errors': [{'loc': loc, 'msg': msg} for loc, msg in invalid]})
+        try:
+            config = EngineConfig.model_validate(candidate)
+        except ValidationError as exc:
+            raise SessionError(422, 'rules_invalid', {'errors': _validation_errors(current, candidate, exc)}) from exc
+        if (param := _trend_range_overflow(config)) is not None:
+            raise SessionError(422, 'rules_invalid', {'errors': [
+                {'loc': f'manual_entry.limits.{param}.max', 'msg': 'range must be finite'}]})
+        changes = _changes(current, config.model_dump(mode='json'))
+        scenario = self._load_scenario(self.scenario_id)
+        for change in changes:
+            if change.path.endswith('_minutes') and _overflows_clock(scenario, change.after):
+                raise SessionError(422, 'rules_invalid', {'errors': [
+                    {'loc': change.path, 'msg': 'duration exceeds the clock range'}]})
+        self._replace_config(config, scenario, role, 'apply', changes)
+
+    def reset_rules(self, role: Role) -> None:
+        self.require_physician(role)
+        changes = _changes(self.config.model_dump(mode='json'), self.default_config.model_dump(mode='json'))
+        scenario = self._load_scenario(self.scenario_id)
+        self._replace_config(self.default_config.model_copy(deep=True), scenario, role, 'reset_defaults', changes)
+
+    def _replace_config(self, config: EngineConfig, scenario: Scenario, role: Role,
+                        action: Literal['apply', 'reset_defaults'], changes: list[RuleChange]) -> None:
+        self.config = config
+        self._start(scenario)
+        self.rules_history.append(RulesHistoryEntry(
+            wall_time=self.wall_now(), role=role, action=action, changes=changes))
 
     def catch_up(self) -> None:
         self.advance_to(self.clock.now())
@@ -167,7 +425,8 @@ class Session:
 
     def sim_status(self) -> SimStatus:
         return SimStatus(time=self.now, playing=self.clock.playing, speed=self.clock.speed,
-                         scenario_id=self.scenario_id, replay_id=self.replay_id, next_cycle_at=self.player.next_cycle_at)
+                         scenario_id=self.scenario_id, replay_id=self.replay_id,
+                         next_cycle_at=self.player.next_cycle_at, rules_custom=self.config != self.default_config)
 
     def view(self, role: Role) -> StateView:
         patients = [self.summary(p) for p in self.patients.values() if p.status == 'in_zone']
@@ -306,7 +565,7 @@ class Session:
         reasons = allowed[action]
         if reasons is None and reason is not None:
             raise SessionError(422, 'reason_not_applicable')
-        if reasons is not None and (not reason or (reasons and reason not in reasons)):
+        if reasons is not None and reason not in reasons:
             raise SessionError(422, 'valid_reason_required')
         if note is not None:
             note = note.strip() or None

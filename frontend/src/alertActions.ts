@@ -6,10 +6,7 @@ export interface ActionSpec {
   reasons?: readonly string[];
 }
 
-/**
- * Action matrix from the design spec §7; the server rejects anything outside it.
- * The `not_at_bed` reasons are not listed in the spec: confirm with the backend (Task 7).
- */
+/** Action matrix from the design spec §7; the server rejects anything outside it. */
 export const ACTIONS: Record<Level, readonly ActionSpec[]> = {
   RED: [
     { action: 'reassessing' },

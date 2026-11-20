@@ -28,3 +28,7 @@ Run `make demo`, use a 1280×720 or larger desktop viewport, and leave the clock
 **Optional limitation rehearsal:** From the hero end at 03:30, press **+15 dk** twice. At 04:00 choose **Klinik değerlendirme kaydı oluştur → Yeniden değerlendiriyorum** for Yatak 02. Step once more: at 04:15 Yatak 08 has OAB 64 from a chronically low baseline and still gets a critical alarm. Choose **Bu hasta için beklenen → Kronik bazal değer** and show the recorded reason. This is a scripted limitation, not clinical advice.
 
 **Suggested pilot endpoints, not outcomes:** time from ready results to discharge decisions, stretcher occupancy, cardiac arrests, in-ED mortality, and white-code calls. A real pilot needs local integration, governance, clinical sign-off, and a comparison design. Do not claim any of these have improved.
+
+## Optional Q&A: what-if rules
+
+Outside the eight-minute flow, choose **Ayarlar → Klinik kurallar**, set **Kritik puan eşiği** to **2**, then choose **Uygula ve vardiyayı 02:45'ten başlat** and confirm. Press **+15 dk** twice: Yatak 01 becomes **Kritik** at 03:15 instead of 03:30. Say: “An earlier alarm here; a lower threshold can also mean more alarms. This is a simulation what-if, not a recommendation.” Choose **Varsayılan kurallara dön** and confirm before the next rehearsal; verify that **ÖZEL KURAL SETİ** disappears.

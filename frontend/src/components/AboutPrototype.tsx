@@ -15,6 +15,7 @@ export function AboutPrototype({ onClose }: { onClose: () => void }) {
       <p>{t('about.realBody')}</p>
       <h3>{t('about.simulated')}</h3>
       <p>{t('about.simulatedBody')}</p>
+      <p>{t('about.rulesAndData')}</p>
       <h3>{t('about.limits')}</h3>
       <p>{t('about.limitsBody')}</p>
       <p>{t('about.ai')}</p>

@@ -1,0 +1,13 @@
+﻿patient_id,bed,initials,synthetic_name,protocol,age,sex,arrived_at,monitored,complaint_tr,working_dx,nurse,physician,data_origin,expected_first_alert
+Y01,S-01,A.K.,Ali Kurt,26110001,68,M,2026-11-20 02:10,yes,"Ateş, idrarda yanma",N39.0 Urinary tract infection; R50.9 Fever,Hmş. Elif Kaya,Dr. Deniz Aksoy,scripted,RED 2026-11-20 03:30
+Y02,S-02,B.L.,Berrin Laçin,26110002,54,F,2026-11-20 02:25,yes,Göğüs ağrısı,R07.4 Chest pain,Hmş. Elif Kaya,Dr. Deniz Aksoy,scripted,RED 2026-11-20 04:00
+Y03,S-03,C.M.,Ceyda Metin,26110003,45,F,2026-11-20 02:40,yes,Nefes darlığı,J45.9 Asthma,Hmş. Elif Kaya,Dr. Deniz Aksoy,scripted,YELLOW 2026-11-20 03:15
+Y04,S-04,D.N.,Dilek Nalbant,26110004,64,F,2026-11-20 02:26,yes,Bayılma,R55 Syncope,Hmş. Elif Kaya,Dr. Deniz Aksoy,"vitals seeded, seed 20261120",
+Y05,S-05,E.P.,Emre Polat,26110005,26,M,2026-11-20 02:20,yes,Nöbet geçirme,R56.8 Convulsions,Hmş. Elif Kaya,Dr. Deniz Aksoy,scripted,
+Y06,S-06,F.R.,Fatih Rüzgar,26110006,37,M,2026-11-20 01:55,yes,Sağ yan ağrısı,N23 Renal colic,Hmş. Elif Kaya,Dr. Deniz Aksoy,scripted,GREEN 2026-11-20 03:00
+Y07,S-07,G.S.,Gizem Sezer,26110007,24,F,2026-11-20 02:31,yes,"Kusma, ishal",A09 Gastroenteritis,Hmş. Selin Yıldız,Dr. Deniz Aksoy,"vitals seeded, seed 20261120",
+Y08,S-08,H.T.,Hatice Tekin,26110008,72,F,2026-11-20 04:05,yes,Halsizlik,K74.6 Liver cirrhosis,Hmş. Selin Yıldız,Dr. Deniz Aksoy,scripted,RED 2026-11-20 04:15
+Y09,S-09,İ.U.,İsmail Uçar,26110009,52,M,2026-11-20 02:33,yes,Bacakta kızarıklık ve şişlik,L03.1 Cellulitis,Hmş. Selin Yıldız,Dr. Deniz Aksoy,"vitals seeded, seed 20261120",
+Y10,S-10,J.V.,Jale Vural,26110010,58,F,2026-11-20 02:36,yes,Baş dönmesi,R42 Dizziness,Hmş. Selin Yıldız,Dr. Deniz Aksoy,"vitals seeded, seed 20261120",
+Y11,S-11,K.Ö.,Kemal Öztürk,26110011,45,M,2026-11-20 02:28,yes,Bel ağrısı,M54.5 Low back pain,Hmş. Selin Yıldız,Dr. Deniz Aksoy,"vitals seeded, seed 20261120",
+Y12,S-12,L.Y.,Leyla Yavuz,26110012,31,F,2026-11-20 02:42,yes,"Kaşıntı, döküntü",T78.4 Allergy,Hmş. Selin Yıldız,Dr. Deniz Aksoy,"vitals seeded, seed 20261120",

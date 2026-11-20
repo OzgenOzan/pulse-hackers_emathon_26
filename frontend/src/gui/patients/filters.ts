@@ -32,9 +32,9 @@ const fold = (text: string) => text.normalize('NFC').toLocaleLowerCase('tr-TR');
 const time = (value: string) => Date.parse(value.endsWith('Z') || /[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`);
 const matches = (count: number, presence: Presence) => !presence || (count > 0) === (presence === 'yes');
 
-export function filterPatients(patients: Summary[], filters: Filters, simTime: string): Summary[] {
+export function filterPatients(patients: Summary[], filters: Filters, simTime: string, overdueMinutes?: number): Summary[] {
   const query = fold(filters.query.trim());
-  const oldAt = time(simTime) - 30 * 60_000;
+  const oldAt = filters.oldVitals && overdueMinutes !== undefined ? time(simTime) - overdueMinutes * 60_000 : undefined;
   const selected = patients.filter(patient => {
     if (query && !fold(displayName(patient)).includes(query) && !protocolOf(patient).includes(query)) return false;
     if (filters.risks.length && !filters.risks.includes(patient.risk_status.key)) return false;
@@ -42,7 +42,7 @@ export function filterPatients(patients: Summary[], filters: Filters, simTime: s
     if (filters.physician && patient.display?.physician !== filters.physician) return false;
     if (filters.nurse && patient.display?.nurse !== filters.nurse) return false;
     if (filters.stay && patient.minutes_in_zone < Number(filters.stay)) return false;
-    if (filters.oldVitals && (!patient.last_vitals || time(patient.last_vitals.time) > oldAt)) return false;
+    if (oldAt !== undefined && (!patient.last_vitals || time(patient.last_vitals.time) > oldAt)) return false;
     return true;
   });
   const measureTime = (patient: Summary) => patient.last_vitals ? time(patient.last_vitals.time) : 0;

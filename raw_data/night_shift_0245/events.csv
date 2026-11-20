@@ -1,0 +1,136 @@
+﻿time,patient_id,bed,type,details
+2026-11-20 01:55,Y06,S-06,arrival,age 37 M
+2026-11-20 01:57,Y06,S-06,gcs,GCS 15
+2026-11-20 02:00,Y06,S-06,lab_order,cbc
+2026-11-20 02:00,Y06,S-06,lab_order,creatinine
+2026-11-20 02:00,Y06,S-06,lab_order,urinalysis
+2026-11-20 02:05,Y06,S-06,physician_action,prescription_written
+2026-11-20 02:10,Y01,S-01,arrival,age 68 M
+2026-11-20 02:12,Y01,S-01,gcs,GCS 15
+2026-11-20 02:20,Y05,S-05,arrival,age 26 M
+2026-11-20 02:22,Y05,S-05,gcs,GCS 14
+2026-11-20 02:25,Y02,S-02,arrival,age 54 F
+2026-11-20 02:25,Y06,S-06,lab_result,cbc = 7.2 10^9/L
+2026-11-20 02:25,Y06,S-06,lab_result,creatinine = 0.9 mg/dL
+2026-11-20 02:25,Y06,S-06,lab_result,urinalysis = 0
+2026-11-20 02:26,Y04,S-04,arrival,age 64 F
+2026-11-20 02:27,Y02,S-02,gcs,GCS 15
+2026-11-20 02:28,Y11,S-11,arrival,age 45 M
+2026-11-20 02:28,Y04,S-04,gcs,GCS 15
+2026-11-20 02:30,Y05,S-05,lab_order,lactate
+2026-11-20 02:30,Y05,S-05,lab_order,potassium
+2026-11-20 02:30,Y11,S-11,gcs,GCS 15
+2026-11-20 02:31,Y07,S-07,arrival,age 24 F
+2026-11-20 02:33,Y09,S-09,arrival,age 52 M
+2026-11-20 02:33,Y07,S-07,gcs,GCS 15
+2026-11-20 02:35,Y09,S-09,gcs,GCS 15
+2026-11-20 02:36,Y10,S-10,arrival,age 58 F
+2026-11-20 02:38,Y10,S-10,gcs,GCS 15
+2026-11-20 02:40,Y03,S-03,arrival,age 45 F
+2026-11-20 02:40,Y05,S-05,consult_request,Nöroloji
+2026-11-20 02:42,Y12,S-12,arrival,age 31 F
+2026-11-20 02:42,Y03,S-03,gcs,GCS 15
+2026-11-20 02:44,Y12,S-12,gcs,GCS 15
+2026-11-20 02:45,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:45,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 02:50,Y02,S-02,lab_order,troponin
+2026-11-20 03:00,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y01,S-01,lab_order,lactate
+2026-11-20 03:00,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:00,Y03,S-03,monitor_disconnect,resume on nurse acknowledgement
+2026-11-20 03:10,Y05,S-05,lab_result,lactate = 4.2 mmol/L
+2026-11-20 03:10,Y05,S-05,lab_result,potassium = 4.1 mmol/L
+2026-11-20 03:15,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:15,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:20,Y05,S-05,lab_order,lactate
+2026-11-20 03:22,Y05,S-05,gcs,GCS 15
+2026-11-20 03:30,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:30,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:40,Y01,S-01,lab_result,lactate = 4.6 mmol/L
+2026-11-20 03:45,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:45,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 03:52,Y02,S-02,lab_result,troponin = 68 ng/L
+2026-11-20 03:55,Y02,S-02,consult_request,Kardiyoloji
+2026-11-20 04:00,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:00,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:05,Y08,S-08,arrival,age 72 F
+2026-11-20 04:07,Y08,S-08,vitals,manual sample (see vitals.csv)
+2026-11-20 04:07,Y08,S-08,gcs,GCS 15
+2026-11-20 04:15,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y08,S-08,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:15,Y12,S-12,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y01,S-01,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y02,S-02,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y03,S-03,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y05,S-05,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y06,S-06,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y08,S-08,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y04,S-04,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y07,S-07,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y09,S-09,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y10,S-10,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y11,S-11,vitals,monitor sample (see vitals.csv)
+2026-11-20 04:30,Y12,S-12,vitals,monitor sample (see vitals.csv)

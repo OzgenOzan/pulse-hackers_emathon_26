@@ -1,12 +1,15 @@
 """FastAPI transport for the single-session demonstration."""
 
 from collections.abc import AsyncIterator
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Header, Request
+import yaml
+from fastapi import APIRouter, Depends, Header, Request, Response
 from pydantic import StrictInt, StringConstraints
 
-from app.domain.models import AuditEntry, CriticalAlarm, Level, Model, PatientDetail, Role, StateView, VitalValues
+from app.domain.models import (
+    AuditEntry, CriticalAlarm, Level, Model, PatientDetail, Role, RulesHistoryEntry, StateView, VitalValues,
+)
 from app.engine.config import EngineConfig
 from app.state import Session, SessionError
 
@@ -22,6 +25,14 @@ class AckInput(Model):
 
 class SeenInput(Model):
     role: Role
+
+
+class RulesRoleInput(Model):
+    role: Role
+
+
+class RulesUpdateInput(RulesRoleInput):
+    config: dict[str, Any]
 
 
 class ManualVitalInput(VitalValues):
@@ -139,5 +150,37 @@ async def audit(session: Current) -> list[AuditEntry]:
 
 
 @router.get('/config')
-async def config(session: Current) -> EngineConfig:
+async def config(session: Current, response: Response) -> EngineConfig:
+    response.headers['X-Replay-Id'] = session.replay_id
+    response.headers['Cache-Control'] = 'no-store'
     return session.config
+
+
+@router.get('/config/defaults')
+async def config_defaults(session: Current) -> EngineConfig:
+    return session.default_config
+
+
+@router.put('/config', status_code=204)
+async def apply_config(body: RulesUpdateInput, session: Mutable) -> None:
+    session.apply_rules(body.role, body.config)
+
+
+@router.post('/config/reset', status_code=204)
+async def reset_config(body: RulesRoleInput, session: Mutable) -> None:
+    session.reset_rules(body.role)
+
+
+@router.get('/config/history')
+async def config_history(session: Current) -> list[RulesHistoryEntry]:
+    return session.rules_history
+
+
+@router.get('/config/export', response_class=Response)
+async def export_config(session: Current) -> Response:
+    config = yaml.safe_dump(session.config.model_dump(mode='json'), allow_unicode=True, sort_keys=False)
+    return Response(
+        "# öneri — config.yaml'ın yerine geçmez\n" + config,
+        media_type='application/yaml',
+        headers={'Content-Disposition': 'attachment; filename="sahin-goz-rules-proposal.yaml"'},
+    )

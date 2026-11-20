@@ -3,7 +3,7 @@ from operator import ge, gt, le, lt
 
 from app.domain.models import Component, PatientSnapshot, VitalReading
 from app.engine.config import RedRules
-from app.engine.display import format_rule_value
+from app.engine.display import format_cutoff, format_rule_value
 
 OPERATORS = {'<': lt, '<=': le, '>': gt, '>=': ge}
 DISPLAY_OPERATORS = {'<=': '≤', '>=': '≥'}
@@ -52,7 +52,7 @@ def score_vitals(fresh: dict[str, tuple[float, datetime]], baseline: dict[str, t
             digits = 1 if rule.param == 'temp' else 0
             op = DISPLAY_OPERATORS.get(rule.op, rule.op)
             components.append(Component(key=rule.key, label=label, value=value, unit=unit,
-                                        rule=f'{op} {format_rule_value(rule.value, digits)} {unit}',
+                                        rule=f'{op} {format_cutoff(rule.value, digits)} {unit}',
                                         points=rule.points, observed_at=observed_at))
     for rule in rules.trend_rules:
         if rule.param not in fresh:
@@ -66,7 +66,7 @@ def score_vitals(fresh: dict[str, tuple[float, datetime]], baseline: dict[str, t
             digits = 1 if rule.param == 'temp' else 0
             components.append(Component(key=rule.key, label=f"{label} {'drop' if drop else 'rise'} from baseline",
                                         value=change, unit=unit,
-                                        rule=f'≥ {format_rule_value(rule.delta, digits)} {unit} from baseline; '
+                                        rule=f'≥ {format_cutoff(rule.delta, digits)} {unit} from baseline; '
                                              f'{label} now {format_rule_value(current, digits)} {unit}',
                                         points=rule.points, observed_at=observed_at))
     return components

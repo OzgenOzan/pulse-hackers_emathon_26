@@ -69,6 +69,9 @@ npm.cmd ci
 npm.cmd run typecheck
 npm.cmd run build
 Pop-Location
+& .\.venv\Scripts\python.exe scripts/export_rules.py --check
+& .\.venv\Scripts\python.exe scripts/generate_noise.py --check
+& .\.venv\Scripts\python.exe scripts/export_raw_data.py --check
 & .\.venv\Scripts\python.exe -m uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -83,3 +86,13 @@ To develop instead, add `--reload --reload-dir backend` to the Uvicorn command, 
 For an English-language rehearsal, choose **Ayarlar → Dil → İngilizce**. The default Turkish clicks above match the backup recording. **İstatistik ve Analiz** shows simulated audit activity, not clinical outcomes.
 
 The project is rule-based and uses prototype thresholds only. It illustrates tradeoffs, not clinical performance. See the [demo script](docs/demo-script.md), [60-second backup](docs/demo-backup.mp4), [generated clinical rules](docs/clinical-rules.md), [status and review items](docs/STATUS.md), and the [light](docs/screenshots/gui-light.png), [dark](docs/screenshots/gui-dark.png) and [mobile](docs/screenshots/gui-mobile.png) screenshots.
+
+### Raw data for the jury
+
+Browse [raw_data/](raw_data/) to inspect the synthetic patient profiles, vital and lab feeds, events, and expected first alerts without running the app. The [patient pages](raw_data/night_shift_0245/patients/) organize the same feed by patient; the CSVs indicate which monitor samples the unattended simulator delivers.
+
+### Editing clinical rules (Ayarlar)
+
+In the **Hekim** demo role, open **Ayarlar → Klinik kurallar** to compare and tune the simulated thresholds and limits. Applying a change restarts the shift at 02:45, clears the prior replay's alarms and records, and displays **ÖZEL KURAL SETİ**. Changes are shared across tabs for the current server process; **Varsayılan kurallara dön** or a server restart restores the default rules. The **Hemşire** view is read-only. The demo role is not authentication, and the editor never writes `config.yaml`. These are simulation what-ifs, not clinical recommendations.
+
+With the demo running, [download the active rules as an advisory YAML](http://127.0.0.1:8000/api/config/export). It is a proposal, not a replacement for `config.yaml`.

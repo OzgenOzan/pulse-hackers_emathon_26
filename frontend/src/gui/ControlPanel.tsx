@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import { api, ApiError } from '../api';
+import { api, ApiError, type ConfigMutationResult } from '../api';
 import { AboutPrototype } from '../components/AboutPrototype';
 import { DemoControls } from '../components/DemoControls';
 import { FilterBar, type ListMode } from '../components/ui/FilterBar';
@@ -19,6 +19,7 @@ import { WorkQueues } from './WorkQueues';
 import { guiError, useSession } from './useSession';
 import { fmtTime } from '../format';
 import { changeLanguage, getLanguage, t } from '../i18n';
+import { withRequestDeadline } from '../requestDeadline';
 import { roleLabels, statusLabels } from './clinical';
 import type { Alert, AuditEntry, CriticalAlarm, Detail, Language, ManualValues, OverviewKey, Role, RulesView, ScenarioInfo } from '../types';
 import './integration.css';
@@ -27,9 +28,28 @@ const lockNotice = () => t('gui.error.red_navigation_blocked');
 const RESOURCE_RETRY_MS = 2000;
 type ReplaySelection = { id: string; replay: string };
 
+function loadResource<T>(read: (signal: AbortSignal) => Promise<T>, accept: (value: T) => void) {
+  const lifetime = new AbortController();
+  let timer: number | undefined;
+  const attempt = async () => {
+    try {
+      const value = await withRequestDeadline(read, lifetime.signal);
+      if (!lifetime.signal.aborted) accept(value);
+    } catch {
+      if (!lifetime.signal.aborted) timer = window.setTimeout(attempt, RESOURCE_RETRY_MS);
+    }
+  };
+  void attempt();
+  return () => {
+    lifetime.abort();
+    window.clearTimeout(timer);
+  };
+}
+
 export function ControlPanel() {
   const [view, setView] = useState(readView);
-  const [config, setConfig] = useState<RulesView | null>(null);
+  const [activeConfig, setActiveConfig] = useState<{ replay: string; rules: RulesView } | null>(null);
+  const [defaults, setDefaults] = useState<RulesView | null>(null);
   const [scenarios, setScenarios] = useState<ScenarioInfo[]>([]);
   const [statFilter, setStatFilter] = useState<OverviewKey | null>(null);
   const [filters, setFilters] = useState(emptyFilters);
@@ -49,6 +69,7 @@ export function ControlPanel() {
   const { state, revision, busy, connection, lastSuccess, mutate } = useSession(view.role, setNotice);
   const offline = connection === 'offline';
   const replay = state?.sim.replay_id;
+  const config = activeConfig && activeConfig.replay === replay ? activeConfig.rules : null;
   const simTime = state?.sim.time;
   const blockingPatientId = state?.critical_alarms.find(a => a.id === state.blocking_alert_id)?.patient_id ?? null;
   const summary = (!blockingPatientId || view.patient === blockingPatientId)
@@ -115,29 +136,11 @@ export function ControlPanel() {
     };
   }, []);
 
+  useEffect(() => loadResource(api.scenarios, setScenarios), []);
+  useEffect(() => loadResource(api.configDefaults, setDefaults), []);
   useEffect(() => {
-    const lifetime = new AbortController();
-    const load = <T,>(read: (signal: AbortSignal) => Promise<T>, accept: (value: T) => void) => {
-      let timer: number | undefined;
-      const attempt = async () => {
-        try {
-          const value = await read(AbortSignal.any([lifetime.signal, AbortSignal.timeout(5000)]));
-          if (!lifetime.signal.aborted) accept(value);
-        } catch {
-          if (!lifetime.signal.aborted) timer = window.setTimeout(attempt, RESOURCE_RETRY_MS);
-        }
-      };
-      void attempt();
-      return () => window.clearTimeout(timer);
-    };
-    const cancelConfigRetry = load(api.config, setConfig);
-    const cancelScenarioRetry = load(api.scenarios, setScenarios);
-    return () => {
-      lifetime.abort();
-      cancelConfigRetry();
-      cancelScenarioRetry();
-    };
-  }, []);
+    if (replay) return loadResource(signal => api.config(replay, signal), rules => setActiveConfig({ replay, rules }));
+  }, [replay]);
 
   useEffect(() => {
     if (!notice) return;
@@ -206,6 +209,19 @@ export function ControlPanel() {
     }
   }
 
+  async function changeRules(draftReplay: string, action: () => Promise<void>): Promise<ConfigMutationResult> {
+    if (draftReplay !== replay || view.role !== 'physician') return { ok: false };
+    let error: ApiError | undefined;
+    const ok = await mutate(async () => {
+      try { await action(); }
+      catch (failure) {
+        if (failure instanceof ApiError) error = failure;
+        throw failure;
+      }
+    });
+    return { ok, error };
+  }
+
   const alarms = state?.critical_alarms ?? [];
   const activeAlarms = new Map(alarms.map(alarm => [alarm.patient_id, alarm]));
   const patientsById = new Map(state?.patients.map(patient => [patient.id, patient]));
@@ -221,7 +237,8 @@ export function ControlPanel() {
       || tasks.some(a => a.target_role === view.role && a.patient_id === patient.id);
     return patient.risk_status.key === statFilter;
   }) ?? [];
-  const filtered = listPage && simTime ? filterPatients(stats, filters, simTime) : [];
+  const overdueMinutes = config?.yellow.vitals_overdue_minutes;
+  const filtered = listPage && simTime ? filterPatients(stats, filters, simTime, overdueMinutes) : [];
   const selectedTasks = tasks.filter(a => a.patient_id === selectedId);
   const savedAlarms = history?.replay === replay ? history?.alarms : undefined;
   const statChip = criticalPreset ? { label: statusLabels.kritik, clear: () => goTo('aktif-hastalar') }
@@ -248,13 +265,14 @@ export function ControlPanel() {
         } else goTo('klinik-alarmlar');
       }}
       demo={state && <DemoControls sim={state.sim} scenarios={scenarios} busy={busy || offline}
+        cycleMinutes={config?.cycle_minutes}
         onReset={id => void mutate(() => api.reset(id)).then(ok => {
           if (!ok) return;
           setManual(null); setEvaluation(null); setStatFilter(null); setFilters(emptyFilters); setNotice('');
           navigate({ role: view.role, route: 'genel-bakis', patient: null }, true);
           window.scrollTo(0, 0);
         })} onPlay={speed => void mutate(() => api.play(speed))} onPause={() => void mutate(api.pause)}
-        onStep={() => void mutate(api.step)} />}
+        onStep={minutes => void mutate(() => api.step(minutes))} />}
       stickyAlarm={listPage && alarms.length > 0 &&
         <AlarmStrip key={replay} alarms={alarms} panel={alarmAnchor} onView={select} />}
       alarm={alarmPanel && view.route === 'genel-bakis' && !mobile &&
@@ -295,6 +313,9 @@ export function ControlPanel() {
         <section aria-labelledby="gui-settings-title">
           <div className="gui-list-head"><h2 id="gui-settings-title">{routeLabels.ayarlar}</h2></div>
           <Settings config={config} theme={theme} onTheme={setTheme} mode={mode} onMode={setMode}
+            defaults={defaults} replayId={replay} rulesCustom={state?.sim.rules_custom ?? false} openCriticalCount={alarms.length}
+            onApplyRules={(next, id) => changeRules(id, () => api.applyConfig(view.role, next, id))}
+            onResetRules={id => changeRules(id, () => api.resetConfig(view.role, id))}
             role={view.role} onRole={setRole} language={language} onLanguage={chooseLanguage}
             onAbout={() => setAbout(true)} busy={busy || offline} />
         </section>
@@ -319,6 +340,7 @@ export function ControlPanel() {
           <div className="gui-list-head"><h2 id="gui-patient-title">{routeLabels[criticalPreset ? 'kritik-hastalar' : 'aktif-hastalar']}</h2>
             <FilterBar key={view.route} filters={filters} onChange={setFilters} allPatients={state.patients}
               defaultExpanded={view.route === 'aktif-hastalar'} mode={mode} onMode={setMode} statChip={statChip}
+              overdueMinutes={overdueMinutes}
               onClear={() => {
                 setFilters(emptyFilters); setStatFilter(null);
                 if (criticalPreset) goTo('aktif-hastalar');

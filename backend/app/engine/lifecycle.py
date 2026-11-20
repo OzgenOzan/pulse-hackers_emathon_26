@@ -42,7 +42,9 @@ def reconcile(alerts: list[Alert], patient_id: str, result: EngineResult, now: d
         escalated_recurrence = False
         if last_ack is not None and last_ack.closed_at is not None:
             if now - last_ack.closed_at < timedelta(minutes=config.alerting.ack_cooldown_minutes):
-                escalated_recurrence = result.score - last_ack.score >= config.alerting.realert_score_increase
+                escalated_recurrence = level == 'RED' and (
+                    result.score - last_ack.score >= config.alerting.realert_score_increase
+                )
                 if not escalated_recurrence:
                     continue
         properties = candidate.model_dump()

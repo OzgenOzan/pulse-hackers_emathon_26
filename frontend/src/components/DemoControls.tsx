@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fmtTime } from '../format';
 import { t } from '../i18n';
 import type { ScenarioInfo, SimStatus, Speed } from '../types';
@@ -9,6 +9,7 @@ const SPEEDS: readonly Speed[] = [30, 60, 120];
 export function DemoControls({
   sim,
   scenarios,
+  cycleMinutes,
   busy,
   onReset,
   onPlay,
@@ -17,18 +18,24 @@ export function DemoControls({
 }: {
   sim: SimStatus;
   scenarios: ScenarioInfo[];
+  cycleMinutes?: number;
   busy: boolean;
   onReset: (scenarioId: string) => void;
   onPlay: (speed: Speed) => void;
   onPause: () => void;
-  onStep: () => void;
+  onStep: (minutes: number) => void;
 }) {
   const [scenario, setScenario] = useState(sim.scenario_id);
-  const [speed, setSpeed] = useState<Speed>(sim.speed);
+  // The user can choose a speed before starting. Once the simulation changes, the server is authoritative.
+  const [pausedSpeed, setPausedSpeed] = useState<Speed | null>(null);
+  const speed = sim.playing ? sim.speed : pausedSpeed ?? sim.speed;
+  useEffect(() => setPausedSpeed(null), [sim.playing, sim.replay_id, sim.speed]);
 
   return (
     <section className="demo-bar" aria-label={t('demo.title')}>
       <span className="demo-title">{t('demo.title')}</span>
+      {sim.rules_custom && <span className="gui-pill" data-testid="rules-custom-demo"
+        title={t('gui.rules.customPillTip')}>{t('gui.rules.customPill')}</span>}
       <label>
         {t('demo.scenario')}{' '}
         <select data-testid="demo-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>
@@ -60,8 +67,8 @@ export function DemoControls({
           disabled={busy}
           onChange={e => {
             const next = Number(e.target.value) as Speed;
-            setSpeed(next);
             if (sim.playing) onPlay(next);
+            else setPausedSpeed(next);
           }}
         >
           {SPEEDS.map(s => (
@@ -71,8 +78,9 @@ export function DemoControls({
           ))}
         </select>
       </label>
-      <button type="button" data-testid="demo-step" disabled={busy || sim.playing} onClick={onStep}>
-        {t('demo.step')}
+      <button type="button" data-testid="demo-step" disabled={busy || sim.playing || cycleMinutes === undefined}
+        onClick={() => { if (cycleMinutes !== undefined) onStep(cycleMinutes); }}>
+        {cycleMinutes === undefined ? t('demo.stepLoading') : t('demo.step', { minutes: cycleMinutes })}
       </button>
       <span className="demo-status" role="status">
         {sim.playing ? t('demo.playing') : t('demo.paused')} · {fmtTime(sim.time)}

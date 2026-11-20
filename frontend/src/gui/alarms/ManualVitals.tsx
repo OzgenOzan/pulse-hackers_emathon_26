@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { bedLabel } from '../clinical';
+import { parseDecimal } from '../decimal';
 import type { ManualValues, Profile, RulesView } from '../../types';
 import { copy } from './copy';
 import './alarms.css';
@@ -35,14 +36,14 @@ export function ManualVitals({ profile, rules, busy, onSave, onClose }: ManualVi
     const values: ManualValues = {};
     const issues: Partial<Record<Field, string>> = {};
     for (const key of FIELDS) {
-      const text = raw[key].trim().replace(',', '.');
+      const text = raw[key].trim();
       if (!text) {
         if (requiredFields.includes(key)) issues[key] = copy.vitals.requiredError;
         continue;
       }
-      const value = Number(text);
+      const value = parseDecimal(text);
       const limit = rules.limits[key];
-      if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) || !Number.isFinite(value)) issues[key] = copy.vitals.invalid;
+      if (value === undefined) issues[key] = copy.vitals.invalid;
       else if (value < limit.min || value > limit.max) issues[key] = copy.vitals.range(limit.min, limit.max);
       else if (key === 'gcs' && !Number.isInteger(value)) issues[key] = copy.vitals.integer;
       else values[key] = value;

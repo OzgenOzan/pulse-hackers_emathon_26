@@ -1,0 +1,6 @@
+﻿first_at,patient_id,bed,level,shown_as
+2026-11-20 03:00,Y06,S-06,GREEN,Taburculuk değerlendirmesi (hekim)
+2026-11-20 03:15,Y03,S-03,YELLOW,Veri eksikliği görevi (hemşire)
+2026-11-20 03:30,Y01,S-01,RED,Kritik alarm (hekim)
+2026-11-20 04:00,Y02,S-02,RED,Kritik alarm (hekim)
+2026-11-20 04:15,Y08,S-08,RED,Kritik alarm (hekim)

@@ -29,7 +29,7 @@ def create_app(source: DataSource | None = None, monotonic: Callable[[], float] 
 
     @app.exception_handler(SessionError)
     async def session_error(_request: Request, exc: SessionError) -> JSONResponse:
-        return JSONResponse({'detail': exc.key}, status_code=exc.status_code)
+        return JSONResponse({'detail': exc.key, **(exc.payload or {})}, status_code=exc.status_code)
 
     @app.get('/{path:path}', include_in_schema=False)
     async def frontend(path: str):
