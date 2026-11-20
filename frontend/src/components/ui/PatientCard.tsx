@@ -2,7 +2,6 @@ import { Eye, Lock, TriangleAlert } from 'lucide-react';
 import { bedLabel, consultLabel, labDisplayLabel, reasonLabel, stayLabel, vitalFlagLabel } from '../../gui/clinical';
 import {
   ageSex,
-  alertTitle,
   complaintOf,
   displayName,
   lastMeasureText,
@@ -10,8 +9,10 @@ import {
   statusSublabel,
   vitalCells,
 } from '../../gui/patients/model';
+import { copy as alarmCopy } from '../../gui/alarms/copy';
+import { alertTitle } from '../../gui/alarms/model';
 import { copy } from '../../gui/patients/copy';
-import type { Alert, Summary } from '../../types';
+import type { Alert, CriticalAlarm, Summary } from '../../types';
 import { StatusLabel } from './StatusLabel';
 import { TaskChip } from './TaskChip';
 import { VitalSign } from './VitalSign';
@@ -19,12 +20,14 @@ import { VitalSign } from './VitalSign';
 /** One patient. The whole card opens the sheet, even when locked, so the controller can show the prescribed notice. */
 export function PatientCard({
   patient,
+  activeAlarm,
   tasks,
   locked,
   offline,
   onOpen,
 }: {
   patient: Summary;
+  activeAlarm: CriticalAlarm | undefined;
   tasks: Alert[];
   locked: boolean;
   offline: boolean;
@@ -32,6 +35,8 @@ export function PatientCard({
 }) {
   const [reason] = patient.risk_status.reasons;
   const extraIssues = patient.risk_status.data_issues.filter(issue => issue.key !== reason?.key);
+  const mainFinding = reason && (activeAlarm?.criteria_met === false
+    ? `${alarmCopy.previousFindings}: ${reasonLabel(reason)}` : reasonLabel(reason));
   const complaint = complaintOf(patient);
   const labs = patient.pending_labs.map(lab => labDisplayLabel(lab.label)).join(', ') || copy.none;
   const consults = patient.pending_consults.map(consult => consultLabel(consult.service)).join(', ') || copy.none;
@@ -59,12 +64,12 @@ export function PatientCard({
           <p className="card-meta">{bedLabel(patient.bed)} · {ageSex(patient)} · {protocolOf(patient)}</p>
         </div>
         <div className="card-status">
-          <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient)} />
+          <StatusLabel status={patient.risk_status.key} sublabel={statusSublabel(patient, !!activeAlarm)} />
           {patient.risk_status.worsened && <span className="badge-worsened">{copy.worsened}</span>}
         </div>
       </header>
       <div className="card-finding">
-        {reason && <p className="card-reason" title={reasonLabel(reason)}>{reasonLabel(reason)}</p>}
+        {mainFinding && <p className="card-reason" title={mainFinding}>{mainFinding}</p>}
         {complaint && <p className="card-complaint" title={complaint}>{complaint}</p>}
       </div>
       {(extraIssues.length > 0 || patient.reconnect_pending) && <p className="card-issue">
@@ -89,8 +94,8 @@ export function PatientCard({
           {tasks.map(task => (
             <li key={task.id}>
               <TaskChip title={alertTitle(task)}>{task.level === 'GREEN'
-                ? (typeof task.params.minutes === 'number' ? copy.dischargeWaitingMinutes(task.params.minutes) : copy.dischargeWaiting)
-                : copy.dataIssues}</TaskChip>
+                ? (typeof task.params.minutes === 'number' ? copy.dischargeWaitingMinutes(task.params.minutes) : alarmCopy.tasks.title('GREEN'))
+                : alertTitle(task)}</TaskChip>
             </li>
           ))}
         </ul>

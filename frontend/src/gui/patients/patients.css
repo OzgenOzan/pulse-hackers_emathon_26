@@ -283,6 +283,14 @@
   box-shadow: var(--shadow);
 }
 
+@media (min-width: 768px) and (max-width: 1199px) {
+  .patient-sheet {
+    bottom: var(--bottom-nav-height, 0px);
+    height: calc(100dvh - var(--header-height, 67px) - var(--bottom-nav-height, 0px));
+    max-height: calc(100dvh - var(--header-height, 67px) - var(--bottom-nav-height, 0px));
+  }
+}
+
 @media (max-width: 767px) {
   .patient-sheet { inset: 0; width: 100vw; height: 100dvh; max-height: 100dvh; z-index: 40; }
   .vitals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -317,6 +325,7 @@
 .sheet-body {
   display: grid;
   flex: 1;
+  min-height: 0;
   gap: 20px;
   padding: 16px;
   overflow-y: auto;

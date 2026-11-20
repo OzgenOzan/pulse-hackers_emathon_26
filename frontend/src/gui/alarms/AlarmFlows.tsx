@@ -3,17 +3,47 @@ import { CircleCheck, ClipboardPlus, Eye, TriangleAlert } from 'lucide-react';
 import { ACTIONS, type ActionSpec } from '../../alertActions';
 import { AlarmCard } from '../../components/ui/AlarmCard';
 import { fmtTime } from '../../format';
-import type { Alert, CriticalAlarm, Role, Summary } from '../../types';
+import type { Alert, CriticalAlarm, Role, State, Summary } from '../../types';
 import { bedLabel, componentText, localRule, roleLabels, stayLabel } from '../clinical';
 import { copy, NOTE_MAX } from './copy';
-import { alarmSentence, announceKey, isWorsenedFor, minutesBetween, rankFindings, ROLES } from './model';
+import { alarmSentence, alertTitle, isWorsenedFor, minutesBetween, rankFindings, ROLES } from './model';
 import './alarms.css';
 
 export { ManualVitals } from './ManualVitals';
 export type { ManualVitalsProps } from './ManualVitals';
 
+/** The shell keeps this region mounted even on routes without an alarm panel. */
+export function AlarmAnnouncer({ state, role }: { state: State | null; role: Role }) {
+  const announced = useRef<{ replay: string; ids: Set<string> } | null>(null);
+  const [message, setMessage] = useState<{ replay: string; role: Role; key: string; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!state) return;
+    const replay = state.sim.replay_id;
+    if (announced.current?.replay !== replay) announced.current = { replay, ids: new Set() };
+    const { ids } = announced.current;
+    const beds: string[] = [];
+    const fresh: string[] = [];
+    for (const alarm of state.critical_alarms) {
+      const key = `${role}:${alarm.id}`;
+      if (alarm.seen[role] || ids.has(key)) continue;
+      ids.add(key);
+      fresh.push(key);
+      beds.push(bedLabel(alarm.patient.bed));
+    }
+    if (fresh.length > 0) setMessage({ replay, role, key: `${replay}:${fresh.join(',')}`, text: copy.live.newAlarm(beds.join(', ')) });
+    else if (state.critical_alarms.length === 0) setMessage(null);
+  }, [state, role]);
+
+  return <div className="visually-hidden" aria-live="assertive" aria-atomic="true" data-testid="alarm-announcer">
+    {message && message.replay === state?.sim.replay_id && message.role === role &&
+      <span key={message.key}>{message.text}</span>}
+  </div>;
+}
+
 export interface AlarmPanelProps {
   alarms: CriticalAlarm[];
+  patients: ReadonlyMap<string, Summary>;
   role: Role;
   busy: boolean;
   offline: boolean;
@@ -23,17 +53,8 @@ export interface AlarmPanelProps {
 }
 
 /** Critical alarm panel. Renders nothing when there are no pending alarms. */
-export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEvaluate }: AlarmPanelProps) {
+export function AlarmPanel({ alarms, patients, role, busy, offline, onView, onSeen, onEvaluate }: AlarmPanelProps) {
   const headingId = useId();
-  const announced = useRef(new Set<string>());
-  const [live, setLive] = useState('');
-
-  useEffect(() => {
-    const fresh = alarms.filter(alarm => !alarm.seen[role] && !announced.current.has(announceKey(alarm, role)));
-    if (fresh.length === 0) return;
-    fresh.forEach(alarm => announced.current.add(announceKey(alarm, role)));
-    setLive(copy.live.newAlarm(fresh.map(alarm => bedLabel(alarm.patient.bed)).join(', ')));
-  }, [alarms, role]);
 
   if (alarms.length === 0) return null;
   const blocker = alarms.find(alarm => alarm.blocking);
@@ -44,11 +65,12 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
         {copy.panel.heading}
         <span className="alarm-count">{alarms.length}</span>
       </h2>
-      <div className="alarm-live" aria-live="assertive">{live}</div>
       <ol className="alarm-list">
         {alarms.map(alarm => {
           const seen = ROLES.filter(r => alarm.seen[r]);
           const mine = alarm.seen[role];
+          const current = patients.get(alarm.patient_id);
+          const patientLine = copy.panel.patientLine(bedLabel(alarm.patient.bed), alarm.patient.label, alarm.patient.age);
           const orderLocked = role === 'physician' && blocker !== undefined && !alarm.blocking;
           const evaluateReason = role !== 'physician'
             ? copy.panel.nurseEvaluate
@@ -62,7 +84,7 @@ export function AlarmPanel({ alarms, role, busy, offline, onView, onSeen, onEval
               <AlarmCard
                 tone="critical"
                 title={copy.panel.headline}
-                meta={copy.panel.patientLine(bedLabel(alarm.patient.bed), alarm.patient.label, alarm.patient.age)}
+                meta={current && !alarm.criteria_met ? `${patientLine} · ${copy.currentScore(current.score)}` : patientLine}
                 badges={(
                   <>
                     {!mine && <span className="alarm-badge new">{copy.panel.newBadge}</span>}
@@ -131,15 +153,11 @@ export interface AlarmStripProps {
   /** The full panel element, or null when this route renders no panel. */
   panel: HTMLElement | null;
   onView: (id: string) => void;
-  /** Reports new alarms via aria-live. Defaults to reporting only when no full panel is rendered. */
-  announce?: boolean;
 }
 
 /** Shows the strip immediately without a full panel, or once the full panel is above the header. */
-export function AlarmStrip({ alarms, panel, onView, announce = panel === null }: AlarmStripProps) {
+export function AlarmStrip({ alarms, panel, onView }: AlarmStripProps) {
   const [pastPanel, setPastPanel] = useState(false);
-  const [live, setLive] = useState('');
-  const announced = useRef(new Set<string>());
   const hasAlarms = alarms.length > 0;
 
   useEffect(() => {
@@ -159,20 +177,11 @@ export function AlarmStrip({ alarms, panel, onView, announce = panel === null }:
     };
   }, [panel]);
 
-  useEffect(() => {
-    if (!announce) return;
-    const fresh = alarms.filter(alarm => !announced.current.has(alarm.id));
-    if (fresh.length === 0) return;
-    fresh.forEach(alarm => announced.current.add(alarm.id));
-    setLive(copy.live.newAlarm(fresh.map(alarm => bedLabel(alarm.patient.bed)).join(', ')));
-  }, [alarms, announce]);
-
   if (!hasAlarms || (panel && !pastPanel)) return null;
   const blocking = alarms.find(alarm => alarm.blocking);
 
   return (
     <section className="alarm-flows alarm-strip" data-past-panel={!!panel} aria-label={copy.strip.label} data-testid="alarm-strip">
-      <div className="alarm-live" aria-live={announce ? 'assertive' : undefined}>{live}</div>
       <p className="alarm-strip-title">
         <TriangleAlert size={20} aria-hidden="true" /> {copy.strip.count(alarms.length)}
       </p>
@@ -206,6 +215,7 @@ export function AlarmStrip({ alarms, panel, onView, announce = panel === null }:
 
 export interface EvaluationSheetProps {
   alarm: CriticalAlarm;
+  current: Summary | undefined;
   busy: boolean;
   offline: boolean;
   onClose: () => void;
@@ -213,7 +223,7 @@ export interface EvaluationSheetProps {
 }
 
 /** Top-anchored native dialog: focus returns to the opener and Escape closes it. */
-export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: EvaluationSheetProps) {
+export function EvaluationSheet({ alarm, current, busy, offline, onClose, onSave }: EvaluationSheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const noteId = useId();
@@ -221,6 +231,7 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
   const [picked, setPicked] = useState<ActionSpec | null>(null);
   const disabled = busy || offline;
   const noteValue = note.trim() || undefined;
+  const evidence = alarm.criteria_met ? copy.sheet.evidence : copy.previousFindings;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -244,7 +255,8 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
           <div>
             <h2 id={titleId}>{copy.sheet.heading}</h2>
             <p className="alarm-card-meta">
-              {copy.panel.patientLine(bedLabel(alarm.patient.bed), alarm.patient.label, alarm.patient.age)} · {copy.sheet.score(alarm.score)}
+              {copy.panel.patientLine(bedLabel(alarm.patient.bed), alarm.patient.label, alarm.patient.age)}
+              {current && ` · ${copy.currentScore(current.score)}`}
             </p>
           </div>
           <button
@@ -258,9 +270,9 @@ export function EvaluationSheet({ alarm, busy, offline, onClose, onSave }: Evalu
           </button>
         </header>
 
-        <section className="alarm-evidence" aria-label={copy.sheet.evidence}>
-          <h3>{copy.sheet.evidence}</h3>
-          <p className="alarm-finding">{alarmSentence(alarm)}</p>
+        <section className="alarm-evidence" aria-label={evidence}>
+          <h3>{evidence}</h3>
+          {alarm.criteria_met && <p className="alarm-finding">{alarmSentence(alarm)}</p>}
           <ul>
             {rankFindings(alarm.components).map((component, index) => (
               <li key={`${component.key}-${index}`}>
@@ -338,12 +350,13 @@ export interface TaskActionsProps {
   offline: boolean;
   /** Locks every action with this reason (e.g. physician lock). A role-specific reason takes precedence. */
   lockReason?: string;
+  vitalsUnavailable?: string;
   onAck: (alert: Alert, action: string, reason?: string) => void;
   onVitals: (id: string) => void;
 }
 
 /** Physician and nurse tasks. Actions outside the owner's role are shown disabled with a reason. */
-export function TaskActions({ tasks, patients, role, busy, offline, lockReason, onAck, onVitals }: TaskActionsProps) {
+export function TaskActions({ tasks, patients, role, busy, offline, lockReason, vitalsUnavailable, onAck, onVitals }: TaskActionsProps) {
   const headingId = useId();
   const [picked, setPicked] = useState<string | null>(null);
 
@@ -355,10 +368,10 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
         {tasks.map(task => {
           const patient = patients?.find(p => p.id === task.patient_id);
           const mine = task.target_role === role;
-          const lock = lockReason || undefined;
-          const reason = mine ? lock : copy.tasks.roleDisabled(task.target_role);
-          const disabled = busy || offline || !mine || lock !== undefined;
+          const reason = mine ? lockReason : copy.tasks.roleDisabled(task.target_role);
+          const disabled = busy || offline || reason !== undefined;
           const reasonId = `${headingId}-${task.id}-reason`;
+          const vitalsReasonId = !reason && vitalsUnavailable ? `${reasonId}-vitals` : undefined;
           return (
             <li key={task.id}>
               <AlarmCard
@@ -377,8 +390,8 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
                             type="button"
                             className="alarm-btn"
                             data-testid={`task-action-${spec.action}`}
-                            disabled={disabled}
-                            aria-describedby={reason ? reasonId : undefined}
+                            disabled={disabled || vitalsUnavailable !== undefined}
+                            aria-describedby={reason ? reasonId : vitalsReasonId}
                             onClick={() => onVitals(task.patient_id)}
                           >
                             {copy.tasks.vitals}
@@ -425,12 +438,14 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
                       );
                     })}
                     {reason && <span className="alarm-reason" id={reasonId}>{reason}</span>}
+                    {vitalsReasonId && task.recommended_actions.includes('vitals_entered') &&
+                      <span className="alarm-reason" id={vitalsReasonId}>{vitalsUnavailable}</span>}
                   </div>
                 )}
               >
-                {typeof task.params.minutes === 'number' &&
-                  <p>{task.level === 'GREEN' ? copy.tasks.discharge(stayLabel(task.params.minutes))
-                    : copy.tasks.gap(stayLabel(task.params.minutes))}</p>}
+                {task.level === 'YELLOW' && <p>{alertTitle(task)}</p>}
+                {task.level === 'GREEN' && typeof task.params.minutes === 'number' &&
+                  <p>{copy.tasks.discharge(stayLabel(task.params.minutes))}</p>}
               </AlarmCard>
             </li>
           );
@@ -442,29 +457,36 @@ export function TaskActions({ tasks, patients, role, busy, offline, lockReason, 
 
 export interface AlarmHistoryProps {
   alarms: CriticalAlarm[];
+  viewReason: (id: string) => string | undefined;
   onView: (id: string) => void;
 }
 
 /** Recorded alarm history: created time, seen per role with latency, decision with reason and note. */
-export function AlarmHistory({ alarms, onView }: AlarmHistoryProps) {
+export function AlarmHistory({ alarms, viewReason, onView }: AlarmHistoryProps) {
   const headingId = useId();
   return (
     <section className="alarm-flows alarm-history" aria-labelledby={headingId}>
       <h2 id={headingId}>{copy.history.heading}</h2>
       {alarms.length === 0 && <p className="alarm-empty">{copy.history.empty}</p>}
       <ol className="alarm-history-list">
-        {alarms.map(alarm => (
-          <li key={alarm.id}>
+        {alarms.map(alarm => {
+          const reason = viewReason(alarm.patient_id);
+          const reasonId = `${headingId}-${alarm.id}-view`;
+          return <li key={alarm.id}>
             <AlarmCard
               tone="neutral"
               title={`${bedLabel(alarm.patient.bed)} - ${alarm.patient.label}`}
               meta={`${copy.history.created(fmtTime(alarm.created_at))} · ${alarm.id}`}
               badges={<span className="alarm-badge">{copy.status(alarm.status)}</span>}
               actions={(
-                <button type="button" className="alarm-btn" onClick={() => onView(alarm.patient_id)}>
-                  <Eye aria-hidden="true" size={20} />
-                  {copy.history.view}
-                </button>
+                <div className="alarm-action">
+                  <button type="button" className="alarm-btn" disabled={reason !== undefined}
+                    aria-describedby={reason ? reasonId : undefined} onClick={() => onView(alarm.patient_id)}>
+                    <Eye aria-hidden="true" size={20} />
+                    {copy.history.view}
+                  </button>
+                  {reason && <span className="alarm-reason" id={reasonId}>{reason}</span>}
+                </div>
               )}
             >
               <ul className="alarm-timeline">
@@ -492,7 +514,7 @@ export function AlarmHistory({ alarms, onView }: AlarmHistoryProps) {
               </ul>
             </AlarmCard>
           </li>
-        ))}
+        })}
       </ol>
     </section>
   );

@@ -57,6 +57,7 @@ export function DemoControls({
         <select
           data-testid="demo-speed"
           value={speed}
+          disabled={busy}
           onChange={e => {
             const next = Number(e.target.value) as Speed;
             setSpeed(next);

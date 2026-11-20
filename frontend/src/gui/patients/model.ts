@@ -64,8 +64,8 @@ function evaluationText(evaluation: { at: string; decision: string }): string {
   return decision ? `${when} · ${decision}` : when;
 }
 
-export function statusSublabel(p: Summary): string | undefined {
-  if (p.risk_status.key !== 'kritik' || !p.last_evaluation) return undefined;
+export function statusSublabel(p: Summary, hasActiveCritical: boolean): string | undefined {
+  if (p.risk_status.key !== 'kritik' || hasActiveCritical || !p.last_evaluation) return undefined;
   return evaluationText(p.last_evaluation);
 }
 
@@ -88,10 +88,6 @@ export function suppressionText(reasonKey: string): string {
   return t(`suppression.${reasonKey}`, undefined, copy.suppressedFallback);
 }
 
-export function alertTitle(alert: Alert): string {
-  return t(`alert.title.${alert.title_key}`, alert.params, copy.alertFallback);
-}
-
 export function alertStatusText(status: Alert['status']): string {
   switch (status) {
     case 'active': return copy.alertOpen;
@@ -99,14 +95,6 @@ export function alertStatusText(status: Alert['status']): string {
     case 'auto_resolved': return t('event.auto_resolved');
     case 'superseded': return t('event.superseded');
   }
-}
-
-/** Physician decision and reason for a closed alert; null while the alert is open. */
-export function decisionText(alert: Alert): string | null {
-  if (!alert.action) return null;
-  const action = actionLabel(alert.action);
-  const reason = alert.reason ? t(`reason.${alert.reason}`, undefined, '') : '';
-  return [action, reason].filter(Boolean).join(' · ') || null;
 }
 
 export function componentFinding(c: Component): string {

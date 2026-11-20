@@ -23,17 +23,24 @@ async function readDetail(res: Response): Promise<string> {
   return res.statusText || `HTTP ${res.status}`;
 }
 
+const MUTATION_TIMEOUT_MS = 5000;
+
 async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, replayId?: string, signal?: AbortSignal): Promise<T> {
+  const deadline = method === 'POST' ? AbortSignal.timeout(MUTATION_TIMEOUT_MS) : signal;
   const res = await fetch(path, {
     method,
-    signal,
+    signal: deadline,
     headers: body === undefined ? undefined : {
       'Content-Type': 'application/json',
       ...(replayId ? { 'X-Replay-Id': replayId } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (!res.ok) throw new ApiError(res.status, await readDetail(res));
+  if (!res.ok) {
+    const detail = await readDetail(res);
+    deadline?.throwIfAborted();
+    throw new ApiError(res.status, detail);
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -44,8 +51,8 @@ export const api = {
     request<Detail>('GET', `/api/patients/${encodeURIComponent(id)}?role=${role}`),
   audit: () => request<AuditEntry[]>('GET', '/api/audit'),
   alarms: () => request<CriticalAlarm[]>('GET', '/api/alerts?level=RED'),
-  config: () => request<RulesView>('GET', '/api/config'),
-  scenarios: () => request<ScenarioInfo[]>('GET', '/api/scenarios'),
+  config: (signal?: AbortSignal) => request<RulesView>('GET', '/api/config', undefined, undefined, signal),
+  scenarios: (signal?: AbortSignal) => request<ScenarioInfo[]>('GET', '/api/scenarios', undefined, undefined, signal),
   seen: (alertId: string, role: Role, replayId: string) =>
     request<void>('POST', `/api/alerts/${encodeURIComponent(alertId)}/seen`, { role }, replayId),
   ack: (alertId: string, body: { action: string; reason?: string; note?: string }, replayId: string) =>

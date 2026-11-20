@@ -7,6 +7,7 @@ import type { OverviewKey, Role, State } from '../../types';
 import { ConnectionStatus, type ConnectionState } from '../../components/ui/ConnectionStatus';
 import { StatCard, type StatTone } from '../../components/ui/StatCard';
 import { routeLabels, type Route } from '../navigation';
+import { AlarmAnnouncer } from '../alarms/AlarmFlows';
 import { simulatedDate } from '../clinical';
 import { HawkEyeLogo } from './HawkEyeLogo';
 import { shellCopy, wallClock } from './copy';
@@ -107,24 +108,31 @@ export function GuiShell({
   const currentTheme = useEffectiveTheme(theme);
 
   const headerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const compact = useMediaQuery('(max-width: 1199px)');
   const wide = useMediaQuery('(min-width: 1600px)');
   const [storedOpen, setStoredOpen] = useState(readSidebarOpen);
   const [moreOpen, setMoreOpen] = useState(false);
   const expanded = storedOpen ?? wide;
 
-  // Other CSS consumers read the real header height from the root.
+  // Fixed surfaces share the actual header and tablet navigation heights.
   useLayoutEffect(() => {
     const header = headerRef.current;
-    if (!header) return;
+    const nav = navRef.current;
+    if (!header || !nav) return;
     const root = document.documentElement;
-    const apply = () => root.style.setProperty('--header-height', `${header.offsetHeight}px`);
+    const apply = () => {
+      root.style.setProperty('--header-height', `${header.offsetHeight}px`);
+      root.style.setProperty('--bottom-nav-height', `${nav.getBoundingClientRect().height}px`);
+    };
     apply();
     const observer = new ResizeObserver(apply);
-    observer.observe(header);
+    observer.observe(header, { box: 'border-box' });
+    observer.observe(nav, { box: 'border-box' });
     return () => {
       observer.disconnect();
       root.style.removeProperty('--header-height');
+      root.style.removeProperty('--bottom-nav-height');
     };
   }, []);
 
@@ -227,6 +235,8 @@ export function GuiShell({
         </div>
       </header>
 
+      <AlarmAnnouncer state={state} role={role} />
+
       {offline && (
         <div className="gui-notice" role="status" data-testid="offline-notice">
           {shellCopy.offlineNotice(lastSuccess ? wallClock(lastSuccess) : null)}
@@ -239,6 +249,7 @@ export function GuiShell({
       <div className="gui-frame" data-expanded={expanded}>
         <nav
           className="gui-nav"
+          ref={navRef}
           aria-label={shellCopy.nav.label}
           onKeyDown={event => { if (event.key === 'Escape') setMoreOpen(false); }}
         >
