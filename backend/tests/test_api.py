@@ -70,6 +70,24 @@ def test_not_at_bed_rejects_unknown_reason():
         assert client.post(url, json={'action': 'not_at_bed', 'reason': 'left_bed'}).status_code == 204
 
 
+def test_vitals_score_rise_does_not_realert_monitor_gap():
+    with client_for_night_shift() as client:
+        step(client)
+        step(client)
+        [task] = state(client, 'nurse')['alerts']
+        assert (task['patient_id'], task['level'], task['score']) == ('Y03', 'YELLOW', 0)
+        ack = client.post(f"/api/alerts/{task['id']}/ack", json={'action': 'not_at_bed', 'reason': 'left_bed'})
+        assert ack.status_code == 204
+        entry = client.post('/api/patients/Y03/vitals', json={'hr': 105, 'sbp': 125, 'dbp': 78, 'temp': 38.2})
+        assert entry.status_code == 204
+        nurse = state(client, 'nurse')
+        assert next(p['score'] for p in nurse['patients'] if p['id'] == 'Y03') == 2
+        assert nurse['alerts'] == []
+        assert not any(
+            e['patient_id'] == 'Y03' and e['event'] == 'escalated' for e in client.get('/api/audit').json()
+        )
+
+
 def test_wait_justified_snoozes_then_returns():
     with client_for_night_shift() as client:
         step(client)

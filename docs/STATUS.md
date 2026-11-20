@@ -94,4 +94,5 @@
 - The remote [`v2-gui`](https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/v2-gui) fallback was published before edits at `660407a` (the same tree as `baca20b`). Baseline: `make test` passed with 122 backend tests.
 - §2.1 (`6c3306f`) — Vital flag severity, demo step, and overdue-vitals filter read the active rules. **CLINICAL-REVIEW:** localized hypoxaemia (SpO₂) and tachypnoea (RR) findings for the disabled candidate rules.
   Threshold regression failed on hard-coded `kritik`, then passed. At 1280×720 Edge kept the controls disabled without config, showed the default 15/30-minute labels once loaded, and stepped to 03:00.
-- §2.2 — Added the seven missing TR/EN error keys; `not_at_bed` accepts only `left_bed`, `in_procedure`, or `other`. Tests first caught missing text and a 204 for `banana`, then verified catalog coverage and 422/204 for the rejected/allowed reasons.
+- §2.2 (`0d52ac3`) — Added the seven missing TR/EN error keys; `not_at_bed` accepts only `left_bed`, `in_procedure`, or `other`. Tests first caught missing text and a 204 for `banana`, then verified catalog coverage and 422/204 for the rejected/allowed reasons.
+- §2.3 — **CLINICAL-REVIEW:** score-based re-alert within the cooldown applies to critical alarms only. The lifecycle and Y03 API regressions initially re-fired; both pass with the guard. The original RED test is unchanged.
