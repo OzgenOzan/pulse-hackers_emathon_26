@@ -61,6 +61,9 @@ async function send<T>(method: Method, path: string, body: unknown, replayId?: s
     deadline?.throwIfAborted();
     throw error;
   }
+  if (method === 'GET' && replayId && res.headers.get('X-Replay-Id') !== replayId) {
+    throw new Error('Active settings changed while the config was loading.');
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -71,7 +74,7 @@ export const api = {
     request<Detail>('GET', `/api/patients/${encodeURIComponent(id)}?role=${role}`),
   audit: () => request<AuditEntry[]>('GET', '/api/audit'),
   alarms: () => request<CriticalAlarm[]>('GET', '/api/alerts?level=RED'),
-  config: (signal?: AbortSignal) => request<RulesView>('GET', '/api/config', undefined, undefined, signal),
+  config: (replayId: string, signal?: AbortSignal) => request<RulesView>('GET', '/api/config', undefined, replayId, signal),
   configDefaults: (signal?: AbortSignal) => request<RulesView>('GET', '/api/config/defaults', undefined, undefined, signal),
   applyConfig: (role: Role, config: RulesView, replayId: string) =>
     request<void>('PUT', '/api/config', { role, config }, replayId),

@@ -150,7 +150,9 @@ async def audit(session: Current) -> list[AuditEntry]:
 
 
 @router.get('/config')
-async def config(session: Current) -> EngineConfig:
+async def config(session: Current, response: Response) -> EngineConfig:
+    response.headers['X-Replay-Id'] = session.replay_id
+    response.headers['Cache-Control'] = 'no-store'
     return session.config
 
 

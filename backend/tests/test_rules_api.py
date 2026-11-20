@@ -457,3 +457,19 @@ def test_nurse_cannot_reset_rules():
         assert response.status_code == 403
         assert response.json() == {'detail': 'physician_role_required'}
         assert client.get('/api/config/history').json() == []
+
+
+def test_active_config_names_the_replay_it_describes():
+    with client_for_night_shift() as client:
+        previous = state(client)['sim']['replay_id']
+        first = client.get('/api/config')
+        assert first.headers.get('X-Replay-Id') == previous
+        assert first.json()['red']['threshold'] == 3
+        changed = edit(first.json(), 'red.threshold', 2)
+        assert put_rules(client, changed).status_code == 204
+
+        # A caller whose state poll preceded the apply can detect that this newer config is not for it.
+        second = client.get('/api/config')
+        assert second.json() == changed
+        assert second.headers.get('X-Replay-Id') != previous
+        assert second.headers.get('X-Replay-Id') == state(client)['sim']['replay_id']

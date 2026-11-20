@@ -139,7 +139,7 @@ export function ControlPanel() {
   useEffect(() => loadResource(api.scenarios, setScenarios), []);
   useEffect(() => loadResource(api.configDefaults, setDefaults), []);
   useEffect(() => {
-    if (replay) return loadResource(api.config, rules => setActiveConfig({ replay, rules }));
+    if (replay) return loadResource(signal => api.config(replay, signal), rules => setActiveConfig({ replay, rules }));
   }, [replay]);
 
   useEffect(() => {
