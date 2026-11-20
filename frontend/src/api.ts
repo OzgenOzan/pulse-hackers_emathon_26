@@ -1,32 +1,46 @@
 import type { AuditEntry, CriticalAlarm, Detail, ManualValues, Role, RulesView, ScenarioInfo, State, Speed } from './types';
 
+type ApiErrorBody = {
+  detail?: unknown;
+  paths?: string[];
+  errors?: { loc: string; msg: string }[];
+};
+
 /** The only module that calls the same-origin API. */
 export class ApiError extends Error {
   readonly status: number;
+  readonly body?: ApiErrorBody;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, body?: ApiErrorBody) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.body = body;
   }
 }
 
-async function readDetail(res: Response): Promise<string> {
+export type ConfigMutationResult = { ok: boolean; error?: ApiError };
+
+async function readError(res: Response): Promise<ApiError> {
+  let body: ApiErrorBody | undefined;
+  let message = res.statusText || `HTTP ${res.status}`;
   try {
-    const body = (await res.json()) as { detail?: unknown };
-    if (body.detail !== undefined) {
-      return typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+    const parsed: unknown = await res.json();
+    if (parsed && typeof parsed === 'object') {
+      body = parsed as ApiErrorBody;
+      const detail = body.detail;
+      if (detail !== undefined) message = typeof detail === 'string' ? detail : JSON.stringify(detail);
     }
   } catch {
     // Non-JSON error bodies fall back to the HTTP status text.
   }
-  return res.statusText || `HTTP ${res.status}`;
+  return new ApiError(res.status, message, body);
 }
 
 const MUTATION_TIMEOUT_MS = 5000;
 
-async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, replayId?: string, signal?: AbortSignal): Promise<T> {
-  const deadline = method === 'POST' ? AbortSignal.timeout(MUTATION_TIMEOUT_MS) : signal;
+async function request<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, replayId?: string, signal?: AbortSignal): Promise<T> {
+  const deadline = method === 'GET' ? signal : AbortSignal.timeout(MUTATION_TIMEOUT_MS);
   const res = await fetch(path, {
     method,
     signal: deadline,
@@ -37,9 +51,9 @@ async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, 
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    const detail = await readDetail(res);
+    const error = await readError(res);
     deadline?.throwIfAborted();
-    throw new ApiError(res.status, detail);
+    throw error;
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -52,6 +66,10 @@ export const api = {
   audit: () => request<AuditEntry[]>('GET', '/api/audit'),
   alarms: () => request<CriticalAlarm[]>('GET', '/api/alerts?level=RED'),
   config: (signal?: AbortSignal) => request<RulesView>('GET', '/api/config', undefined, undefined, signal),
+  configDefaults: (signal?: AbortSignal) => request<RulesView>('GET', '/api/config/defaults', undefined, undefined, signal),
+  applyConfig: (role: Role, config: RulesView, replayId: string) =>
+    request<void>('PUT', '/api/config', { role, config }, replayId),
+  resetConfig: (role: Role, replayId: string) => request<void>('POST', '/api/config/reset', { role }, replayId),
   scenarios: (signal?: AbortSignal) => request<ScenarioInfo[]>('GET', '/api/scenarios', undefined, undefined, signal),
   seen: (alertId: string, role: Role, replayId: string) =>
     request<void>('POST', `/api/alerts/${encodeURIComponent(alertId)}/seen`, { role }, replayId),

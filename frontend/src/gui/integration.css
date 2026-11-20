@@ -21,8 +21,6 @@
 .settings-options { column-gap: 1rem; margin-block-start: .5rem; }
 .settings-choice [aria-pressed='true'] { background: var(--text); color: var(--ink-inverse); }
 .settings-rules summary { display: list-item; padding: .625rem 0; min-height: 44px; font-weight: 680; cursor: pointer; }
-.settings-definitions { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: .4rem 1rem; }
-.settings-definitions dd { margin: 0; font-weight: 600; }
 .pending-records { display: grid; gap: .5rem; list-style: none; padding-inline-start: 0; }
 .pending-records li { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .mobile-alarm-actions { display: none; }

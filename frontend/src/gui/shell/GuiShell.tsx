@@ -6,6 +6,7 @@ import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import type { OverviewKey, Role, State } from '../../types';
 import { ConnectionStatus, type ConnectionState } from '../../components/ui/ConnectionStatus';
 import { StatCard, type StatTone } from '../../components/ui/StatCard';
+import { t } from '../../i18n';
 import { routeLabels, type Route } from '../navigation';
 import { AlarmAnnouncer } from '../alarms/AlarmFlows';
 import { simulatedDate } from '../clinical';
@@ -220,7 +221,11 @@ export function GuiShell({
 
           <ConnectionStatus state={connection} />
 
-          <span className="gui-pill" title={shellCopy.simulatedPillTitle}>{shellCopy.simulatedPill}</span>
+          <div className="gui-data-pills">
+            <span className="gui-pill" title={shellCopy.simulatedPillTitle}>{shellCopy.simulatedPill}</span>
+            {state?.sim.rules_custom && <span className="gui-pill gui-custom-pill" title={t('gui.rules.customPillTip')}
+              data-testid="rules-custom-header">{t('gui.rules.customPill')}</span>}
+          </div>
 
           <button
             type="button"

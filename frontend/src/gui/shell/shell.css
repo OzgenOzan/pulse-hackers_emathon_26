@@ -161,6 +161,13 @@
   box-sizing: border-box;
 }
 
+.gui-data-pills {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
 .gui-pill {
   display: inline-flex;
   align-items: center;
@@ -207,7 +214,9 @@
   .role-switch { grid-area: role; }
   .gui-clock { grid-area: clock; justify-self: end; }
   .gui-clock-value { font-size: .875rem; white-space: normal; }
-  .gui-pill { grid-area: pill; padding-inline: 4px; letter-spacing: 0; }
+  .gui-data-pills { grid-area: pill; min-width: 0; }
+  .gui-pill { padding-inline: 4px; letter-spacing: 0; }
+  .gui-data-pills .gui-custom-pill { white-space: normal; overflow-wrap: anywhere; }
   .gui-theme { grid-area: theme; justify-self: end; }
   .gui-info { grid-area: info; justify-self: end; }
   .gui-controls > .connection { grid-area: wire; min-width: 0; white-space: normal; line-height: 1.15; }

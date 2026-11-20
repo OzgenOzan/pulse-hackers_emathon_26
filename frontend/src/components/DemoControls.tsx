@@ -31,6 +31,8 @@ export function DemoControls({
   return (
     <section className="demo-bar" aria-label={t('demo.title')}>
       <span className="demo-title">{t('demo.title')}</span>
+      {sim.rules_custom && <span className="gui-pill" data-testid="rules-custom-demo"
+        title={t('gui.rules.customPillTip')}>{t('gui.rules.customPill')}</span>}
       <label>
         {t('demo.scenario')}{' '}
         <select data-testid="demo-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>

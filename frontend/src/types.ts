@@ -65,7 +65,10 @@ export interface Detail {
   active_red: boolean; intervention_started: boolean; assessment: EngineResult; alert_history: Alert[];
   gcs_history: GcsReading[]; consultations: Consultation[];
 }
-export interface SimStatus { time: string; playing: boolean; speed: Speed; scenario_id: string; replay_id: string; next_cycle_at: string | null }
+export interface SimStatus {
+  time: string; playing: boolean; speed: Speed; scenario_id: string; replay_id: string;
+  next_cycle_at: string | null; rules_custom: boolean;
+}
 export interface State {
   sim: SimStatus; patients: Summary[]; alerts: Alert[]; blocking_alert_id: string | null;
   counters: { suppressed_labs: number; acknowledgements: number };
@@ -90,6 +93,10 @@ export interface RulesView {
   manual_entry: { required: (keyof VitalValues)[]; limits: Record<keyof ManualValues, {min: number; max: number}> };
   labs: Record<string, {
     label: string; unit: string; ref_low: number | null; ref_high: number | null;
+    critical_low: number | null; critical_high: number | null;
+  }>;
+  icd_lab_relevance: Record<string, { icd_prefixes: string[]; labs: string[] }>;
+  universal_panic: { enabled: boolean } & Record<'potassium' | 'ph', {
     critical_low: number | null; critical_high: number | null;
   }>;
   status: { watch_min_score: number; required_fresh_vitals: (keyof VitalValues)[] };
