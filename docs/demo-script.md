@@ -25,7 +25,7 @@ Run `make demo`, use a 1280×720 or larger desktop viewport, and leave the clock
 | 32–49 | **Physician → +15 min** (**Hekim → +15 dk**). The Bed 01 (Yatak 01) alarm cites tachycardia (108/min), fever (38.4 °C), and a MAP (OAB) drop of 18 mmHg. Try another bed to show the lock. Press **Mark alarm seen** (**Alarmı gördüm**) and verify the alarm and lock both remain. |
 | 49–60 | **Create clinical assessment record → Move to red zone** (**Klinik değerlendirme kaydı oluştur → Kırmızı alana al**). Open **Clinical Alarms** (**Klinik Alarmlar**) to show the seen and clinical evaluation records. |
 
-Jurors can open the [public demo page](https://ozgenozan.github.io/pulse-hackers_emathon_26/) on their own devices to watch the backup and view screenshots.
+Jurors can run the night shift on their own devices from the [public demo page](https://ozgenozan.github.io/pulse-hackers_emathon_26/).
 
 **Optional limitation rehearsal:** From the hero end at 03:30, press **+15 min** (**+15 dk**) twice. At 04:00 choose **Create clinical assessment record → Reassessing** (**Klinik değerlendirme kaydı oluştur → Yeniden değerlendiriyorum**) for Bed 02 (Yatak 02). Step once more: at 04:15 Bed 08 (Yatak 08) has MAP (OAB) 64 from a chronically low baseline and still gets a critical alarm. Choose **Expected for this patient → Chronic baseline** (**Bu hasta için beklenen → Kronik bazal değer**) and show the recorded reason. This is a scripted limitation, not clinical advice.
 

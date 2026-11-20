@@ -48,9 +48,9 @@ Team 4 — PULSE HACKERS
 
 ### Live demo (GitHub Pages)
 
-[Open the jury demo on GitHub Pages](https://ozgenozan.github.io/pulse-hackers_emathon_26/). The release uses the English-first static fallback: a 60-second recording and three screenshots of the local app, with a Turkish section below. The stage demo and advisory YAML export still use `make demo`.
+[Open the jury demo on GitHub Pages](https://ozgenozan.github.io/pulse-hackers_emathon_26/). The interactive site runs the same Python rules engine through self-hosted Pyodide, with no API server. The first load transferred about 17 MB in the loopback browser smoke test.
 
-The separate interactive Pages build runs the same Python rules engine through self-hosted Pyodide, with no API server. Each tab has its own simulation; reloading restores the default rules and starts the shift at 02:45. The public site uses the fallback until the interactive build is ready for release.
+Each tab has its own simulation; reloading restores the default rules and starts the shift at 02:45. The stage demo and advisory YAML export still use `make demo`. A separate static fallback contains a 60-second recording and three screenshots of the local app.
 
 | Task | Make | Windows PowerShell without Make |
 |---|---|---|
