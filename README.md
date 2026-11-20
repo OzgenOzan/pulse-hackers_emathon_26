@@ -69,6 +69,8 @@ npm.cmd ci
 npm.cmd run typecheck
 npm.cmd run build
 Pop-Location
+& .\.venv\Scripts\python.exe scripts/export_rules.py --check
+& .\.venv\Scripts\python.exe scripts/generate_noise.py --check
 & .\.venv\Scripts\python.exe -m uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
 ```
 

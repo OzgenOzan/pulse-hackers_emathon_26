@@ -95,4 +95,5 @@
 - §2.1 (`6c3306f`) — Vital flag severity, demo step, and overdue-vitals filter read the active rules. **CLINICAL-REVIEW:** localized hypoxaemia (SpO₂) and tachypnoea (RR) findings for the disabled candidate rules.
   Threshold regression failed on hard-coded `kritik`, then passed. At 1280×720 Edge kept the controls disabled without config, showed the default 15/30-minute labels once loaded, and stepped to 03:00.
 - §2.2 (`0d52ac3`) — Added the seven missing TR/EN error keys; `not_at_bed` accepts only `left_bed`, `in_procedure`, or `other`. Tests first caught missing text and a 204 for `banana`, then verified catalog coverage and 422/204 for the rejected/allowed reasons.
-- §2.3 — **CLINICAL-REVIEW:** score-based re-alert within the cooldown applies to critical alarms only. The lifecycle and Y03 API regressions initially re-fired; both pass with the guard. The original RED test is unchanged.
+- §2.3 (`5da36ac`) — **CLINICAL-REVIEW:** score-based re-alert within the cooldown applies to critical alarms only. The lifecycle and Y03 API regressions initially re-fired; both pass with the guard. The original RED test is unchanged.
+- §2.4 — `make test` and the Windows PowerShell commands check the clinician-owned rules export and seeded noise; the raw-data check is wired with the §3 exporter. The §2 checkpoint passed: 127 backend tests and all frontend checks.
