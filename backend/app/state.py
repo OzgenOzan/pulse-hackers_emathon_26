@@ -224,9 +224,9 @@ def _changes(before: Any, after: Any, path: str = '') -> list[RuleChange]:
     return [RuleChange(path=path, before=before, after=after)]
 
 
-def _overflows_clock(now: datetime, minutes: int) -> bool:
+def _overflows_clock(scenario: Scenario, minutes: int) -> bool:
     try:
-        _ = (now - timedelta(minutes=minutes), now + timedelta(minutes=minutes))
+        _ = (scenario.start - timedelta(minutes=minutes), scenario.end + timedelta(minutes=minutes))
     except OverflowError:
         return True
     return False
@@ -243,7 +243,7 @@ class SessionError(Exception):
 class Session:
     def __init__(self, config: EngineConfig, source: DataSource,
                  monotonic: Callable[[], float], wall_now: Callable[[], datetime]):
-        self.default_config = config
+        self.default_config = config.model_copy(deep=True)
         self.config = config
         self.rules_history: list[RulesHistoryEntry] = []
         self.source = source
@@ -313,7 +313,7 @@ class Session:
         changes = _changes(current, config.model_dump(mode='json'))
         scenario = self._load_scenario(self.scenario_id)
         for change in changes:
-            if change.path.endswith('_minutes') and _overflows_clock(scenario.start, change.after):
+            if change.path.endswith('_minutes') and _overflows_clock(scenario, change.after):
                 raise SessionError(422, 'rules_invalid', {'errors': [
                     {'loc': change.path, 'msg': 'duration exceeds the clock range'}]})
         self._replace_config(config, scenario, role, 'apply', changes)
@@ -322,7 +322,7 @@ class Session:
         self.require_physician(role)
         changes = _changes(self.config.model_dump(mode='json'), self.default_config.model_dump(mode='json'))
         scenario = self._load_scenario(self.scenario_id)
-        self._replace_config(self.default_config, scenario, role, 'reset_defaults', changes)
+        self._replace_config(self.default_config.model_copy(deep=True), scenario, role, 'reset_defaults', changes)
 
     def _replace_config(self, config: EngineConfig, scenario: Scenario, role: Role,
                         action: Literal['apply', 'reset_defaults'], changes: list[RuleChange]) -> None:

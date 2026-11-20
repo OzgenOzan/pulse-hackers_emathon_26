@@ -393,3 +393,67 @@ def test_clock_range_is_checked_against_scenario_start_not_current_time():
         assert response.json()['errors'] == [{'loc': 'yellow.vitals_overdue_escalate_minutes', 'msg': 'duration exceeds the clock range'}]
         assert client.get('/api/config').json() == config
         assert state(client)['sim']['replay_id'] == before['replay_id']
+
+
+def test_vital_max_age_overflowing_scenario_end_is_rules_invalid_and_changes_nothing(tmp_path):
+    late = (SCENARIO_DIR / 'night_shift_0245.json').read_text(encoding='utf-8').replace('2026-11-20', '7000-11-20')
+    (tmp_path / 'night_shift_0245.json').write_text(late, encoding='utf-8')
+    start = datetime(7000, 11, 20, 2, 45)
+    end = datetime(7000, 11, 20, 4, 30)
+    minutes = (datetime.max - end) // timedelta(minutes=1) + 1
+    with pytest.raises(OverflowError):
+        end + timedelta(minutes=minutes)
+    assert start + timedelta(minutes=minutes) < datetime.max
+    assert start - timedelta(minutes=minutes) > datetime.min
+    with client_for_night_shift(source=SimulatorSource(tmp_path)) as client:
+        before = state(client)['sim']
+        config = client.get('/api/config').json()
+        response = put_rules(client, edit(config, 'red.vital_max_age_minutes', minutes))
+        assert response.status_code == 422
+        assert response.json()['errors'] == [{'loc': 'red.vital_max_age_minutes', 'msg': 'duration exceeds the clock range'}]
+        assert client.get('/api/config').json() == config
+        assert state(client)['sim']['replay_id'] == before['replay_id']
+
+
+def test_in_process_active_mutation_does_not_change_defaults():
+    with client_for_night_shift() as client:
+        defaults = client.get('/api/config/defaults').json()
+        client.app.state.session.config.red.threshold = 9
+        assert client.get('/api/config/defaults').json() == defaults
+
+
+def test_in_process_active_mutation_after_reset_does_not_change_defaults():
+    with client_for_night_shift() as client:
+        state(client)
+        defaults = client.get('/api/config/defaults').json()
+        assert put_rules(client, edit(client.get('/api/config').json(), 'red.threshold', 2)).status_code == 204
+        state(client)
+        assert client.post('/api/config/reset', json={'role': 'physician'}).status_code == 204
+        client.app.state.session.config.red.threshold = 9
+        assert client.get('/api/config/defaults').json() == defaults
+
+
+def test_reset_without_replay_id_is_428():
+    with client_for_night_shift() as client:
+        response = client.post('/api/config/reset', json={'role': 'physician'})
+        assert response.status_code == 428
+        assert response.json() == {'detail': 'replay_id_required'}
+
+
+def test_reset_with_stale_replay_id_is_409():
+    with client_for_night_shift() as client:
+        state(client)
+        assert client.post('/api/sim/reset', json={}).status_code == 204
+        response = client.post('/api/config/reset', json={'role': 'physician'})
+        assert response.status_code == 409
+        assert response.json() == {'detail': 'stale_replay'}
+        assert client.get('/api/config/history').json() == []
+
+
+def test_nurse_cannot_reset_rules():
+    with client_for_night_shift() as client:
+        state(client, 'nurse')
+        response = client.post('/api/config/reset', json={'role': 'nurse'})
+        assert response.status_code == 403
+        assert response.json() == {'detail': 'physician_role_required'}
+        assert client.get('/api/config/history').json() == []
