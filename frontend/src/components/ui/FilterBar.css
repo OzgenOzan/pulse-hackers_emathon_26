@@ -1,0 +1,35 @@
+.patient-filter { min-width: 0; }
+.filter-toolbar, .list-modes, .filter-active, .filter-risks { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; }
+.filter-toolbar { justify-content: flex-end; }
+.filter-search { display: flex; min-height: 44px; min-width: 0; align-items: center; gap: .5rem; padding-inline: .625rem; border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--surface); }
+.filter-search:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.filter-search input { width: 13rem; min-width: 0; padding: 0; color: var(--text); background: none; border: 0; }
+.filter-search input:focus-visible { outline: none; }
+.filter-search input::placeholder { color: var(--muted); opacity: 1; }
+.filter-active { margin-block-start: .5rem; }
+.filter-active button { display: flex; align-items: center; gap: .375rem; overflow-wrap: anywhere; }
+.filter-active .filter-chip { background: var(--subtle); border-radius: 999px; }
+.filter-toolbar button { display: inline-flex; align-items: center; gap: .35rem; justify-content: center; }
+.list-modes { gap: 0; }
+.list-modes button { width: 44px; padding: .25rem; border-radius: 0; }
+.list-modes button:focus-visible { position: relative; z-index: 1; }
+.list-modes button:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.list-modes button:last-child { border-radius: 0 var(--radius-control) var(--radius-control) 0; border-inline-start: 0; }
+.list-modes [aria-pressed='true'], .filter-risks [aria-pressed='true'] { background: var(--text); color: var(--ink-inverse); }
+.filter-options { margin-block-start: .625rem; padding: .625rem; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); }
+.filter-options fieldset { margin: 0 0 .5rem; border: 0; padding: 0; min-width: 0; }
+.filter-fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem 1rem; }
+.filter-fields label { display: grid; font-size: .875rem; gap: .125rem; max-width: 100%; }
+.filter-fields select { min-height: 44px; max-width: 100%; border: 1px solid var(--line-strong); border-radius: var(--radius-control); background: var(--surface); color: var(--text); }
+.filter-fields .filter-check { display: flex; align-items: center; gap: .4rem; min-height: 44px; }
+.filter-check input { width: 1.25rem; height: 1.25rem; }
+.gui-patient-section .gui-list-head { flex-wrap: wrap; }
+.gui-patient-section .gui-list-head > .patient-filter:not(:has(.filter-options, .filter-active)) { margin-inline-start: auto; }
+.gui-patient-section .gui-list-head > .patient-filter:has(.filter-options, .filter-active) { flex: 1 0 100%; }
+@media (max-width: 639px) {
+  .gui-patient-section .patient-filter { flex: 1 0 100%; }
+  .filter-toolbar { display: grid; grid-template-columns: auto 1fr; justify-content: start; }
+  .filter-search { grid-column: 1 / -1; }
+  .filter-search input { width: 100%; }
+  .list-modes { justify-self: end; }
+}

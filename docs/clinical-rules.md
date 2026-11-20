@@ -76,8 +76,15 @@ Data-entry plausibility limits only; these are not alert thresholds.
 | temp | no | 30.0 | 43.0 |
 | spo2 | no | 50.0 | 100.0 |
 | rr | no | 4.0 | 60.0 |
+| gcs | no | 3.0 | 15.0 |
 
 SBP must be above DBP. A supplied MAP must be between DBP and SBP.
+
+## GUI risk status and display (CLINICAL-REVIEW)
+
+- Close monitoring begins at 1 point(s) and below the critical threshold.
+- Required fresh measurements: hr, map.
+- Display GCS as stale after 120 minutes. GCS entries are whole numbers only and never scored.
 
 ## Alerting
 
@@ -103,3 +110,6 @@ SBP must be above DBP. A supplied MAP must be between DBP and SBP.
 - line 38: `ack_cooldown_minutes: 30            # CLINICAL-REVIEW (not in design report)`
 - line 39: `realert_score_increase: 2           # CLINICAL-REVIEW (not in design report)`
 - line 41: `manual_entry:                         # data-entry plausibility limits, NOT alert thresholds. CLINICAL-REVIEW`
+- line 51: `gcs:  {min: 3,    max: 15}          # CLINICAL-REVIEW (whole numbers only)`
+- line 52: `status:                               # GUI risk-status mapping. CLINICAL-REVIEW`
+- line 56: `gcs_fresh_minutes: 120               # CLINICAL-REVIEW (display only)`

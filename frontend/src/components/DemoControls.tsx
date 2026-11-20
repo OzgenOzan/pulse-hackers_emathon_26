@@ -5,7 +5,7 @@ import type { ScenarioInfo, SimStatus, Speed } from '../types';
 
 const SPEEDS: readonly Speed[] = [30, 60, 120];
 
-/** Demo-only controls. Allowed while a RED dialog blocks, so they stay usable for the demo operator. */
+/** Sim-only controls; remain available while patient navigation is locked. */
 export function DemoControls({
   sim,
   scenarios,
@@ -27,16 +27,17 @@ export function DemoControls({
   const [speed, setSpeed] = useState<Speed>(sim.speed);
 
   return (
-    <section className="demo-bar" data-blocking-allowed aria-label={t('demo.title')}>
+    <section className="demo-bar" aria-label={t('demo.title')}>
       <span className="demo-title">{t('demo.title')}</span>
       <label>
         {t('demo.scenario')}{' '}
         <select data-testid="demo-scenario" value={scenario} onChange={e => setScenario(e.target.value)}>
-          {scenarios.map(s => (
-            <option key={s.id} value={s.id} disabled={s.error !== null} title={s.error ?? undefined}>
-              {s.error ? t('demo.invalidScenario', { name: s.title }) : t(`demo.scenario.${s.id}`, undefined, s.title)}
-            </option>
-          ))}
+          {scenarios.map(s => {
+            const name = t(`demo.scenario.${s.id}`, undefined, s.title);
+            return <option key={s.id} value={s.id} disabled={s.error !== null}>
+              {s.error ? t('demo.invalidScenario', { name }) : name}
+            </option>;
+          })}
         </select>
       </label>
       <button type="button" data-testid="demo-reset" disabled={busy} onClick={() => onReset(scenario)}>
@@ -56,6 +57,7 @@ export function DemoControls({
         <select
           data-testid="demo-speed"
           value={speed}
+          disabled={busy}
           onChange={e => {
             const next = Number(e.target.value) as Speed;
             setSpeed(next);

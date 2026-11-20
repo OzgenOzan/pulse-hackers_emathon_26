@@ -76,8 +76,10 @@ To develop instead, add `--reload --reload-dir backend` to the Uvicorn command, 
 
 ### Try the night shift
 
-1. **Physician → Reset → +15 min**. Open S-06 and make a simulated discharge decision from the GREEN results-ready alert.
-2. **+15 min → Nurse**. Acknowledge S-03 with **Monitor reconnected**.
-3. **Physician → +15 min**. Review the blocking RED for S-01. Try opening another patient, then choose **Move to red zone**. Open **Audit log**.
+1. Choose **Hekim → Sıfırla → +15 dk**. Point out that Ali Kurt (Yatak 01) is **Yakın Takip** at 03:00. Open Fatih Rüzgar (Yatak 06) and choose **Taburculuk kararı verildi**.
+2. Choose **+15 dk → Hemşire**. Open Ceyda Metin (Yatak 03) and choose **Monitör yeniden bağlandı**. The patient stays unclassified until data returns.
+3. Choose **Hekim → +15 dk**. Yatak 01 is now **Kritik**. Try opening another patient, press **Alarmı gördüm**, and show that the lock holds. Choose **Klinik değerlendirme kaydı oluştur → Kırmızı alana al**. Open **Klinik Alarmlar** to show the seen and evaluation records.
 
-The project is rule-based and uses prototype thresholds only. It illustrates tradeoffs, not clinical performance. See the [demo script](docs/demo-script.md), [60-second backup](docs/demo-backup.mp4), [generated clinical rules](docs/clinical-rules.md), [status and review items](docs/STATUS.md), and [screenshots](docs/screenshots/).
+For an English-language rehearsal, choose **Ayarlar → Dil → İngilizce**. The default Turkish clicks above match the backup recording. **İstatistik ve Analiz** shows simulated audit activity, not clinical outcomes.
+
+The project is rule-based and uses prototype thresholds only. It illustrates tradeoffs, not clinical performance. See the [demo script](docs/demo-script.md), [60-second backup](docs/demo-backup.mp4), [generated clinical rules](docs/clinical-rules.md), [status and review items](docs/STATUS.md), and the [light](docs/screenshots/gui-light.png), [dark](docs/screenshots/gui-dark.png) and [mobile](docs/screenshots/gui-mobile.png) screenshots.
