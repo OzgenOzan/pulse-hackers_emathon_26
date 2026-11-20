@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 import pytest
 from test_scenario_night_shift import client_for_night_shift, state, step
 
-from app.engine.config import load_config
+from app.engine.config import CriticalBounds, load_config
+from app.engine.labs import critical_rule
 from app.adapters.simulator import SCENARIO_DIR, SimulatorSource
 
 
@@ -143,6 +144,49 @@ def test_defaults_reset_restores_defaults_with_new_replay_and_unattended_timelin
         assert sim['rules_custom'] is False
         assert client.get('/api/config').json() == client.get('/api/config/defaults').json()
         assert run_shift(client) == default_timeline
+
+
+def test_custom_cutoffs_keep_exact_decimals_in_evidence():
+    with client_for_night_shift() as client:
+        state(client)
+        config = client.get('/api/config').json()
+        config = edit(config, 'red.vital_rules.hr_high.value', 100.5)
+        config = edit(config, 'red.vital_rules.spo2_low.value', 90.5)
+        config = edit(config, 'red.vital_rules.spo2_low.enabled', True)
+        config = edit(config, 'red.trend_rules.hr_rise.delta', 20.5)
+        assert put_rules(client, config).status_code == 204
+        state(client)
+        vitals = {'sbp': 120, 'dbp': 80, 'spo2': 90}
+        assert client.post('/api/patients/Y12/vitals', json={'hr': 101, **vitals}).status_code == 204
+        components = {c['key']: c for c in client.get('/api/patients/Y12').json()['assessment']['components']}
+        assert components['hr_high']['rule'] == '> 100.5 bpm'
+        assert components['spo2_low']['rule'] == '≤ 90.5 %'
+        assert client.post('/api/patients/Y12/vitals', json={'hr': 200, **vitals}).status_code == 204
+        components = {c['key']: c for c in client.get('/api/patients/Y12').json()['assessment']['components']}
+        assert components['hr_rise']['rule'].startswith('≥ 20.5 bpm from baseline')
+        summary = next(p for p in state(client)['patients'] if p['id'] == 'Y12')
+        assert summary['vital_flags']['spo2']['note'] == '≤ 90,5'
+
+
+def test_configured_lab_cutoffs_keep_exact_decimals():
+    assert critical_rule(CriticalBounds(critical_high=6.125), 6.2, 'mmol/L', 'potassium') == '≥ 6.125 mmol/L'
+    assert critical_rule(CriticalBounds(critical_low=7.125), 7.0, '', 'ph') == '≤ 7.125'
+    assert critical_rule(CriticalBounds(critical_low=7.1), 7.0, '', 'ph') == '≤ 7.10'
+    assert critical_rule(CriticalBounds(critical_high=52), 60, 'ng/L', 'troponin') == '≥ 52 ng/L'
+
+
+@pytest.mark.parametrize('param', ['hr', 'map'])
+def test_trend_param_range_overflowing_float_is_rules_invalid_and_changes_nothing(param):
+    with client_for_night_shift() as client:
+        state(client)
+        before = state(client)['sim']['replay_id']
+        config = client.get('/api/config').json()
+        response = put_rules(client, edit(config, f'manual_entry.limits.{param}', {'min': -1.7e308, 'max': 1.7e308}))
+        assert response.status_code == 422
+        assert response.json()['detail'] == 'rules_invalid'
+        assert [error['loc'] for error in response.json()['errors']] == [f'manual_entry.limits.{param}.max']
+        assert client.get('/api/config').json() == config
+        assert state(client)['sim']['replay_id'] == before
 
 
 def test_enabled_spo2_rule_scores_manual_spo2_88_for_y12():

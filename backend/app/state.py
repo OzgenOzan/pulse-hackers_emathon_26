@@ -232,6 +232,15 @@ def _overflows_clock(scenario: Scenario, minutes: int) -> bool:
     return False
 
 
+def _trend_range_overflow(config: EngineConfig) -> str | None:
+    # Trends subtract two readings from one manual range, so the range width itself must stay finite.
+    for rule in config.red.trend_rules:
+        bound = config.manual_entry.limits[rule.param]
+        if not isfinite(bound.max - bound.min):
+            return rule.param
+    return None
+
+
 class SessionError(Exception):
     def __init__(self, status_code: int, key: str, payload: dict[str, Any] | None = None):
         super().__init__(key)
@@ -310,6 +319,9 @@ class Session:
             config = EngineConfig.model_validate(candidate)
         except ValidationError as exc:
             raise SessionError(422, 'rules_invalid', {'errors': _validation_errors(current, candidate, exc)}) from exc
+        if (param := _trend_range_overflow(config)) is not None:
+            raise SessionError(422, 'rules_invalid', {'errors': [
+                {'loc': f'manual_entry.limits.{param}.max', 'msg': 'range must be finite'}]})
         changes = _changes(current, config.model_dump(mode='json'))
         scenario = self._load_scenario(self.scenario_id)
         for change in changes:
