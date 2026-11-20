@@ -1,12 +1,11 @@
 """Runs the unchanged FastAPI app inside Pyodide: one ASGI HTTP call per request, no server."""
 import asyncio
-import base64
 import json
 import sys
 
 ENGINE_ROOT = '/home/pyodide/engine'
 # Vendored pure-Python packages first (anyio gets typing-extensions 4.16.0), then the backend.
-sys.path[:0] = [f'{ENGINE_ROOT}/backend', f'{ENGINE_ROOT}/vendor']
+sys.path[:0] = [f'{ENGINE_ROOT}/vendor', f'{ENGINE_ROOT}/backend']
 
 from app.main import app  # noqa: E402
 
@@ -58,4 +57,4 @@ async def dispatch(method, path, query, headers_json, body):
     finally:
         if not done.done():
             done.set_result(None)
-    return json.dumps([status, response_headers, base64.b64encode(b''.join(chunks)).decode('ascii')])
+    return status, response_headers, b''.join(chunks)

@@ -10,9 +10,12 @@ type Scope = {
   postMessage(message: WorkerReply, transfer?: Transferable[]): void;
   onmessage: ((event: MessageEvent<BootMessage | RequestMessage>) => void) | null;
 };
-type Dispatch = (method: string, path: string, query: string, headers: string, body: string) => Promise<string> & {
-  destroy?: () => void;
+type DispatchResult = {
+  toJs(options: { create_pyproxies: false }): [number, [string, string][], Uint8Array<ArrayBuffer>];
+  destroy(): void;
 };
+type Dispatch = (method: string, path: string, query: string, headers: string, body: string) =>
+  PromiseLike<DispatchResult> & { destroy(): void };
 
 const scope = self as unknown as Scope;
 let dispatch: Dispatch | undefined;
@@ -48,12 +51,16 @@ async function boot({ pyodideBase, engineZip }: BootMessage): Promise<void> {
 async function call(method: string, path: string, query: string, headers: Record<string, string>, body: string) {
   if (!dispatch) throw new Error('The rules engine is not ready.');
   const pending = dispatch(method, path, query, JSON.stringify(headers), body);
+  let result: DispatchResult | undefined;
   try {
-    const [status, pairs, encoded] = JSON.parse(await pending) as [number, [string, string][], string];
-    const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
-    return { status, headers: pairs, body: bytes.buffer as ArrayBuffer };
+    result = await pending;
+    const [status, pairs, bytes] = result.toJs({ create_pyproxies: false });
+    const body = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
+      ? bytes.buffer : bytes.slice().buffer;
+    return { status, headers: pairs, body };
   } finally {
-    pending.destroy?.();
+    result?.destroy();
+    pending.destroy();
   }
 }
 
