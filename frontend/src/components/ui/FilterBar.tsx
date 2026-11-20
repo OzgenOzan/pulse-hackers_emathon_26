@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { LayoutGrid, List, Search, SlidersHorizontal, X } from 'lucide-react';
+import { t } from '../../i18n';
 import type { RiskKey, Summary } from '../../types';
-import { statusLabels } from '../../gui/clinical';
+import { staffLabel, statusLabels } from '../../gui/clinical';
 import { type Filters, type Presence, type Sort, sortLabels } from '../../gui/patients/filters';
 import './FilterBar.css';
 
 export type ListMode = 'cards' | 'table';
 const riskChoices: RiskKey[] = ['kritik', 'yakin_takip', 'siniflandirilmamis', 'stabil'];
-const presenceLabel = (presence: Presence) => presence === 'yes' ? 'Var' : 'Yok';
+const presenceLabel = (presence: Presence) => t(presence === 'yes' ? 'patients.presence.yes' : 'patients.presence.no');
 const names = (patients: Summary[], key: 'nurse' | 'physician') =>
   [...new Set(patients.flatMap(patient => patient.display?.[key] ? [patient.display[key]] : []))].sort((a, b) => a.localeCompare(b, 'tr-TR'));
 
 export function ListModeButtons({ mode, onMode }: { mode: ListMode; onMode: (mode: ListMode) => void }) {
-  return <div className="list-modes" role="group" aria-label="Liste görünümü">
-    <button type="button" aria-label="Kart görünümü" title="Kart görünümü" aria-pressed={mode === 'cards'}
+  const cards = t('patients.view.cards');
+  const table = t('patients.view.table');
+  return <div className="list-modes" role="group" aria-label={t('patients.view.group')}>
+    <button type="button" aria-label={cards} title={cards} aria-pressed={mode === 'cards'}
       data-testid="view-cards" onClick={() => onMode('cards')}><LayoutGrid size={18} aria-hidden="true" /></button>
-    <button type="button" aria-label="Tablo görünümü" title="Tablo görünümü" aria-pressed={mode === 'table'}
+    <button type="button" aria-label={table} title={table} aria-pressed={mode === 'table'}
       data-testid="view-table" onClick={() => onMode('table')}><List size={18} aria-hidden="true" /></button>
   </div>;
 }
@@ -37,53 +40,55 @@ export function FilterBar({ filters, onChange, allPatients, defaultExpanded, mod
   const chips: { label: string; clear: () => void }[] = [];
   if (statChip) chips.push(statChip);
   for (const risk of filters.risks) chips.push({ label: statusLabels[risk], clear: () => toggleRisk(risk) });
-  if (filters.query.trim()) chips.push({ label: `Arama: ${filters.query.trim()}`, clear: () => set('query', '') });
-  if (filters.labs) chips.push({ label: `Tetkik: ${presenceLabel(filters.labs)}`, clear: () => set('labs', '') });
-  if (filters.consults) chips.push({ label: `Konsültasyon: ${presenceLabel(filters.consults)}`, clear: () => set('consults', '') });
-  if (filters.physician) chips.push({ label: filters.physician, clear: () => set('physician', '') });
-  if (filters.nurse) chips.push({ label: filters.nurse, clear: () => set('nurse', '') });
-  if (filters.stay) chips.push({ label: `Acilde en az ${Number(filters.stay) / 60} saat`, clear: () => set('stay', '') });
-  if (filters.oldVitals) chips.push({ label: 'Son vital en az 30 dk önce', clear: () => set('oldVitals', false) });
-  if (filters.sort !== 'risk') chips.push({ label: 'Risk sırası kapalı', clear: () => set('sort', 'risk') });
+  if (filters.query.trim()) chips.push({ label: t('patients.filter.query', { query: filters.query.trim() }), clear: () => set('query', '') });
+  if (filters.labs) chips.push({ label: t('patients.filter.labsChip', { value: presenceLabel(filters.labs) }), clear: () => set('labs', '') });
+  if (filters.consults) chips.push({ label: t('patients.filter.consultsChip', { value: presenceLabel(filters.consults) }), clear: () => set('consults', '') });
+  if (filters.physician) chips.push({ label: staffLabel(filters.physician), clear: () => set('physician', '') });
+  if (filters.nurse) chips.push({ label: staffLabel(filters.nurse), clear: () => set('nurse', '') });
+  if (filters.stay) chips.push({ label: t('patients.filter.stayChip', { hours: Number(filters.stay) / 60 }), clear: () => set('stay', '') });
+  if (filters.oldVitals) chips.push({ label: t('patients.filter.oldVitals'), clear: () => set('oldVitals', false) });
+  if (filters.sort !== 'risk') chips.push({ label: t('patients.filter.sortOff'), clear: () => set('sort', 'risk') });
 
   return <div className="patient-filter">
     <div className="filter-toolbar">
-      <label className="filter-search" title="Ad, soyad veya protokol numarası ile ara">
+      <label className="filter-search" title={t('patients.filter.searchHint')}>
         <Search size={18} aria-hidden="true" />
-        <input type="search" data-testid="patient-search" placeholder="Ad, soyad veya protokol"
-          aria-label="Hasta ara" value={filters.query} onChange={event => set('query', event.target.value)} />
+        <input type="search" data-testid="patient-search" placeholder={t('patients.filter.searchPlaceholder')}
+          aria-label={t('patients.filter.searchLabel')} value={filters.query} onChange={event => set('query', event.target.value)} />
       </label>
       <button type="button" className="filter-toggle" data-testid="filter-toggle" aria-expanded={expanded}
-        onClick={() => setExpanded(!expanded)}><SlidersHorizontal size={18} aria-hidden="true" /> Filtreler</button>
+        onClick={() => setExpanded(!expanded)}><SlidersHorizontal size={18} aria-hidden="true" /> {t('patients.filter.toggle')}</button>
       <ListModeButtons mode={mode} onMode={onMode} />
     </div>
-    {chips.length > 0 && <div className="filter-active" aria-label="Etkin filtreler">
+    {chips.length > 0 && <div className="filter-active" aria-label={t('patients.filter.active')}>
       {chips.map(({ label, clear }, i) => <button type="button" className="filter-chip" key={`${i}:${label}`}
-        onClick={clear} aria-label={`${label} — kaldır`}>{label}<X size={16} aria-hidden="true" /></button>)}
-      <button type="button" data-testid="filters-clear" onClick={onClear}>Filtreleri temizle</button>
+        onClick={clear} aria-label={t('patients.filter.remove', { label })}>{label}<X size={16} aria-hidden="true" /></button>)}
+      <button type="button" data-testid="filters-clear" onClick={onClear}>{t('patients.filter.clear')}</button>
     </div>}
     {expanded && <div className="filter-options">
-      <fieldset><legend>Klinik risk</legend><div className="filter-risks">
+      <fieldset><legend>{t('patients.filter.risk')}</legend><div className="filter-risks">
         {riskChoices.map(risk => <button type="button" key={risk} aria-pressed={filters.risks.includes(risk)}
           data-testid={`filter-risk-${risk}`} onClick={() => toggleRisk(risk)}>{statusLabels[risk]}</button>)}
       </div></fieldset>
       <div className="filter-fields">
-        <label>Sıralama<select data-testid="patient-sort" value={filters.sort} onChange={e => set('sort', e.target.value as Sort)}>
+        <label>{t('patients.filter.sort')}<select data-testid="patient-sort" value={filters.sort} onChange={e => set('sort', e.target.value as Sort)}>
           {Object.entries(sortLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select></label>
-        {(['labs', 'consults'] as const).map(key => <label key={key}>{key === 'labs' ? 'Bekleyen tetkik' : 'Bekleyen konsültasyon'}
+        {(['labs', 'consults'] as const).map(key => <label key={key}>{t(`patients.filter.${key}`)}
           <select value={filters[key]} onChange={event => set(key, event.target.value as Presence)}>
-            <option value="">Tümü</option><option value="yes">Var</option><option value="no">Yok</option>
+            <option value="">{t('patients.filter.all')}</option><option value="yes">{presenceLabel('yes')}</option><option value="no">{presenceLabel('no')}</option>
           </select></label>)}
-        {(['physician', 'nurse'] as const).map(key => <label key={key}>{key === 'physician' ? 'Sorumlu hekim' : 'Sorumlu hemşire'}
+        {(['physician', 'nurse'] as const).map(key => <label key={key}>{t(`patients.${key}`)}
           <select value={filters[key]} onChange={event => set(key, event.target.value)}>
-            <option value="">Tümü</option>{names(allPatients, key).map(name => <option key={name}>{name}</option>)}
+            <option value="">{t('patients.filter.all')}</option>{names(allPatients, key).map(name => <option key={name} value={name}>{staffLabel(name)}</option>)}
           </select></label>)}
-        <label>Acilde kalış süresi<select value={filters.stay} onChange={e => set('stay', e.target.value as Filters['stay'])}>
-          <option value="">Tümü</option><option value="120">En az 2 saat</option><option value="240">En az 4 saat</option>
+        <label>{t('patients.filter.stay')}<select value={filters.stay} onChange={e => set('stay', e.target.value as Filters['stay'])}>
+          <option value="">{t('patients.filter.all')}</option>
+          <option value="120">{t('patients.filter.stayOption', { hours: 2 })}</option>
+          <option value="240">{t('patients.filter.stayOption', { hours: 4 })}</option>
         </select></label>
         <label className="filter-check"><input type="checkbox" checked={filters.oldVitals}
-          onChange={e => set('oldVitals', e.target.checked)} />Son vital en az 30 dk önce</label>
+          onChange={e => set('oldVitals', e.target.checked)} />{t('patients.filter.oldVitals')}</label>
       </div>
     </div>}
   </div>;

@@ -1,27 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
+import { t } from '../i18n';
 import type { Role, State } from '../types';
 
 type Connection = 'connected' | 'weak' | 'offline';
 const POLL_MS = 1000;
 
-const errors: Record<string, string> = {
-  red_navigation_blocked: 'Önce kritik alarm için klinik değerlendirme kaydı oluşturun.',
-  stale_replay: 'Bu işlem önceki demoya ait. Güncel hasta listesini kontrol edin.',
-  replay_id_required: 'Önce güncel demo verilerini yükleyin.',
-  note_too_long: 'Değerlendirme notu en fazla 280 karakter olabilir.',
-  vital_required_missing: 'Zorunlu vital ölçümlerin tümünü girin.',
-  vital_out_of_range: 'Bir veya daha fazla ölçüm izin verilen aralığın dışında.',
-  sbp_not_above_dbp: 'Sistolik basınç diyastolik basınçtan yüksek olmalıdır.',
-  map_outside_bp: 'OAB, diyastolik ve sistolik basınç arasında olmalıdır.',
-  alert_already_closed: 'Bu alarm artık açık değil.',
-  unknown_alert: 'Alarm güncel demoda bulunamadı.',
-  unknown_patient: 'Hasta güncel demoda bulunamadı.',
-  valid_reason_required: 'Geçerli bir gerekçe seçin.',
-};
-
 export function guiError(error: unknown): string {
-  return (error instanceof ApiError && errors[error.message]) || 'İşlem tamamlanamadı. Lütfen yeniden deneyin.';
+  const fallback = t('gui.error.generic');
+  return error instanceof ApiError ? t(`gui.error.${error.message}`, undefined, fallback) : fallback;
 }
 
 export function useSession(role: Role, notify: (notice: string) => void) {

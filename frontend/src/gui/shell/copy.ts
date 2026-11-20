@@ -1,66 +1,66 @@
+import { getLanguage, t } from '../../i18n';
 import type { OverviewKey, Role } from '../../types';
+import { roleLabels, statusLabels } from '../clinical';
 
-/** Turkish copy for the shell and its widgets. Grouped so the P2 English catalogue can mirror it key-for-key. */
 export const shellCopy = {
-  title: 'ŞAHİN GÖZ 2.0',
-  subtitle: 'Akıllı Klinik Takip ve Karar Destek Sistemi',
-  logo: 'Şahin Göz logosu',
-  bell: (count: number) => `Kaydedilmemiş kritik alarm: ${count}`,
-  clockLabel: 'Simüle saat',
+  get title() { return t('gui.brand'); },
+  get subtitle() { return t('gui.subtitle'); },
+  get logo() { return t('gui.logo'); },
+  bell: (count: number) => t('gui.alarmCount', { count }),
+  get clockLabel() { return t('app.clock'); },
   clockEmpty: '—',
-  roleGroup: 'Demo rolü',
-  roles: { physician: 'Hekim', nurse: 'Hemşire' } satisfies Record<Role, string>,
-  profile: { physician: 'Dr. Deniz Aksoy', nurse: 'Hmş. Elif Kaya' } satisfies Record<Role, string>,
-  simulatedPill: 'SİMÜLE VERİ',
-  simulatedPillTitle: 'Bu ekrandaki veriler sentetik simülasyon verisidir.',
-  about: 'Bu prototip hakkında',
-  overview: 'Genel durum',
-  filterChip: (label: string) => `Filtre: ${label}`,
-  clearFilter: 'Filtreyi kaldır',
+  get roleGroup() { return t('app.role.demo'); },
+  roles: roleLabels,
+  profile: {
+    physician: 'Dr. Deniz Aksoy',
+    get nurse() { return t('gui.profile.nurse'); },
+  } satisfies Record<Role, string>,
+  get simulatedPill() { return t('app.simulated'); },
+  get simulatedPillTitle() { return t('gui.simulatedHint'); },
+  get about() { return t('about.title'); },
+  get overview() { return t('gui.overview'); },
   theme: {
-    toLight: 'Açık temaya geç',
-    toDark: 'Koyu temaya geç',
+    get toLight() { return t('gui.theme.toLight'); },
+    get toDark() { return t('gui.theme.toDark'); },
   },
   nav: {
-    label: 'Ana gezinme',
-    expand: 'Menüyü genişlet',
-    collapse: 'Menüyü daralt',
-    more: 'Daha fazla',
-    pending: (count: number) => `Bekleyen işlem: ${count}`,
+    get label() { return t('gui.nav.label'); },
+    get expand() { return t('gui.nav.expand'); },
+    get collapse() { return t('gui.nav.collapse'); },
+    get more() { return t('gui.nav.more'); },
+    pending: (count: number) => t('gui.pendingCount', { count }),
   },
   connection: {
-    connected: 'Bağlı',
-    weak: 'Bağlantı zayıf',
-    offline: 'Bağlantı kesildi',
+    get connected() { return t('gui.connection.connected'); },
+    get weak() { return t('gui.connection.weak'); },
+    get offline() { return t('gui.connection.offline'); },
   },
   connectionTitle: {
-    connected: 'Son veri çekme 2 sn içinde başarılı',
-    weak: 'Yavaş yanıt veya başarısız bir veri çekme',
-    offline: 'Üst üste 3 veri çekme başarısız',
+    get connected() { return t('gui.connection.connectedHint'); },
+    get weak() { return t('gui.connection.weakHint'); },
+    get offline() { return t('gui.connection.offlineHint'); },
   },
-  offlineNotice: (time: string | null) =>
-    time ? `Bağlantı kesildi — veriler ${time} itibarıyla` : 'Bağlantı kesildi — veriler güncel değil',
-  footer: 'Yalnızca karar desteğidir; nihai karar hekime aittir.',
+  offlineNotice: (time: string | null) => time ? t('gui.connection.asOf', { time }) : t('gui.connection.stale'),
+  get footer() { return t('app.footer'); },
   stats: {
-    aktif: 'Aktif hasta',
-    kritik: 'Kritik',
-    yakin_takip: 'Yakın Takip',
-    stabil: 'Stabil',
-    siniflandirilmamis: 'Sınıflandırılmamış',
-    bekleyen_islem: 'Bekleyen işlem',
-    taburculuk_bekleyen: 'Taburculuk değerlendirmesi bekleyen',
+    get aktif() { return t('gui.stat.active'); },
+    get kritik() { return statusLabels.kritik; },
+    get yakin_takip() { return statusLabels.yakin_takip; },
+    get stabil() { return statusLabels.stabil; },
+    get siniflandirilmamis() { return statusLabels.siniflandirilmamis; },
+    get bekleyen_islem() { return t('gui.stat.pending'); },
+    get taburculuk_bekleyen() { return t('gui.stat.discharge'); },
   } satisfies Record<OverviewKey, string>,
-  /** Visible card labels only; the full label stays in aria-label and title. */
-  statsShort: {
-    taburculuk_bekleyen: 'Taburculuk bekleyen',
-  } as Partial<Record<OverviewKey, string>>,
+  statsShort: (key: OverviewKey) => key === 'taburculuk_bekleyen' ? t('gui.stat.dischargeShort') : undefined,
 };
 
-const clockFormat = new Intl.DateTimeFormat('tr-TR', {
-  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-});
+const wallTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false } as const;
+const clockFormat = {
+  tr: new Intl.DateTimeFormat('tr-TR', wallTime),
+  en: new Intl.DateTimeFormat('en-GB', wallTime),
+};
 
 /** Wall-clock HH:MM:SS of the last successful poll (not simulated time). */
 export function wallClock(date: Date): string {
-  return clockFormat.format(date);
+  return clockFormat[getLanguage()].format(date);
 }

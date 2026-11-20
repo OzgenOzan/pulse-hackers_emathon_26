@@ -1,5 +1,4 @@
 import type { AuditEntry, CriticalAlarm, Detail, ManualValues, Role, RulesView, ScenarioInfo, State, Speed } from './types';
-import { t } from './i18n';
 
 /** The only module that calls the same-origin API. */
 export class ApiError extends Error {
@@ -10,16 +9,6 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
   }
-}
-
-export function errorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.message === 'stale_replay') return t('error.staleReplay');
-    const translated = t(`vitals.error.${err.message}`, undefined, '');
-    if (translated) return translated;
-    return `${err.status} ${err.message}`;
-  }
-  return err instanceof Error ? err.message : String(err);
 }
 
 async function readDetail(res: Response): Promise<string> {

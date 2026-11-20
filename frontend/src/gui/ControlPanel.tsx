@@ -13,15 +13,17 @@ import { readView, routeLabels, viewHash, type Route, type View } from './naviga
 import { shellCopy } from './shell/copy';
 import { useMediaQuery } from './shell/media';
 import { Settings } from './Settings';
+import { ShiftAnalytics } from './ShiftAnalytics';
 import { useChoice, useTheme } from './usePreferences';
 import { WorkQueues } from './WorkQueues';
 import { guiError, useSession } from './useSession';
 import { fmtTime } from '../format';
-import { roleLabels } from './clinical';
-import type { Alert, CriticalAlarm, Detail, ManualValues, OverviewKey, Role, RulesView, ScenarioInfo } from '../types';
+import { changeLanguage, getLanguage, t } from '../i18n';
+import { roleLabels, statusLabels } from './clinical';
+import type { Alert, AuditEntry, CriticalAlarm, Detail, Language, ManualValues, OverviewKey, Role, RulesView, ScenarioInfo } from '../types';
 import './integration.css';
 
-const LOCK_NOTICE = 'Önce kritik alarm için klinik değerlendirme kaydı oluşturun.';
+const lockNotice = () => t('gui.error.red_navigation_blocked');
 type ReplaySelection = { id: string; replay: string };
 
 export function ControlPanel() {
@@ -32,10 +34,12 @@ export function ControlPanel() {
   const [filters, setFilters] = useState(emptyFilters);
   const [mode, setMode] = useChoice<ListMode>('sg.list-mode', ['cards', 'table'], 'cards');
   const [theme, setTheme] = useTheme();
+  const [language, setLanguage] = useState(getLanguage);
   const [notice, setNotice] = useState('');
   const [about, setAbout] = useState(false);
   const [detail, setDetail] = useState<{ key: string; value: Detail } | null>(null);
   const [history, setHistory] = useState<{ replay: string; alarms: CriticalAlarm[] } | null>(null);
+  const [audit, setAudit] = useState<{ replay: string; entries: AuditEntry[] } | null>(null);
   const [evaluation, setEvaluation] = useState<ReplaySelection | null>(null);
   const [manual, setManual] = useState<ReplaySelection | null>(null);
   const [alarmAnchor, setAlarmAnchor] = useState<HTMLDivElement | null>(null);
@@ -74,11 +78,11 @@ export function ControlPanel() {
 
   function select(id: string): boolean {
     if (blockingPatientId && id !== blockingPatientId) {
-      setNotice(LOCK_NOTICE);
+      setNotice(lockNotice());
       return false;
     }
     if (!state?.patients.some(p => p.id === id)) {
-      setNotice('Hasta artık aktif hasta listesinde değil.');
+      setNotice(t('gui.error.patientInactive'));
       return false;
     }
     navigate({ ...view, patient: id });
@@ -91,6 +95,11 @@ export function ControlPanel() {
     setEvaluation(null);
     setStatFilter(null);
     navigate({ ...view, role, patient: null });
+  }
+
+  function chooseLanguage(next: Language) {
+    setLanguage(changeLanguage(next));
+    setNotice('');
   }
 
   useEffect(() => {
@@ -120,7 +129,7 @@ export function ControlPanel() {
 
   useEffect(() => {
     if (!view.patient || !blockingPatientId || view.patient === blockingPatientId) return;
-    setNotice(LOCK_NOTICE);
+    setNotice(lockNotice());
   }, [view.patient, blockingPatientId]);
 
   useEffect(() => {
@@ -143,12 +152,21 @@ export function ControlPanel() {
     return () => { active = false; };
   }, [view.route, replay, revision, simTime, offline]);
 
+  useEffect(() => {
+    if (view.route !== 'istatistik-ve-analiz' || !replay || offline) return;
+    let active = true;
+    void api.audit().then(entries => {
+      if (active) setAudit({ replay, entries });
+    }).catch(error => { if (active) setNotice(guiError(error)); });
+    return () => { active = false; };
+  }, [view.route, replay, revision, simTime, offline]);
+
   function markSeen(alarm: CriticalAlarm) {
     if (replay) void mutate(() => api.seen(alarm.id, view.role, replay));
   }
 
   function taskAck(alert: Alert, action: string, reason?: string) {
-    if (blockingPatientId) { setNotice(LOCK_NOTICE); return; }
+    if (blockingPatientId) { setNotice(lockNotice()); return; }
     if (replay && alert.target_role === view.role) void mutate(() => api.ack(alert.id, { action, reason }, replay));
   }
 
@@ -186,10 +204,10 @@ export function ControlPanel() {
   const filtered = listPage && simTime ? filterPatients(stats, filters, simTime) : [];
   const selectedTasks = tasks.filter(a => a.patient_id === selectedId);
   const savedAlarms = history?.replay === replay ? history?.alarms : undefined;
-  const statChip = criticalPreset ? { label: 'Kritik', clear: () => goTo('aktif-hastalar') }
+  const statChip = criticalPreset ? { label: statusLabels.kritik, clear: () => goTo('aktif-hastalar') }
     : statFilter ? { label: shellCopy.stats[statFilter], clear: () => setStatFilter(null) } : undefined;
   const taskProps = { role: view.role, busy, offline, onAck: taskAck, onVitals: openVitals,
-    lockReason: blockingPatientId ? LOCK_NOTICE : undefined };
+    lockReason: blockingPatientId ? lockNotice() : undefined };
   const openEvaluation = (alarm: CriticalAlarm) => {
     if (replay && view.role === 'physician' && (!blockingPatientId || alarm.blocking)) setEvaluation({ id: alarm.id, replay });
   };
@@ -239,7 +257,7 @@ export function ControlPanel() {
             <TaskActions {...taskProps} tasks={selectedTasks} patients={state?.patients} />
             {view.role === 'nurse' && !selectedTasks.some(a => a.recommended_actions.includes('vitals_entered')) &&
               <button type="button" className="gui-primary" data-testid="detail-enter-vitals" disabled={!config || busy || offline}
-                onClick={() => openVitals(summary.id)}>Vital gir</button>}
+                onClick={() => openVitals(summary.id)}>{alarmCopy.tasks.vitals}</button>}
           </>} />}
         {editing && <EvaluationSheet key={`${replay}/${editing.id}`} alarm={editing} busy={busy} offline={offline}
           onClose={() => setEvaluation(null)} onSave={saveEvaluation} />}
@@ -252,13 +270,16 @@ export function ControlPanel() {
         <section aria-labelledby="gui-settings-title">
           <div className="gui-list-head"><h2 id="gui-settings-title">{routeLabels.ayarlar}</h2></div>
           <Settings config={config} theme={theme} onTheme={setTheme} mode={mode} onMode={setMode}
-            role={view.role} onRole={setRole} onAbout={() => setAbout(true)} busy={busy || offline} />
+            role={view.role} onRole={setRole} language={language} onLanguage={chooseLanguage}
+            onAbout={() => setAbout(true)} busy={busy || offline} />
         </section>
-      ) : !state ? <p role="status">Simüle hasta listesi yükleniyor…</p> : view.route === 'klinik-alarmlar' ? (
+      ) : view.route === 'istatistik-ve-analiz' ? (
+        <ShiftAnalytics entries={audit && audit.replay === replay ? audit.entries : null} />
+      ) : !state ? <p role="status">{t('gui.loading')}</p> : view.route === 'klinik-alarmlar' ? (
         <section aria-labelledby="gui-history-title">
           <div className="gui-list-head"><h2 id="gui-history-title">{routeLabels[view.route]}</h2></div>
           {alarmPanel}
-          {savedAlarms ? <AlarmHistory alarms={savedAlarms} onView={select} /> : <p role="status">Alarm geçmişi yükleniyor…</p>}
+          {savedAlarms ? <AlarmHistory alarms={savedAlarms} onView={select} /> : <p role="status">{t('gui.alarmLoading')}</p>}
         </section>
       ) : queuePage ? (
         <section aria-labelledby="gui-queue-title">
@@ -267,7 +288,7 @@ export function ControlPanel() {
         </section>
       ) : (
         <section aria-labelledby="gui-patient-title" className="gui-patient-section">
-          <div className="gui-list-head"><h2 id="gui-patient-title">{criticalPreset ? routeLabels['kritik-hastalar'] : 'Aktif Hastalar'}</h2>
+          <div className="gui-list-head"><h2 id="gui-patient-title">{routeLabels[criticalPreset ? 'kritik-hastalar' : 'aktif-hastalar']}</h2>
             <FilterBar key={view.route} filters={filters} onChange={setFilters} allPatients={state.patients}
               defaultExpanded={view.route === 'aktif-hastalar'} mode={mode} onMode={setMode} statChip={statChip}
               onClear={() => {

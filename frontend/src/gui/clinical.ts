@@ -21,17 +21,23 @@ export function measurement(value: number, kind: string): string {
 }
 
 export const statusLabels: Record<RiskKey, string> = {
-  kritik: 'Kritik', yakin_takip: 'Yakın Takip', siniflandirilmamis: 'Sınıflandırılmamış', stabil: 'Stabil',
+  get kritik() { return t('gui.status.critical'); },
+  get yakin_takip() { return t('gui.status.watch'); },
+  get siniflandirilmamis() { return t('gui.status.unclassified'); },
+  get stabil() { return t('gui.status.stable'); },
 };
 
-export const roleLabels: Record<Role, string> = { physician: 'Hekim', nurse: 'Hemşire' };
+export const roleLabels: Record<Role, string> = {
+  get physician() { return t('app.role.physician'); },
+  get nurse() { return t('app.role.nurse'); },
+};
 
 export function bedLabel(bed: string): string {
-  return `Yatak ${bed.startsWith('S-') ? bed.slice(2) : bed}`;
+  return t('gui.bed', { bed: bed.startsWith('S-') ? bed.slice(2) : bed });
 }
 
 export function stayLabel(minutes: number): string {
-  return minutes >= 60 ? `${Math.floor(minutes / 60)} sa ${minutes % 60} dk` : `${minutes} dk`;
+  return minutes >= 60 ? t('gui.duration.hours', { hours: Math.floor(minutes / 60), minutes: minutes % 60 }) : t('gui.duration.minutes', { minutes });
 }
 
 export function diagnosisLabel(diagnosis: Diagnosis): string {
@@ -39,57 +45,83 @@ export function diagnosisLabel(diagnosis: Diagnosis): string {
   return text ? `${diagnosis.code} ${text}` : diagnosis.code;
 }
 
-const labKeys: Record<string, string> = { 'hs-cTnT': 'troponin', Lactate: 'lactate', 'pH (blood gas)': 'ph', 'K+': 'potassium' };
+const labKeys: Record<string, string> = {
+  'hs-cTnT': 'troponin', Lactate: 'lactate', 'pH (blood gas)': 'ph', 'K+': 'potassium',
+  'Tam kan sayımı': 'cbc', Kreatinin: 'creatinine', 'İdrar tahlili': 'urinalysis',
+};
 export function labDisplayLabel(label: string): string {
   const key = labKeys[label];
   return key ? t(`lab.${key}`) : label;
 }
 
+const complaints: Record<string, string> = {
+  'Ateş, idrarda yanma': 'feverUrine',
+  'Göğüs ağrısı': 'chestPain',
+  'Nefes darlığı': 'dyspnoea',
+  'Bayılma': 'syncope',
+  'Nöbet geçirme': 'seizure',
+  'Sağ yan ağrısı': 'rightFlank',
+  'Kusma, ishal': 'vomitingDiarrhoea',
+  'Halsizlik': 'weakness',
+  'Bacakta kızarıklık ve şişlik': 'leg',
+  'Baş dönmesi': 'dizziness',
+  'Bel ağrısı': 'lowBack',
+  'Kaşıntı, döküntü': 'rash',
+};
+export function complaintLabel(value: string): string {
+  const key = complaints[value];
+  return key ? t(`gui.complaint.${key}`) : value;
+}
+
+export function consultLabel(value: string): string {
+  if (value === 'Kardiyoloji') return t('gui.consult.cardiology');
+  if (value === 'Nöroloji') return t('gui.consult.neurology');
+  return value;
+}
+
+export function staffLabel(value: string): string {
+  return getLanguage() === 'en' && value.startsWith('Hmş. ') ? `${roleLabels.nurse} ${value.slice(5)}` : value;
+}
+
+export function vitalFlagLabel(note: string): string {
+  if (getLanguage() === 'tr') return note;
+  return note.replace('Yüksek', t('gui.flag.high'))
+    .replace(/bazale göre ([−+][\d,]+)/g, (_, change: string) => t('gui.flag.baseline', { change: change.replace(',', '.') }))
+    .replace(/(\d),(\d)/g, '$1.$2');
+}
+
 export function finding(key: string, value: number): string | undefined {
-  switch (key) {
-    case 'map_low': return `Hipotansiyon (OAB ${measurement(value, 'map')} mmHg)`;
-    case 'hr_high': return `Taşikardi (nabız ${measurement(value, 'hr')}/dk)`;
-    case 'temp_high': return `Ateş (${measurement(value, 'temp')} °C)`;
-    case 'map_drop': return `Bazale göre OAB düşüşü (${measurement(value, 'map')} mmHg)`;
-    case 'hr_rise': return `Bazale göre nabız artışı (${measurement(value, 'hr')}/dk)`;
-    case 'lab_troponin': return `Troponin yüksekliği (${measurement(value, 'lab')} ng/L)`;
-    case 'lab_lactate': return `Laktat yüksekliği (${measurement(value, 'lab')} mmol/L)`;
-    case 'lab_ph': return `Kritik pH (${measurement(value, 'ph')})`;
-    case 'lab_potassium': return `Kritik potasyum (${measurement(value, 'lab')} mmol/L)`;
-    default: return undefined;
-  }
+  const kind = key === 'temp_high' ? 'temp' : key === 'lab_ph' ? 'ph' : key.startsWith('lab_') ? 'lab' : '';
+  return t(`gui.finding.${key}`, { value: measurement(value, kind) }, '') || undefined;
 }
 
 export function reasonLabel(reason: RiskReason): string {
   const { key, params } = reason;
-  switch (key) {
-    case 'monitor_gap': return `Monitör verisi yok · ${params.minutes} dk`;
-    case 'vitals_overdue': return `Vital ölçümü gecikti · ${params.minutes} dk`;
-    case 'insufficient_data': return 'Yetersiz veri';
-    case 'awaiting_evaluation': return 'Değerlendirme bekliyor';
-    case 'below_watch_threshold': return 'Yakın takip eşiğinin altında';
-    case 'score_threshold': return 'Öncelikli klinik değerlendirme gerekli';
-    case 'no_risk_findings': return 'Değerlendirmede risk bulgusu yok';
-    default: return typeof params.value === 'number' ? finding(key, params.value) ?? 'Değerlendirme bulgusu' : 'Değerlendirme bulgusu';
-  }
+  return t(`gui.risk.${key}`, params, '') ||
+    (typeof params.value === 'number' ? finding(key, params.value) : undefined) || t('gui.finding.generic');
 }
 
 export function componentText(component: Component): string {
-  return finding(component.key, component.value) ?? 'Değerlendirme bulgusu';
+  return finding(component.key, component.value) ?? t('gui.finding.generic');
 }
 
 export function localRule(rule: string): string {
-  return rule.replace('Universal panic cutoff:', 'Evrensel panik eşiği:')
-    .replace('Diagnosis-related critical cutoff:', 'Çalışma tanısıyla ilişkili kritik eşik:')
-    .replace(' from baseline; MAP now ', ' bazale göre; güncel OAB ')
-    .replace(' from baseline; Heart rate now ', ' bazale göre; güncel nabız ')
-    .replace(/(\d)\.(\d)/g, '$1,$2').replace(' bpm', '/dk');
+  if (getLanguage() === 'en') return rule;
+  const safe = rule.replace(/(\d)\.(\d)/g, '$1,$2').replace(/ bpm/g, '/dk').replace(/ min\b/g, ' dk');
+  const cutoff = /^(Universal panic|Diagnosis-related critical) cutoff: (.+)$/.exec(safe);
+  if (cutoff) return t(cutoff[1] === 'Universal panic' ? 'rule.panic' : 'rule.critical', { cutoff: cutoff[2] });
+  const trend = /^(.+) from baseline; (MAP|Heart rate) now (.+)$/.exec(safe);
+  if (trend) return t('rule.trend', { cutoff: trend[1], name: t(trend[2] === 'MAP' ? 'vitals.short.map' : 'vitals.short.hr'), current: trend[3] });
+  const idle = /^(.+) without a new physician action$/.exec(safe);
+  return idle ? t('rule.idle', { cutoff: idle[1] }) : safe;
 }
+
+const dateOptions = { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' } as const;
+const dates = { tr: new Intl.DateTimeFormat('tr-TR', dateOptions), en: new Intl.DateTimeFormat('en-GB', dateOptions) };
 
 export function simulatedDate(iso: string): string {
   const y = +iso.slice(0, 4);
   const m = +iso.slice(5, 7);
   const d = +iso.slice(8, 10);
-  const date = new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-  return `${date.format(new Date(Date.UTC(y, m - 1, d)))} · ${fmtTime(iso)}`;
+  return `${dates[getLanguage()].format(new Date(Date.UTC(y, m - 1, d)))} · ${fmtTime(iso)}`;
 }

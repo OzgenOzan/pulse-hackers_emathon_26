@@ -1,13 +1,14 @@
 import type { RiskKey, Summary } from '../../types';
+import { t } from '../../i18n';
 import { compareRisk, displayName, protocolOf } from './model';
 
 export const sortLabels = {
-  risk: 'Risk sırası',
-  bed: 'Yatak numarası',
-  stay: 'Acilde kalış süresi',
-  vitals: 'Son vital ölçümü',
-  labs: 'Bekleyen tetkik sayısı',
-  consults: 'Bekleyen konsültasyon sayısı',
+  get risk() { return t('patients.sort.risk'); },
+  get bed() { return t('patients.sort.bed'); },
+  get stay() { return t('patients.sort.stay'); },
+  get vitals() { return t('patients.sort.vitals'); },
+  get labs() { return t('patients.sort.labs'); },
+  get consults() { return t('patients.sort.consults'); },
 };
 export type Sort = keyof typeof sortLabels;
 export type Presence = '' | 'yes' | 'no';

@@ -54,3 +54,5 @@ Shared primitives live in [`frontend/src/components/ui/`](../frontend/src/compon
 | `ConnectionStatus` | Monochrome connection icon plus explicit status text; data are marked stale when offline. |
 
 Desktop uses a sidebar and a right-hand patient sheet. Below 1200 px, navigation moves to the bottom bar; on phones the overview metrics scroll horizontally, critical alarms use the sticky strip, and the patient sheet fills the screen. The table can scroll inside its own labelled region on narrow viewports; secondary columns hide below 1440 px. The demo controls and simulated-data disclosure remain distinct from clinical UI.
+
+Turkish is the default. English is enabled only through Settings → Language, and the selector is available only when catalog keys, translations and placeholder names match. `scripts/check_locales.py` checks this as part of `make test`. Audit numbers and the neutral role chart are labelled as simulation activity, not clinical outcomes.

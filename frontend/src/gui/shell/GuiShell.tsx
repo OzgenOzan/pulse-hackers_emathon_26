@@ -1,5 +1,5 @@
 import {
-  type LucideIcon, Bell, CircleCheck, CircleHelp, ClipboardList, Ellipsis, Eye, HeartPulse, Info, LayoutDashboard,
+  type LucideIcon, Bell, ChartColumn, CircleCheck, CircleHelp, ClipboardList, Ellipsis, Eye, HeartPulse, Info, LayoutDashboard,
   LogOut, Moon, PanelLeftClose, PanelLeftOpen, Settings, Stethoscope, Sun, TriangleAlert, UserRound, Users,
 } from 'lucide-react';
 import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
@@ -62,6 +62,7 @@ const NAV: { route: Route; icon: LucideIcon; primary: boolean }[] = [
   { route: 'bekleyen-islemler', icon: ClipboardList, primary: true },
   { route: 'hekim-paneli', icon: Stethoscope, primary: false },
   { route: 'hemsire-paneli', icon: HeartPulse, primary: false },
+  { route: 'istatistik-ve-analiz', icon: ChartColumn, primary: false },
   { route: 'ayarlar', icon: Settings, primary: false },
 ];
 
@@ -296,7 +297,7 @@ export function GuiShell({
                     key={key}
                     testId={`stat-${key}`}
                     label={shellCopy.stats[key]}
-                    shortLabel={shellCopy.statsShort[key]}
+                    shortLabel={shellCopy.statsShort(key)}
                     count={state ? state.overview[key] : shellCopy.clockEmpty}
                     icon={icon}
                     tone={tone}

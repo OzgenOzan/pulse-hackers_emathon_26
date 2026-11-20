@@ -1,14 +1,16 @@
 import type { Role } from '../types';
+import { t } from '../i18n';
 
 export const routeLabels = {
-  'genel-bakis': 'Genel Bakış',
-  'aktif-hastalar': 'Aktif Hastalar',
-  'kritik-hastalar': 'Kritik Hastalar',
-  'klinik-alarmlar': 'Klinik Alarmlar',
-  'bekleyen-islemler': 'Bekleyen İşlemler',
-  'hekim-paneli': 'Hekim Paneli',
-  'hemsire-paneli': 'Hemşire Paneli',
-  ayarlar: 'Ayarlar',
+  get 'genel-bakis'() { return t('gui.nav.overview'); },
+  get 'aktif-hastalar'() { return t('gui.nav.patients'); },
+  get 'kritik-hastalar'() { return t('gui.nav.critical'); },
+  get 'klinik-alarmlar'() { return t('gui.nav.alarms'); },
+  get 'bekleyen-islemler'() { return t('gui.nav.tasks'); },
+  get 'hekim-paneli'() { return t('gui.nav.physician'); },
+  get 'hemsire-paneli'() { return t('gui.nav.nurse'); },
+  get 'istatistik-ve-analiz'() { return t('gui.nav.analytics'); },
+  get ayarlar() { return t('gui.nav.settings'); },
 };
 export type Route = keyof typeof routeLabels;
 export interface View { route: Route; role: Role; patient: string | null }

@@ -18,6 +18,7 @@ dev:
 test:
 	$(VENV_PYTHON) -m pytest -c backend/pytest.ini backend/tests
 	$(VENV_PYTHON) scripts/check_palette.py --check
+	$(VENV_PYTHON) scripts/check_locales.py
 	cd frontend && $(NPM) run typecheck
 	cd frontend && $(NPM) run build
 

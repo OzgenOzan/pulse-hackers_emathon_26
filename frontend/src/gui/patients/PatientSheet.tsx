@@ -11,6 +11,7 @@ import {
   localRule,
   measurement,
   reasonLabel,
+  staffLabel,
   stayLabel,
 } from '../clinical';
 import type { Detail, RulesView, Summary, VitalReading } from '../../types';
@@ -109,8 +110,8 @@ export function PatientSheet({
             <Fact label={copy.complaint}>{complaintOf(summary) ?? copy.noData}</Fact>
             <Fact label={copy.stay}>{stayLabel(summary.minutes_in_zone)}</Fact>
             <Fact label={copy.arrival}>{fmtTime(summary.arrived_at)}</Fact>
-            <Fact label={copy.physician}>{summary.display?.physician ?? copy.noData}</Fact>
-            <Fact label={copy.nurse}>{summary.display?.nurse ?? copy.noData}</Fact>
+            <Fact label={copy.physician}>{summary.display?.physician ? staffLabel(summary.display.physician) : copy.noData}</Fact>
+            <Fact label={copy.nurse}>{summary.display?.nurse ? staffLabel(summary.display.nurse) : copy.noData}</Fact>
             <Fact label={copy.lastMeasure}>{lastMeasureText(summary)}</Fact>
             <Fact label={copy.lastEvaluation}>{lastEvaluationText(summary)}</Fact>
             <Fact label={copy.pendingLabs}>

@@ -41,7 +41,7 @@ export function VitalSign({
         </span>
       ))}
       {sub && <span className="vital-sub" title={copy.mapTitle(sub)}>
-        {compact && state.kind === 'stale' && sub.endsWith(describeState(state)) ? `${copy.oab} -` : sub}
+        {compact && state.kind === 'stale' && sub.endsWith(describeState(state)) ? `${copy.oab} —` : sub}
       </span>}
     </div>
   );
