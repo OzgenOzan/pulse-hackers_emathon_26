@@ -1,3 +1,4 @@
+import { withRequestDeadline } from './requestDeadline';
 import type { AuditEntry, CriticalAlarm, Detail, ManualValues, Role, RulesView, ScenarioInfo, State, Speed } from './types';
 
 type ApiErrorBody = {
@@ -37,10 +38,15 @@ async function readError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, message, body);
 }
 
-const MUTATION_TIMEOUT_MS = 5000;
+type Method = 'GET' | 'POST' | 'PUT';
 
-async function request<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, replayId?: string, signal?: AbortSignal): Promise<T> {
-  const deadline = method === 'GET' ? signal : AbortSignal.timeout(MUTATION_TIMEOUT_MS);
+function request<T>(method: Method, path: string, body?: unknown, replayId?: string, signal?: AbortSignal): Promise<T> {
+  return method === 'GET'
+    ? send<T>(method, path, body, replayId, signal)
+    : withRequestDeadline(deadline => send<T>(method, path, body, replayId, deadline));
+}
+
+async function send<T>(method: Method, path: string, body: unknown, replayId?: string, deadline?: AbortSignal): Promise<T> {
   const res = await fetch(path, {
     method,
     signal: deadline,

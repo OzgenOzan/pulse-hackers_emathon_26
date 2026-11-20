@@ -19,6 +19,7 @@ import { WorkQueues } from './WorkQueues';
 import { guiError, useSession } from './useSession';
 import { fmtTime } from '../format';
 import { changeLanguage, getLanguage, t } from '../i18n';
+import { withRequestDeadline } from '../requestDeadline';
 import { roleLabels, statusLabels } from './clinical';
 import type { Alert, AuditEntry, CriticalAlarm, Detail, Language, ManualValues, OverviewKey, Role, RulesView, ScenarioInfo } from '../types';
 import './integration.css';
@@ -32,7 +33,7 @@ function loadResource<T>(read: (signal: AbortSignal) => Promise<T>, accept: (val
   let timer: number | undefined;
   const attempt = async () => {
     try {
-      const value = await read(AbortSignal.any([lifetime.signal, AbortSignal.timeout(5000)]));
+      const value = await withRequestDeadline(read, lifetime.signal);
       if (!lifetime.signal.aborted) accept(value);
     } catch {
       if (!lifetime.signal.aborted) timer = window.setTimeout(attempt, RESOURCE_RETRY_MS);

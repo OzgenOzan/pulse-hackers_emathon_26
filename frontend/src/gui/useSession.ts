@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
 import { t } from '../i18n';
+import { withRequestDeadline } from '../requestDeadline';
 import type { Role, State } from '../types';
 
 type Connection = 'connected' | 'weak' | 'offline';
@@ -35,7 +36,7 @@ export function useSession(role: Role, notify: (notice: string) => void) {
         }
       }, 2000);
       try {
-        const state = await api.state(role, AbortSignal.any([lifetime.signal, AbortSignal.timeout(5000)]));
+        const state = await withRequestDeadline(signal => api.state(role, signal), lifetime.signal);
         if (alive) {
           failures.current = 0;
           setLastSuccess(new Date());
