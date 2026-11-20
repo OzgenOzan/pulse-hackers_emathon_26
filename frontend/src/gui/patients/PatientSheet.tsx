@@ -5,6 +5,7 @@ import { VitalSign } from '../../components/ui/VitalSign';
 import { fmtTime } from '../../format';
 import {
   bedLabel,
+  consultLabel,
   diagnosisLabel,
   labDisplayLabel,
   localRule,
@@ -116,7 +117,7 @@ export function PatientSheet({
               {summary.pending_labs.length ? summary.pending_labs.map(lab => labDisplayLabel(lab.label)).join(', ') : copy.none}
             </Fact>
             <Fact label={copy.pendingConsults}>
-              {summary.pending_consults.length ? summary.pending_consults.map(c => c.service).join(', ') : copy.none}
+              {summary.pending_consults.length ? summary.pending_consults.map(c => consultLabel(c.service)).join(', ') : copy.none}
             </Fact>
             <Fact label={copy.diagnosis}>
               {summary.working_dx.length ? summary.working_dx.map(diagnosisLabel).join(', ') : copy.noDiagnosis}
@@ -259,7 +260,7 @@ function DetailSections({ detail, config }: { detail: Detail; config: RulesView 
           <ul className="reason-list">
             {detail.consultations.map(c => (
               <li key={`${c.service}-${c.requested_at}`}>
-                {c.service} · {fmtTime(c.requested_at)} · {c.resulted_at ? copy.resulted : copy.pending}
+                {consultLabel(c.service)} · {fmtTime(c.requested_at)} · {c.resulted_at ? copy.resulted : copy.pending}
               </li>
             ))}
           </ul>
@@ -288,11 +289,13 @@ function DetailSections({ detail, config }: { detail: Detail; config: RulesView 
   );
 }
 
-const TRENDS = [
-  { key: 'hr', label: copy.vital.hr },
-  { key: 'map', label: copy.oab },
-  { key: 'spo2', label: copy.vital.spo2 },
-] as const;
+function trendRows() {
+  return [
+    { key: 'hr', label: copy.vital.hr },
+    { key: 'map', label: copy.oab },
+    { key: 'spo2', label: copy.vital.spo2 },
+  ] as const;
+}
 
 function Trends({ vitals }: { vitals: VitalReading[] }) {
   const recent = [...vitals].sort((a, b) => a.time.localeCompare(b.time)).slice(-6);
@@ -302,7 +305,7 @@ function Trends({ vitals }: { vitals: VitalReading[] }) {
       {recent.length === 0 ? (
         <p>{copy.trendNone}</p>
       ) : (
-        TRENDS.map(({ key, label }) => <Sparkline key={key} label={label} values={recent.map(r => r[key])} />)
+        trendRows().map(({ key, label }) => <Sparkline key={key} label={label} values={recent.map(r => r[key])} />)
       )}
     </section>
   );

@@ -1,5 +1,5 @@
 import { Eye, Lock, TriangleAlert } from 'lucide-react';
-import { bedLabel, labDisplayLabel, reasonLabel, stayLabel } from '../../gui/clinical';
+import { bedLabel, consultLabel, labDisplayLabel, reasonLabel, stayLabel, vitalFlagLabel } from '../../gui/clinical';
 import {
   ageSex,
   alertTitle,
@@ -34,7 +34,7 @@ export function PatientCard({
   const extraIssues = patient.risk_status.data_issues.filter(issue => issue.key !== reason?.key);
   const complaint = complaintOf(patient);
   const labs = patient.pending_labs.map(lab => labDisplayLabel(lab.label)).join(', ') || copy.none;
-  const consults = patient.pending_consults.map(consult => consult.service).join(', ') || copy.none;
+  const consults = patient.pending_consults.map(consult => consultLabel(consult.service)).join(', ') || copy.none;
   const cells = vitalCells(patient, offline);
   const flagged = cells.filter(cell => cell.state.kind === 'value' && cell.flags.length);
   return (
@@ -80,7 +80,7 @@ export function PatientCard({
           const critical = cell.flags.some(flag => flag.level === 'kritik');
           const Icon = critical ? TriangleAlert : Eye;
           return <span key={cell.key} className={critical ? 'flag-kritik' : 'flag-yakin_takip'}><Icon size={14} aria-hidden="true" />
-            {cell.label}: {cell.flags.map(flag => flag.note).join(' · ')}
+            {cell.label}: {cell.flags.map(flag => vitalFlagLabel(flag.note)).join(' · ')}
           </span>;
         })}
       </div>}
@@ -89,8 +89,8 @@ export function PatientCard({
           {tasks.map(task => (
             <li key={task.id}>
               <TaskChip title={alertTitle(task)}>{task.level === 'GREEN'
-                ? `Taburculuk değerlendirmesi bekliyor${typeof task.params.minutes === 'number' ? ` · ${task.params.minutes} dk` : ''}`
-                : 'Veri eksikliği'}</TaskChip>
+                ? (typeof task.params.minutes === 'number' ? copy.dischargeWaitingMinutes(task.params.minutes) : copy.dischargeWaiting)
+                : copy.dataIssues}</TaskChip>
             </li>
           ))}
         </ul>
@@ -100,8 +100,8 @@ export function PatientCard({
         <span>{copy.lastMeasure} {lastMeasureText(patient)}</span>
       </footer>
       <div className="card-pending">
-        <span title={`${copy.pendingLabs}: ${labs}`}>Tetkik: {labs}</span>
-        <span title={`${copy.pendingConsults}: ${consults}`}>Konsültasyon: {consults}</span>
+        <span title={`${copy.pendingLabs}: ${labs}`}>{copy.labsValue(labs)}</span>
+        <span title={`${copy.pendingConsults}: ${consults}`}>{copy.consultsValue(consults)}</span>
       </div>
     </article>
   );
