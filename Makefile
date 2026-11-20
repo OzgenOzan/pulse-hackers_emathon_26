@@ -24,6 +24,7 @@ test:
 	cd frontend && $(NPM) run build
 	$(VENV_PYTHON) scripts/export_rules.py --check
 	$(VENV_PYTHON) scripts/generate_noise.py --check
+	$(VENV_PYTHON) scripts/export_raw_data.py --check
 
 demo:
 	cd frontend && $(NPM) run build
