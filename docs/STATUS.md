@@ -23,7 +23,7 @@
 
 ## Assumptions
 
-- The tracked initial prompt already lives at the repository root; it is not copied or moved. The original team PDFs remain unchanged.
+- The [initial prompt](../prompts/00_omp-initial-draft.md) and [audit follow-up](../prompts/01_omp-followup.md) live in `prompts/`. The original team PDFs remain unchanged.
 - No fixture-only endpoints: the browser uses the real local API, engine, and scenario player.
 - Simulated times are local to the scenario. Actual wall timestamps are UTC; identical replay audit checks inject a fixed wall clock, and real-session comparisons exclude wall timestamps only.
 - Lab cutoffs are inclusive; reference limits are normal at equality. Unrecognized units are not scored. Result times and physician actions in the same simulated minute count the action as having addressed the result. Repeated tests are separate orders paired oldest pending first.
@@ -47,3 +47,44 @@
 ## Next steps
 
 - Review prototype defaults with the clinical team and rehearse with an independent clinician before the jury. [P2 backlog](backlog.md) is not implemented.
+
+## Audit follow-up 01
+
+- D1 — regressions reproduced the score drop (3 → 1) and stale-field masking. Freshness and baseline now resolve per parameter, and the board uses evaluated values. The focused engine, API and timeline checks passed (38 tests).
+- D2 — the reconnect fixture reproduced a missing GREEN at 03:15; nurse acknowledgements now remain in audit without entering physician decision history.
+- D3 — the new invalid-entry cases first returned 204. The server and bilingual form now enforce the clinician-supplied `manual_entry` rules; those limits are **CLINICAL-REVIEW** data-entry checks, not alert thresholds. The HR-only D1 replay is rejected after D3; the API test now supplies HR and BP while omitting optional fields, and engine tests still exercise HR-only observations.
+- D4 — `banana` reproduced a 204; unsupported physician action types now return `422 invalid_action_type` without changing Y06's GREEN. The RED navigation guard still runs first.
+- U1 — Edge at 1280×720 showed 11/11 44 px rows in both roles with no banner and 10 rows with one GREEN or YELLOW strip, with no page scroll. At 1920×1080 all 11 were visible with a banner.
+- U2 — at 04:00, all four 56 px RED buttons were visible without scrolling in Edge (bottom at y=650). Opening the reason picker kept all three options and all four actions in view; only the evidence area scrolls.
+- U3 — Edge showed all six RED evidence rows at 04:00 with consistent precision and no visible value over two decimals. The engine still uses raw values; the focused engine and replay suite passed (10 tests).
+- U4 — with no URL selection, a nurse opening the board at 03:15 gets C.M. (S-03), the top YELLOW row. Edge also preserved an explicit A.K. selection after reload.
+- U5 — Edge showed configured Lactate and K+ labels (including filtered lactate) and localized CBC, Creatinine and Urinalysis labels in English and Turkish.
+- U6 — a fresh Edge load used the inline SVG icon, made no `/favicon.ico` request, and logged no errors.
+- P2 — moved both prompts to `prompts/` and regenerated the [clinical rules](clinical-rules.md) with the manual-entry table. The documented hero clicks are unchanged.
+- Review follow-through — timestamps and staleness now follow each displayed vital, halfway MAP values agree between rules and values, overflow YELLOW alerts remain actionable, and every unsupported physician-action string returns the same key. Verified with the off-cycle regression and an isolated three-alert browser fixture.
+- Final checks — `make test` passed (94 backend tests, TypeScript and Vite); both generated-file checks passed. The scenario and two deterministic night-shift tests are unchanged. Edge blocked all seven invalid form cases before the POST, with localized messages, and accepted the valid entry. Two hero passes produced identical visible alerts and nine identical audit rows with no browser errors. Refreshed the [four 1280×720 screenshots](screenshots/) and decoded all 600 frames of the [60-second recording](demo-backup.mp4).
+- Intentional behavior: a valid manual entry or acknowledgement re-evaluates immediately, so an alert can appear between the scheduled 15-minute evaluations.
+
+## GUI 2.0
+
+- The remote `v1-audited` fallback points to the audited `main` commit `ba0261a`, before any GUI changes. Baseline: 94 backend tests, TypeScript, build, clinical rules and seeded noise checks passed.
+- [Approved GUI brief](gui-2.0-brief.md) and [execution plan](superpowers/plans/2026-11-19-sahin-goz-gui-2.md). The engine and protected tests remain the control for this UI redesign.
+- Added the pure risk classifier and GUI-only configuration: status precedence follows the existing engine, data gaps remain independent, and deterioration emphasis expires at the next scheduled assessment. `status.*`, `display.gcs_fresh_minutes`, and `manual_entry.limits.gcs` require clinical review; none changes scoring.
+- Added the briefing's synthetic patient identities, separate GCS and consultation streams, and optional integer manual GCS. The new data does not alter clinical alerts or audit history; consultation requests/results do not affect discharge evaluation (**CLINICAL-REVIEW**).
+- Both roles can record seeing an active critical alarm without closing it or lifting the navigation lock. Evaluation records accept an optional 280-character note. Replay guards, per-role idempotency, and unchanged legacy behavior passed the focused API suite.
+- Added the GUI overview, patient projections, role-specific tasks and shared critical alarm list. All 121 backend tests passed, including the 94 unmodified baseline tests and the full hero count/lock sequence. SpO₂, respiratory rate and GCS have no active scoring flags (**CLINICAL-REVIEW**).
+- P0: integrated the Turkish control panel, compact patient cards and detail, role-specific tasks, and the critical alarm / evaluation flow. Two production-build runs in Edge at 1280×720 matched audit entries except for wall timestamps. Both runs checked that “Alarmı gördüm” neither closes the alarm nor lifts the lock, including after reload.
+- `make test`: 122 backend tests (the original 94 unchanged), TypeScript check and production build. Both generated-artifact checks passed.
+- **CLINICAL-REVIEW:** `status.*`, `display.gcs_fresh_minutes` and `manual_entry.limits.gcs` are prototype rules and limits. Consult requests are display-only and do not affect discharge-evaluation alerts.
+- P1 adds the role queues, clinical-rule settings, filterable cards and table, system/light/dark preferences, responsive navigation, and the persistent critical-alarm strip. Edge checks at 1920×1080, 1280×720, 1024×768 and 390×844 covered both roles and themes, with no document overflow, console errors or third-party requests.
+- Density at 1280×720: 6 complete cards and 10 complete table rows at reset, and 7 complete table rows with one active alarm. At 1920×1080, all 12 cards were visible at 04:15 with three active alarms.
+- The overview moves to the alarm strip on phones; the dedicated alarm and work-queue pages retain the full action controls. The narrow table scrolls internally. Native scenario, speed and filter selects can show an OS-drawn accent; app focus, selection and other accents are palette-controlled.
+- [Design system and contrast](design-system.md) · [light screenshot](screenshots/gui-light.png) · [dark screenshot](screenshots/gui-dark.png) · [phone screenshot](screenshots/gui-mobile.png) · [60-second demo recording](demo-backup.mp4), decoded all 600 frames.
+- A separate Edge run dropped three consecutive state requests: the phone showed the last-success timestamp, all 54 visible measured values lost their normal style, mutations were disabled, and the connection recovered when requests resumed.
+- P2 started after P1 was published at 23:46 Istanbul time, before the 04:30 cutoff. Settings enables English only when both catalogs have matching nonempty messages and placeholder names. Turkish remains the default; the chosen language survives reload.
+- The shift summary counts actual audit records and labels them as simulation activity, not clinical performance. In two final replays Edge showed one seen record, one recorded critical evaluation, and one filtered lab. Both runs produced the same 10 audit entries except for wall-clock timestamps.
+- Final browser checks also covered a 48 px primary action and locked secondary alarm at 04:00, and English patient detail at 390×844 with localized staff/lab names and the disabled physician action.
+- Published on [`feat/gui-2`](https://github.com/OzgenOzan/pulse-hackers_emathon_26/tree/feat/gui-2) in [PR #3](https://github.com/OzgenOzan/pulse-hackers_emathon_26/pull/3); not merged.
+- Review fixes distinguish a latched alarm's earlier findings from its current score, keep a prior evaluation out of a newly active alarm’s status, and show the seen/decision timeline and note in patient detail. A departed patient remains visible in the history with its detail action disabled and explained. The clinical engine and server-side lock are unchanged.
+- Stale trend endpoints show the measurement time and the chart breaks at missing samples. Monitor-only gaps are distinct from overdue vitals, tablet navigation no longer covers the detail sheet, and one assertive critical alert region works on every route.
+- Failed startup resources reload independently. A timed-out mutation keeps actions disabled until reconciliation. Edge held a real successful seen response: the connection showed offline, then accepted the saved seen record after recovery without sending a duplicate POST. The palette regression tests and final 571-key locale check passed.

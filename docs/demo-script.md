@@ -9,22 +9,22 @@
 | Time | Show |
 |---|---|
 | 0:00–1:30 | The night shift story, the crowded emergency department, and one question: can a clinician catch deterioration and idle waiting without drowning in alerts? |
-| 1:30–5:00 | Run the live hero path below. Explain that RED is weighted evidence, YELLOW is a data-quality check, and GREEN suggests a review, not discharge. Show the alert reason and the human acknowledgement. |
-| 5:00–6:30 | Continue from the hero end to the Y08 limitation. Show why a chronic baseline still triggers RED and how the override is audited. |
-| 6:30–8:00 | Reset and step twice. On S-05 show the filtered lactate, then open the honesty panel. Y01's weighted score flags it at 03:30; its MAP-only threshold is crossed at 04:00. The 30 simulated minutes demonstrate the rule, not real-world performance. Close with what a pilot would measure. |
+| 1:30–5:00 | Run the Turkish hero path below with English narration. Distinguish measured risk, a data-gap task, and a discharge-evaluation task. A seen alarm is not a clinical decision. |
+| 5:00–6:30 | Continue to the Yatak 08 limitation. Explain why a chronically low baseline still triggers a critical alarm and how to record the reason. |
+| 6:30–8:00 | Reset and step twice. On Yatak 05 show the filtered lactate and open the honesty panel. Yatak 01 shows **Yakın Takip** at 03:00, **Kritik** at 03:30, and crosses the isolated OAB cutoff at 04:00. These simulated times demonstrate the rules, not real-world performance. |
 
 ## Hero path and 60-second backup
 
-Run `make demo`, use a 1280×720 or larger desktop viewport, keep English selected and the clock paused. The [60-second backup recording](demo-backup.mp4) uses the actual application controls. Keep a copy on two devices.
+Run `make demo`, use a 1280×720 or larger desktop viewport, and leave the clock paused. Narrate in English; the controls below are in Turkish. Keep a local copy of the [60-second backup recording](demo-backup.mp4) on two devices.
 
 | Seconds | Click and verify |
 |---|---|
-| 0–7 | **Physician → Reset**. Show **SIMULATED DATA** and the 02:45 clock. |
-| 7–19 | **+15 min**. Open S-06 (GREEN, results ready 35 minutes). Click **Discharge decision made**; the simulated patient leaves the board. |
-| 19–32 | **+15 min → Nurse**. Show the S-03 missing monitor readings. Click **Monitor reconnected**; its simulated feed returns on the next cycle. |
-| 32–49 | **Physician → +15 min**. The RED for S-01 blocks navigation. Show HR 108, temperature 38.4, MAP 18 below baseline and current MAP 74; attempt to open another patient and show refusal. |
-| 49–60 | Click **Move to red zone**. Open **Audit log** and briefly hold on the acknowledged transfer. |
+| 0–7 | **Hekim → Sıfırla**. Point out **SİMÜLE VERİ**, 02:45, and 11 stable patients. |
+| 7–19 | **+15 dk**. Yatak 01 is **Yakın Takip** before any critical alarm. Open Yatak 06 (results ready for 35 min), then choose **Taburculuk kararı verildi**. |
+| 19–32 | **+15 dk → Hemşire**. Open Yatak 03 and choose **Monitör yeniden bağlandı**. The task clears; the patient stays **Sınıflandırılmamış** until new readings arrive. |
+| 32–49 | **Hekim → +15 dk**. The Yatak 01 alarm cites tachycardia (108/min), fever (38.4 °C), and an OAB drop of 18 mmHg. Try another bed to show the lock. Press **Alarmı gördüm** and verify the alarm and lock both remain. |
+| 49–60 | **Klinik değerlendirme kaydı oluştur → Kırmızı alana al**. Open **Klinik Alarmlar** to show the seen and clinical evaluation records. |
 
-**Optional limitation rehearsal:** From the hero end, step to 04:00 and choose **Reassessing** for S-02. Step to 04:15: S-08 has MAP 64 from a chronically low baseline and still raises RED. Choose **Expected for this patient → Chronic baseline** and show the physician override in the audit. This is a scripted limitation, not an instruction to override alerts in practice.
+**Optional limitation rehearsal:** From the hero end at 03:30, press **+15 dk** twice. At 04:00 choose **Klinik değerlendirme kaydı oluştur → Yeniden değerlendiriyorum** for Yatak 02. Step once more: at 04:15 Yatak 08 has OAB 64 from a chronically low baseline and still gets a critical alarm. Choose **Bu hasta için beklenen → Kronik bazal değer** and show the recorded reason. This is a scripted limitation, not clinical advice.
 
 **Suggested pilot endpoints, not outcomes:** time from ready results to discharge decisions, stretcher occupancy, cardiac arrests, in-ED mortality, and white-code calls. A real pilot needs local integration, governance, clinical sign-off, and a comparison design. Do not claim any of these have improved.

@@ -1,7 +1,7 @@
 """Typed rule data. Only load_config touches the filesystem."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args
 
 import yaml
 from pydantic import PositiveInt, model_validator
@@ -9,6 +9,7 @@ from pydantic import PositiveInt, model_validator
 from app.domain.models import Model
 
 VitalParam = Literal['map', 'hr', 'temp', 'spo2', 'rr', 'sbp', 'dbp']
+ManualMeasure = VitalParam | Literal['gcs']
 LabName = Literal['troponin', 'lactate', 'ph', 'potassium']
 
 
@@ -103,6 +104,48 @@ class AlertingRules(Model):
     red_blocks_navigation: bool
 
 
+class ManualBound(Model):
+    min: float
+    max: float
+
+    @model_validator(mode='after')
+    def ordered(self):
+        if self.min >= self.max:
+            raise ValueError('manual entry min must be below max')
+        return self
+
+
+class ManualEntry(Model):
+    required: list[VitalParam]
+    limits: dict[ManualMeasure, ManualBound]
+
+    @model_validator(mode='after')
+    def complete(self):
+        if self.limits.keys() != set(get_args(VitalParam)) | {'gcs'}:
+            raise ValueError('manual entry must define limits for each vital parameter and GCS')
+        gcs = self.limits['gcs']
+        if not (gcs.min.is_integer() and gcs.max.is_integer() and 3 <= gcs.min < gcs.max <= 15):
+            raise ValueError('GCS limits must be integers in the 3–15 scale')
+        if len(self.required) != len(set(self.required)):
+            raise ValueError('manual entry required fields must be unique')
+        return self
+
+
+class StatusRules(Model):
+    watch_min_score: PositiveInt
+    required_fresh_vitals: list[VitalParam]
+
+    @model_validator(mode='after')
+    def unique_required_vitals(self):
+        if not self.required_fresh_vitals or len(self.required_fresh_vitals) != len(set(self.required_fresh_vitals)):
+            raise ValueError('required_fresh_vitals must be nonempty and unique')
+        return self
+
+
+class DisplayRules(Model):
+    gcs_fresh_minutes: PositiveInt
+
+
 class EngineConfig(Model):
     cycle_minutes: PositiveInt
     red: RedRules
@@ -112,9 +155,14 @@ class EngineConfig(Model):
     yellow: YellowRules
     green: GreenRules
     alerting: AlertingRules
+    manual_entry: ManualEntry
+    status: StatusRules
+    display: DisplayRules
 
     @model_validator(mode='after')
     def valid_lab_references(self):
+        if self.status.watch_min_score >= self.red.threshold:
+            raise ValueError('watch_min_score must be below the critical threshold')
         for group, mapping in self.icd_lab_relevance.items():
             if any(lab not in self.labs for lab in mapping.labs):
                 raise ValueError(f'{group} references an undefined lab')

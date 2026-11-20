@@ -1,0 +1,99 @@
+/* Simulated shift summary. Colours come from tokens.css only; nothing below 14 px. */
+
+.shift-analytics {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  color: var(--text);
+}
+
+.shift-analytics h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+.analytics-note {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.analytics-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analytics-stat,
+.analytics-panel {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+
+.analytics-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.analytics-hint {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.analytics-panel h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.analytics-bars {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analytics-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.analytics-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.analytics-track {
+  grid-column: 1 / -1;
+  height: 16px;
+  overflow: hidden;
+  background: var(--subtle);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+
+.analytics-fill {
+  display: block;
+  height: 100%;
+  background: var(--text);
+}

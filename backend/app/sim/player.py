@@ -6,9 +6,11 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import Field, TypeAdapter, model_validator
+from pydantic import Field, StrictInt, StringConstraints, TypeAdapter, model_validator
 
 from app.domain.models import (
+    Consultation,
+    GcsReading,
     LabOrder,
     Level,
     Model,
@@ -60,6 +62,18 @@ class MonitorDisconnectEvent(Model):
     resume: Literal['on_nurse_ack']
 
 
+class GcsEvent(Model):
+    type: Literal['gcs']
+    patient: str
+    value: StrictInt = Field(ge=3, le=15)
+
+
+class ConsultEvent(Model):
+    type: Literal['consult_request', 'consult_result']
+    patient: str
+    service: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
 class ArrivalRef(Model):
     """Arrival as written in JSON. Scenario.load replaces it with an ArrivalEvent carrying the profile."""
 
@@ -75,12 +89,12 @@ class ArrivalEvent(Model):
 
 Event = (
     ArrivalEvent | VitalsEvent | LabOrderEvent | LabResultEvent
-    | PhysicianActionEvent | MonitorDisconnectEvent
+    | PhysicianActionEvent | MonitorDisconnectEvent | GcsEvent | ConsultEvent
 )
 
 _RawEvent = TypeAdapter(Annotated[
     ArrivalRef | VitalsEvent | LabOrderEvent | LabResultEvent
-    | PhysicianActionEvent | MonitorDisconnectEvent,
+    | PhysicianActionEvent | MonitorDisconnectEvent | GcsEvent | ConsultEvent,
     Field(discriminator='type'),
 ])
 
@@ -173,6 +187,7 @@ class Scenario:
         scheduled.sort(key=lambda item: (item.at, not isinstance(item.event, ArrivalEvent),
                                          isinstance(item.event, MonitorDisconnectEvent)))
         pending_orders: dict[tuple[str, str], int] = defaultdict(int)
+        pending_consults: dict[tuple[str, str], int] = defaultdict(int)
         for item in scheduled:
             event = item.event
             if isinstance(event, LabOrderEvent):
@@ -182,6 +197,14 @@ class Scenario:
                 if not pending_orders[key]:
                     raise ValueError(f'{event.patient} {event.test} result at {item.at} has no pending order')
                 pending_orders[key] -= 1
+            elif isinstance(event, ConsultEvent):
+                key = (event.patient, event.service)
+                if event.type == 'consult_request':
+                    pending_consults[key] += 1
+                elif pending_consults[key]:
+                    pending_consults[key] -= 1
+                else:
+                    raise ValueError(f'{event.patient} {event.service} result at {item.at} has no pending request')
 
         expect = tuple(
             Expectation(patient=item.patient, level=item.level, at=_at(day, item.first_at))
@@ -312,3 +335,14 @@ def apply_event(
         order.unit = event.unit
     elif isinstance(event, PhysicianActionEvent):
         snapshot.actions.append(PhysicianAction(time=time, type=event.action))
+    elif isinstance(event, GcsEvent):
+        snapshot.gcs_history.append(GcsReading(value=event.value, observed_at=time))
+    elif isinstance(event, ConsultEvent):
+        if event.type == 'consult_request':
+            snapshot.consultations.append(Consultation(service=event.service, requested_at=time))
+        else:
+            request = next((record for record in snapshot.consultations
+                            if record.service == event.service and record.resulted_at is None), None)
+            if request is None:
+                raise ValueError(f'{event.patient} {event.service} result at {time} has no pending request')
+            request.resulted_at = time

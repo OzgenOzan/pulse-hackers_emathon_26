@@ -38,3 +38,19 @@ alerting:
   ack_cooldown_minutes: 30            # CLINICAL-REVIEW (not in design report)
   realert_score_increase: 2           # CLINICAL-REVIEW (not in design report)
   red_blocks_navigation: true         # design report
+manual_entry:                         # data-entry plausibility limits, NOT alert thresholds. CLINICAL-REVIEW
+  required: [hr, sbp, dbp]
+  limits:
+    hr:   {min: 20,   max: 250}
+    sbp:  {min: 40,   max: 300}
+    dbp:  {min: 20,   max: 200}
+    map:  {min: 20,   max: 250}
+    temp: {min: 30.0, max: 43.0}
+    spo2: {min: 50,   max: 100}
+    rr:   {min: 4,    max: 60}
+    gcs:  {min: 3,    max: 15}          # CLINICAL-REVIEW (whole numbers only)
+status:                               # GUI risk-status mapping. CLINICAL-REVIEW
+  watch_min_score: 1
+  required_fresh_vitals: [hr, map]
+display:
+  gcs_fresh_minutes: 120               # CLINICAL-REVIEW (display only)
