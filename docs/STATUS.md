@@ -128,5 +128,9 @@
 
 ### Release checks
 
-- `make test`: 166 backend tests versus 122 on the verified baseline; palette and its two tests, 638 matching locale keys and placeholders, TypeScript, Vite, and all three generated-artifact checks passed. The existing Starlette/AnyIO deprecation warning remains.
+- `make test`: 177 backend tests versus 122 on the verified baseline; palette and its two tests, 638 matching locale keys and placeholders, TypeScript, Vite, and all three generated-artifact checks passed. The existing Starlette/AnyIO deprecation warning remains.
 - The clinician-owned YAML, night-shift JSON, three protected tests, original RED re-alert test, screenshots, backup recording, and original hero text are unchanged. The what-if rehearsal is an optional Q&A beat only.
+- [PR #4](https://github.com/OzgenOzan/pulse-hackers_emathon_26/pull/4) was opened at 11:57 Istanbul time against `main`, without merging.
+- Review follow-through: `8fded86` bounds clock arithmetic to the whole replay and keeps active/default model objects separate; reset guard tests caught deliberate regressions in role and replay checks. `43b3545` binds the config response to its own replay; Edge discarded newer config received with an older board snapshot. `892fbc6` makes the artifact check reject BOM-less CSVs while still accepting CRLF checkouts.
+- `d120e3a` preserves exact edited cutoff and trend-threshold text without changing the comparisons or the default evidence. It rejects a manual trend range that cannot produce a finite difference. Four focused cases failed before the fix and passed afterward.
+- The final `make demo` build repeated the two default hero runs at 1280×720: identical visible audit, no custom badge, no console errors, and only `127.0.0.1:8000` resource requests. The view was reset to 02:45 with default rules at the end.
