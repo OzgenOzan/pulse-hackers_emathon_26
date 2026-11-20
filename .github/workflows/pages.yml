@@ -16,7 +16,7 @@ concurrency:
 env:
   # `fallback` ships the static jury page (scripts/pages-fallback); `interactive` ships the Pyodide site.
   PAGES_VARIANT: fallback
-  PLAYWRIGHT_VERSION: "1.55.0"
+  PLAYWRIGHT_VERSION: "1.58.0"
 
 jobs:
   test:
@@ -96,7 +96,7 @@ jobs:
 
   deploy:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
