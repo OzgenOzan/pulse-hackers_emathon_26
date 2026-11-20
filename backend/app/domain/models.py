@@ -273,6 +273,20 @@ class SimStatus(Model):
     scenario_id: str
     replay_id: str
     next_cycle_at: datetime | None
+    rules_custom: bool
+
+
+class RuleChange(Model):
+    path: str
+    before: int | float | bool
+    after: int | float | bool
+
+
+class RulesHistoryEntry(Model):
+    wall_time: datetime
+    role: Role
+    action: Literal['apply', 'reset_defaults']
+    changes: list[RuleChange]
 
 
 class Overview(Model):
