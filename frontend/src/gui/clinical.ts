@@ -51,7 +51,7 @@ const labKeys: Record<string, string> = {
 };
 export function labDisplayLabel(label: string): string {
   const key = labKeys[label];
-  return key ? t(`lab.${key}`) : label;
+  return key ? t(`lab.${key}`, undefined, label) : label;
 }
 
 const complaints: Record<string, string> = {
