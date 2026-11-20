@@ -1,7 +1,7 @@
 import { fmtTime } from '../../format';
 import { t } from '../../i18n';
 import type { Alert, Component, Profile, RiskKey, RulesView, Summary, VitalFlag } from '../../types';
-import { componentText, measurement, reasonLabel } from '../clinical';
+import { complaintLabel, componentText, measurement, reasonLabel } from '../clinical';
 import { copy } from './copy';
 
 /** Display-only per-field reading from the payload. */
@@ -45,7 +45,8 @@ export function protocolOf(p: Profile): string {
 }
 
 export function complaintOf(p: Profile): string | null {
-  return p.display?.complaint || null;
+  const complaint = p.display?.complaint;
+  return complaint ? complaintLabel(complaint) : null;
 }
 
 export function ageSex(p: Profile): string {
@@ -109,7 +110,7 @@ export function decisionText(alert: Alert): string | null {
 }
 
 export function componentFinding(c: Component): string {
-  if (c.key === 'results_idle') return `${copy.resultsIdle} · ${c.value} dk`;
+  if (c.key === 'results_idle') return `${copy.resultsIdle} · ${c.value} ${copy.minuteUnit}`;
   if (c.key === 'monitor_gap' || c.key === 'vitals_overdue') {
     return reasonLabel({ key: c.key, params: { minutes: c.value } });
   }
@@ -117,12 +118,16 @@ export function componentFinding(c: Component): string {
 }
 
 const VALUE_KINDS: Record<string, string> = { temp_high: 'temp', lab_ph: 'ph' };
-const UNITS: Record<string, string> = { bpm: '/dk', min: 'dk' };
+function unitLabel(unit: string): string {
+  if (unit === 'bpm') return copy.perMinuteUnit;
+  if (unit === 'min') return copy.minuteUnit;
+  return unit;
+}
 
 export function componentValue(c: Component): string {
   const kind = VALUE_KINDS[c.key] ?? (c.key.startsWith('lab_') ? 'lab' : '');
   const value = measurement(c.value, kind);
-  const unit = UNITS[c.unit] ?? c.unit;
+  const unit = unitLabel(c.unit);
   return unit ? `${value} ${unit}` : value;
 }
 
@@ -195,9 +200,9 @@ export function vitalCells(p: Summary, offline: boolean): VitalCell[] {
       flags: flagsOf(flags.sbp, flags.dbp, flags.map),
       sub: `${copy.oab} ${describeState(map)}`,
     },
-    { key: 'hr', label: copy.vital.hr, unit: '/dk', state: single(m.hr, offline, noPatientData, fmtInt), flags: flagsOf(flags.hr) },
+    { key: 'hr', label: copy.vital.hr, unit: copy.perMinuteUnit, state: single(m.hr, offline, noPatientData, fmtInt), flags: flagsOf(flags.hr) },
     { key: 'spo2', label: copy.vital.spo2, unit: '%', state: single(m.spo2, offline, noPatientData, fmtInt), flags: flagsOf(flags.spo2) },
-    { key: 'rr', label: copy.vital.rr, unit: '/dk', state: single(m.rr, offline, noPatientData, fmtInt), flags: flagsOf(flags.rr) },
+    { key: 'rr', label: copy.vital.rr, unit: copy.perMinuteUnit, state: single(m.rr, offline, noPatientData, fmtInt), flags: flagsOf(flags.rr) },
     {
       key: 'temp',
       label: copy.vital.temp,

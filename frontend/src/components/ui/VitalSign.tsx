@@ -1,5 +1,7 @@
 import { Eye, TriangleAlert } from 'lucide-react';
 import { describeState, type VitalState } from '../../gui/patients/model';
+import { vitalFlagLabel } from '../../gui/clinical';
+import { copy } from '../../gui/patients/copy';
 import type { VitalFlag } from '../../types';
 
 /** One vital. Only a fresh value is shown large; stale or missing fields are small text with their own label. */
@@ -35,11 +37,11 @@ export function VitalSign({
           {flag.level === 'kritik'
             ? <TriangleAlert aria-hidden="true" size={14} />
             : <Eye aria-hidden="true" size={14} />}
-          {flag.note}
+          {vitalFlagLabel(flag.note)}
         </span>
       ))}
-      {sub && <span className="vital-sub" title={`Ortalama arter basıncı: ${sub}`}>
-        {compact && state.kind === 'stale' && sub.endsWith(describeState(state)) ? 'OAB —' : sub}
+      {sub && <span className="vital-sub" title={copy.mapTitle(sub)}>
+        {compact && state.kind === 'stale' && sub.endsWith(describeState(state)) ? `${copy.oab} -` : sub}
       </span>}
     </div>
   );
