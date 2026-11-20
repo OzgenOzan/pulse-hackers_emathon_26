@@ -3,7 +3,8 @@
 from collections.abc import AsyncIterator
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Header, Request
+import yaml
+from fastapi import APIRouter, Depends, Header, Request, Response
 from pydantic import StrictInt, StringConstraints
 
 from app.domain.models import (
@@ -171,3 +172,13 @@ async def reset_config(body: RulesRoleInput, session: Mutable) -> None:
 @router.get('/config/history')
 async def config_history(session: Current) -> list[RulesHistoryEntry]:
     return session.rules_history
+
+
+@router.get('/config/export', response_class=Response)
+async def export_config(session: Current) -> Response:
+    config = yaml.safe_dump(session.config.model_dump(mode='json'), allow_unicode=True, sort_keys=False)
+    return Response(
+        "# öneri — config.yaml'ın yerine geçmez\n" + config,
+        media_type='application/yaml',
+        headers={'Content-Disposition': 'attachment; filename="sahin-goz-rules-proposal.yaml"'},
+    )
