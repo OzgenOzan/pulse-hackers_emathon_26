@@ -57,6 +57,19 @@ def test_manual_vitals_leave_independent_monitor_gap_open():
         assert any(entry['event'] == 'manual_vitals' for entry in client.get('/api/audit').json())
 
 
+def test_not_at_bed_rejects_unknown_reason():
+    with client_for_night_shift() as client:
+        step(client)
+        step(client)
+        [task] = state(client, 'nurse')['alerts']
+        assert task['patient_id'] == 'Y03'
+        url = f"/api/alerts/{task['id']}/ack"
+        invalid = client.post(url, json={'action': 'not_at_bed', 'reason': 'banana'})
+        assert invalid.status_code == 422
+        assert invalid.json() == {'detail': 'valid_reason_required'}
+        assert client.post(url, json={'action': 'not_at_bed', 'reason': 'left_bed'}).status_code == 204
+
+
 def test_wait_justified_snoozes_then_returns():
     with client_for_night_shift() as client:
         step(client)

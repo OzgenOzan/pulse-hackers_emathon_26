@@ -25,7 +25,7 @@ ACK_REASONS: dict[str, dict[str, frozenset[str] | None]] = {
         'expected_for_patient': frozenset({'chronic_baseline', 'artifact', 'already_managed'}),
     },
     # Selecting “Vitals entered” only opens the form; POSTing readings is the mutation.
-    'YELLOW': {'monitor_reconnected': None, 'not_at_bed': frozenset()},
+    'YELLOW': {'monitor_reconnected': None, 'not_at_bed': frozenset({'left_bed', 'in_procedure', 'other'})},
     'GREEN': {
         'discharge_decided': None, 'prescription_written': None,
         'wait_justified': frozenset({'consult', 'imaging', 'other'}),
@@ -306,7 +306,7 @@ class Session:
         reasons = allowed[action]
         if reasons is None and reason is not None:
             raise SessionError(422, 'reason_not_applicable')
-        if reasons is not None and (not reason or (reasons and reason not in reasons)):
+        if reasons is not None and reason not in reasons:
             raise SessionError(422, 'valid_reason_required')
         if note is not None:
             note = note.strip() or None
