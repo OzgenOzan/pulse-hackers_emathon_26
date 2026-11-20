@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fmtTime } from '../format';
 import { t } from '../i18n';
 import type { ScenarioInfo, SimStatus, Speed } from '../types';
@@ -26,7 +26,10 @@ export function DemoControls({
   onStep: (minutes: number) => void;
 }) {
   const [scenario, setScenario] = useState(sim.scenario_id);
-  const [speed, setSpeed] = useState<Speed>(sim.speed);
+  // The user can choose a speed before starting. Once the simulation changes, the server is authoritative.
+  const [pausedSpeed, setPausedSpeed] = useState<Speed | null>(null);
+  const speed = sim.playing ? sim.speed : pausedSpeed ?? sim.speed;
+  useEffect(() => setPausedSpeed(null), [sim.playing, sim.replay_id, sim.speed]);
 
   return (
     <section className="demo-bar" aria-label={t('demo.title')}>
@@ -64,8 +67,8 @@ export function DemoControls({
           disabled={busy}
           onChange={e => {
             const next = Number(e.target.value) as Speed;
-            setSpeed(next);
             if (sim.playing) onPlay(next);
+            else setPausedSpeed(next);
           }}
         >
           {SPEEDS.map(s => (
